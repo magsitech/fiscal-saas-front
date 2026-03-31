@@ -350,7 +350,9 @@ export function AuthPage() {
           <div style={S.glow} />
           <div style={{ position: 'relative', zIndex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '28px' }}>
-              <ThemeToggle />
+              <div className="app-desktop-only">
+                <ThemeToggle />
+              </div>
               <button type="button" onClick={() => setShowAside(false)} style={S.ghostBtn}>
                 <Menu size={15} />
               </button>
@@ -388,6 +390,9 @@ export function AuthPage() {
               </div>
             ))}
             <div style={{ fontSize: '10px', color: 'var(--text-dim)', marginTop: '6px' }}>* inclui adicional fixo de R$ 0,03</div>
+            <div style={{ borderTop: '1px solid var(--border)', marginTop: '18px', paddingTop: '18px', textAlign: 'center', fontSize: '11px', color: 'var(--text-dim)' }}>
+              © 2026 validaeNota. Plataforma de validação fiscal brasileira.
+            </div>
           </div>
         </aside>
       )}
@@ -396,7 +401,6 @@ export function AuthPage() {
         <div style={S.formShell}>
           <div style={S.topBar} className="auth-topbar">
             <div style={S.topBarLeft}>
-              {!showAside && <ThemeToggle />}
               {!showAside && (
                 <button type="button" onClick={() => setShowAside(true)} style={S.ghostBtn}>
                   <Menu size={15} />
@@ -408,6 +412,9 @@ export function AuthPage() {
               <button type="button" onClick={() => navigate('/')} style={S.ghostBtn}>
                 <ArrowLeft size={15} />
               </button>
+              <div className="app-mobile-only">
+                <ThemeToggle />
+              </div>
             </div>
           </div>
 

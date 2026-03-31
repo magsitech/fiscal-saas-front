@@ -97,33 +97,35 @@ export function PublicNav({ current }: { current: 'home' | 'pricing' }) {
           className="public-nav-mobile app-mobile-only"
           style={{
             display: 'flex',
-            alignItems: 'center',
+            alignItems: 'flex-start',
             width: '100%',
             justifyContent: 'space-between',
             gap: '10px',
           }}
         >
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '10px' }}>
+            <button
+              type="button"
+              onClick={() => setMobileOpen((value) => !value)}
+              style={{
+                border: '1px solid var(--border)',
+                background: 'var(--surface-2)',
+                color: 'var(--text)',
+                borderRadius: '999px',
+                padding: '9px 14px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '13px',
+                fontWeight: 700,
+              }}
+              aria-label={mobileOpen ? 'Fechar menu da Área do Cliente' : 'Abrir menu da Área do Cliente'}
+            >
+              {mobileOpen ? <X size={16} /> : <Menu size={16} />}
+              Área do Cliente
+            </button>
+          </div>
           <ThemeToggle />
-          <button
-            type="button"
-            onClick={() => setMobileOpen((value) => !value)}
-            style={{
-              border: '1px solid var(--border)',
-              background: 'var(--surface-2)',
-              color: 'var(--text)',
-              borderRadius: '999px',
-              padding: '9px 14px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              fontSize: '13px',
-              fontWeight: 700,
-            }}
-            aria-label={mobileOpen ? 'Fechar menu da Área do Cliente' : 'Abrir menu da Área do Cliente'}
-          >
-            {mobileOpen ? <X size={16} /> : <Menu size={16} />}
-            Área do Cliente
-          </button>
         </div>
       </nav>
 
