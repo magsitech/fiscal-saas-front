@@ -401,6 +401,9 @@ export function AuthPage() {
         <div style={S.formShell}>
           <div style={S.topBar} className="auth-topbar">
             <div style={S.topBarLeft}>
+              <button type="button" onClick={() => navigate('/')} style={S.ghostBtn}>
+                <ArrowLeft size={15} />
+              </button>
               {!showAside && (
                 <button type="button" onClick={() => setShowAside(true)} style={S.ghostBtn}>
                   <Menu size={15} />
@@ -409,9 +412,6 @@ export function AuthPage() {
             </div>
 
             <div style={S.topBarActions} className="auth-topbar-actions">
-              <button type="button" onClick={() => navigate('/')} style={S.ghostBtn}>
-                <ArrowLeft size={15} />
-              </button>
               <div className="app-mobile-only">
                 <ThemeToggle />
               </div>

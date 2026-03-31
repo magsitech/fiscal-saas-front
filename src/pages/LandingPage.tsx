@@ -168,7 +168,7 @@ export function LandingPage() {
               display: 'inline-block',
             }}
           />
-          Plataforma SaaS Fiscal B2B
+          Plataforma Fiscal B2B
         </div>
 
         <h1
