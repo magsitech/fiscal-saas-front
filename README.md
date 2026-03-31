@@ -1,28 +1,29 @@
 # fiscal-saas-front
 
-Frontend do validaeNota.
+Frontend do `validaeNota`, publicado no Vercel e preparado para operar com dados mockados enquanto a integração com a API no Railway e com o PostgreSQL não é ativada.
 
-Hoje este projeto roda como frontend React + Vite publicado no Vercel, com suporte a dados mockados para testes antes da integracao com a API no Railway e com o PostgreSQL.
+## Visão geral
+
+Hoje o projeto entrega:
+
+- landing page pública em `https://validaenota.com.br`
+- página de preços em `https://validaenota.com.br/pricing`
+- área do cliente em `https://app.validaenota.com.br`
+- autenticação e dados de demonstração com mock local
+- tema com alternância entre modo `escuro` e `claro`
+- responsividade para desktop e mobile
 
 ## Stack
 
-- React 18 + TypeScript
+- React 18
+- TypeScript
 - Vite
-- React Router v6
+- React Router DOM
 - Zustand
 - Axios
-- lucide-react
-- react-hot-toast
-- date-fns
-
-## Estado atual do projeto
-
-- Landing page publica em `/`
-- Painel do usuario em `/app`
-- Tema com modos `claro`, `escuro` e `sistema`
-- Modo mock para autenticacao, dashboard, consumo, pagamentos e simulacoes
-- Deploy principal via Vercel
-- Dominio do app: `app.validaenota.com.br`
+- `react-hot-toast`
+- `lucide-react`
+- `date-fns`
 
 ## Estrutura principal
 
@@ -40,25 +41,33 @@ src/
   store/
   types/
   utils/
+public/
 ```
 
-## Desenvolvimento local
+## Execução local
+
+Instale as dependências:
 
 ```bash
 npm install
+```
+
+Inicie o ambiente local:
+
+```bash
 npm run dev
 ```
 
-## Build
+## Build de produção
 
 ```bash
 npm run build
 npm run preview
 ```
 
-## Variaveis de ambiente
+## Variáveis de ambiente
 
-Use o arquivo `.env.example` como base.
+Use o arquivo `.env.example` como base para o ambiente local.
 
 ```env
 VITE_USE_MOCK_API=true
@@ -68,15 +77,27 @@ VITE_API_BASE_URL=http://localhost:8000
 ### Significado
 
 - `VITE_USE_MOCK_API=true`
-  Mantem a aplicacao funcionando com dados mockados.
+  Mantém a aplicação funcionando com dados mockados.
 
 - `VITE_USE_MOCK_API=false`
   Faz o frontend consumir a API real usando `VITE_API_BASE_URL`.
 
 - `VITE_API_BASE_URL`
-  URL base da API real quando o mock estiver desligado.
+  Define a URL base da API real quando o mock estiver desligado.
 
-## Credenciais mock para teste
+## Modo mock
+
+Enquanto a integração real não estiver ativa, o projeto pode ser testado com mock de:
+
+- autenticação
+- dashboard
+- histórico de validações
+- consumo
+- pagamentos
+- créditos
+- simulador
+
+### Credenciais de teste
 
 ```text
 demo@validaenota.com.br
@@ -85,38 +106,47 @@ Demo@123
 
 ## Deploy no Vercel
 
-Configuracao usada hoje:
+Configuração atual do projeto:
 
 - Framework Preset: `Vite`
 - Build Command: `npm run build`
 - Output Directory: `dist`
 - Install Command: `npm install`
 
-### Variaveis no Vercel
+### Variáveis no Vercel
 
-Para testar com mocks no dominio real:
+Para publicar com mocks ativos:
 
 ```env
 VITE_USE_MOCK_API=true
 VITE_API_BASE_URL=https://api.validaenota.com.br
 ```
 
-### Dominios
+## Domínios
 
-- `validaenota.com.br`: landing page
-- `www.validaenota.com.br`: redireciona para `validaenota.com.br`
-- `app.validaenota.com.br`: painel/app
+- `validaenota.com.br`: landing page principal
+- `www.validaenota.com.br`: redirecionamento para `validaenota.com.br`
+- `app.validaenota.com.br`: área do cliente
+- `api.validaenota.com.br`: reservado para a API
 
-## Proximo passo de integracao
+## Identidade visual atual
 
-Quando o backend real estiver pronto:
+- favicon configurado com `public/validaenota.png`
+- rodapé padronizado nas páginas públicas e na área autenticada
+- tema padrão em modo escuro
+- modo claro persistido quando o usuário selecionar manualmente
 
-1. manter o deploy no Vercel
+## Próximo passo de integração
+
+Quando a API real estiver pronta:
+
+1. manter o frontend no Vercel
 2. alterar `VITE_USE_MOCK_API` para `false`
 3. manter `VITE_API_BASE_URL=https://api.validaenota.com.br`
+4. conectar o backend e o banco PostgreSQL
 
-## Observacao sobre Docker
+## Observação sobre Docker
 
-O projeto nao usa mais Docker no fluxo atual.
+O projeto não utiliza Docker no fluxo atual.
 
-Como o frontend e publicado no Vercel como app estatico do Vite, os arquivos de Docker/Nginx foram removidos para simplificar o repositorio e evitar manutencao desnecessaria.
+Como o frontend é publicado no Vercel como aplicação estática do Vite, a estrutura foi simplificada para esse modelo de deploy.
