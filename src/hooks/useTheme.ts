@@ -22,9 +22,9 @@ function applyTheme(mode: ThemeMode) {
 
 export function useTheme() {
   const [mode, setMode] = useState<ThemeMode>(() => {
-    if (typeof window === 'undefined') return 'system'
+    if (typeof window === 'undefined') return 'dark'
     const stored = window.localStorage.getItem(STORAGE_KEY)
-    return stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system'
+    return stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'dark'
   })
 
   useEffect(() => {
@@ -49,6 +49,6 @@ export function useTheme() {
 
 export function initializeTheme() {
   const stored = window.localStorage.getItem(STORAGE_KEY)
-  const mode: ThemeMode = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system'
+  const mode: ThemeMode = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'dark'
   applyTheme(mode)
 }

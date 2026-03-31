@@ -12,11 +12,13 @@ function getModeIcon(mode: ThemeMode) {
   return OPTIONS.find((option) => option.mode === mode)?.icon ?? Monitor
 }
 
-export function ThemeToggle() {
-  const { mode, setMode } = useTheme()
+export function ThemeToggle({ modes = ['light', 'system', 'dark'] }: { modes?: ThemeMode[] }) {
+  const { mode, resolvedTheme, setMode } = useTheme()
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement | null>(null)
-  const ActiveIcon = getModeIcon(mode)
+  const availableOptions = OPTIONS.filter((option) => modes.includes(option.mode))
+  const fallbackMode = modes.includes(mode) ? mode : resolvedTheme
+  const ActiveIcon = getModeIcon(fallbackMode)
 
   useEffect(() => {
     function handleOutsideClick(event: MouseEvent) {
@@ -73,7 +75,7 @@ export function ThemeToggle() {
             zIndex: 120,
           }}
         >
-          {OPTIONS.map(({ mode: optionMode, label, icon: Icon }) => {
+          {availableOptions.map(({ mode: optionMode, label, icon: Icon }) => {
             const active = mode === optionMode
 
             return (

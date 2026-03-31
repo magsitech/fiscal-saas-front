@@ -17,68 +17,93 @@ export function PublicNav({ current }: { current: 'home' | 'pricing' }) {
       <nav
         className="landing-nav"
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+          position: 'sticky',
+          top: 0,
+          zIndex: 100,
           padding: '0 40px',
           height: '60px',
           background: 'rgba(10,12,15,0.97)',
           borderBottom: '1px solid var(--border)',
-          position: 'sticky',
-          top: 0,
-          zIndex: 100,
         }}
       >
         <div
-          className="app-desktop-only"
+          className="public-nav-desktop app-desktop-only"
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '16px',
+            position: 'relative',
+            height: '100%',
             width: '100%',
           }}
         >
-          <div className="landing-nav-links" style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-            <PublicNavButton label="Home" active={current === 'home'} onClick={() => go('/')} />
-            <PublicNavButton label="Pricing" active={current === 'pricing'} onClick={() => go('/pricing')} />
-          </div>
-
-          <div className="landing-theme-wrap">
-            <ThemeToggle />
-          </div>
-
-          <div className="landing-nav-cta">
-            <button
-              onClick={() => go('/login')}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              pointerEvents: 'none',
+            }}
+          >
+            <div
               style={{
-                padding: '8px 20px',
-                background: 'var(--accent)',
-                color: '#000',
-                border: 'none',
-                borderRadius: '8px',
-                fontSize: '13px',
-                fontWeight: 700,
-                cursor: 'pointer',
-                fontFamily: 'var(--sans)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '14px',
+                pointerEvents: 'auto',
               }}
             >
-              Area do Cliente
-            </button>
+              <div className="landing-nav-links" style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                <PublicNavButton label="Home" active={current === 'home'} onClick={() => go('/')} />
+                <PublicNavButton label="Pricing" active={current === 'pricing'} onClick={() => go('/pricing')} />
+              </div>
+
+              <div className="landing-nav-cta">
+                <button
+                  onClick={() => go('/login')}
+                  style={{
+                    padding: '8px 20px',
+                    background: 'var(--accent)',
+                    color: '#000',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    fontFamily: 'var(--sans)',
+                  }}
+                >
+                  Area do Cliente
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div
+            style={{
+              position: 'absolute',
+              right: 0,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            <ThemeToggle modes={['light', 'dark']} />
           </div>
         </div>
 
         <div
-          className="app-mobile-only"
+          className="public-nav-mobile app-mobile-only"
           style={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
             width: '100%',
+            justifyContent: 'space-between',
             gap: '10px',
           }}
         >
-          <ThemeToggle />
+          <ThemeToggle modes={['light', 'dark']} />
           <button
             type="button"
             onClick={() => setMobileOpen((value) => !value)}

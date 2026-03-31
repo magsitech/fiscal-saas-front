@@ -80,11 +80,11 @@ input, select, textarea { font-family: inherit; }
 /* Selection */
 ::selection { background: var(--accent-dim); color: var(--accent); }
 
-.app-mobile-only { display: none; }
-.app-desktop-only { display: initial; }
+.app-mobile-only { display: none !important; }
+.app-desktop-only { display: block !important; }
 
 @media (max-width: 900px) {
-  .app-mobile-only { display: initial; }
+  .app-mobile-only { display: block !important; }
   .app-desktop-only { display: none !important; }
   .app-shell { flex-direction: column; }
   .app-header { height: auto; padding: 14px 16px; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
@@ -99,10 +99,12 @@ input, select, textarea { font-family: inherit; }
   .landing-hero h1, .pricing-hero h1 { font-size: 32px !important; }
   .landing-grid-4, .landing-grid-3, .pricing-grid-2 { grid-template-columns: 1fr !important; }
   .auth-root { flex-direction: column; }
-  .auth-left { width: 100% !important; border-right: none !important; border-bottom: 1px solid rgba(0,212,170,.15); }
-  .auth-right { padding: 24px 16px !important; }
+  .auth-left { order: 2; width: 100% !important; border-right: none !important; border-bottom: none !important; border-top: 1px solid var(--border); }
+  .auth-right { order: 1; padding: 20px 16px 28px !important; }
   .auth-form { max-width: 100% !important; }
   .auth-type-grid { grid-template-columns: 1fr !important; }
+  .auth-topbar { align-items: flex-start !important; flex-direction: column !important; }
+  .auth-topbar-actions { width: 100%; justify-content: space-between !important; }
   .auth-heading-row { align-items: flex-start !important; flex-direction: column !important; }
   .profile-grid-2, .dashboard-kpis, .dashboard-bottom-grid, .management-grid-3, .simulator-results-grid, .pricing-card-header, .credit-result-actions { grid-template-columns: 1fr !important; flex-direction: column !important; }
   .dashboard-hero-top, .dashboard-hero-meta, .card-header-responsive, .simulator-controls, .perfil-header, .danger-row, .credit-method-row { flex-direction: column !important; align-items: stretch !important; }
