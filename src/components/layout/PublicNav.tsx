@@ -55,7 +55,7 @@ export function PublicNav({ current }: { current: 'home' | 'pricing' }) {
             >
               <div className="landing-nav-links" style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                 <PublicNavButton label="Home" active={current === 'home'} onClick={() => go('/')} />
-                <PublicNavButton label="Pricing" active={current === 'pricing'} onClick={() => go('/pricing')} />
+                <PublicNavButton label="Preços" active={current === 'pricing'} onClick={() => go('/pricing')} />
               </div>
 
               <div className="landing-nav-cta">
@@ -169,7 +169,7 @@ export function PublicNav({ current }: { current: 'home' | 'pricing' }) {
             </button>
             <div style={{ display: 'grid', gap: '6px' }}>
               <PublicMenuButton label="Home" active={current === 'home'} onClick={() => go('/')} />
-              <PublicMenuButton label="Pricing" active={current === 'pricing'} onClick={() => go('/pricing')} />
+              <PublicMenuButton label="Preços" active={current === 'pricing'} onClick={() => go('/pricing')} />
             </div>
           </div>
         </div>
