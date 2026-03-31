@@ -112,6 +112,20 @@ export function PricingPage() {
           Ir para a Área do Cliente
         </button>
       </div>
+
+      <footer
+        style={{
+          borderTop: '1px solid var(--border)',
+          padding: '28px 40px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <span style={{ fontSize: '12px', color: 'var(--text-dim)', textAlign: 'center' }}>
+          © 2026 validaeNota. Plataforma de validação fiscal brasileira.
+        </span>
+      </footer>
     </div>
   )
 }

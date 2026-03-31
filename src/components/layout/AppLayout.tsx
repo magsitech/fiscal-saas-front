@@ -53,6 +53,22 @@ export function AppLayout() {
         <main className="flex-1 p-8 overflow-y-auto app-main">
           <Outlet />
         </main>
+
+        <footer
+          style={{
+            borderTop: '1px solid var(--border)',
+            padding: '20px 24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            textAlign: 'center',
+            color: 'var(--text-dim)',
+            fontSize: '12px',
+            background: 'var(--surface)',
+          }}
+        >
+          © 2026 validaeNota. Plataforma de validação fiscal brasileira.
+        </footer>
       </div>
     </div>
   )
