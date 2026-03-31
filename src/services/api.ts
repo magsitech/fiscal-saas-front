@@ -4,8 +4,16 @@ import type {
   SaldoResumo, DashboardResumo, ValidacaoItem, ConsumoItem,
   SimuladorResponse, Pagamento, IniciarPagamentoResponse,
 } from '@/types'
+import { API_BASE_URL, USE_MOCK_API } from '@/config/runtime'
+import {
+  mockAuthApi,
+  mockDashboardApi,
+  mockFiscalApi,
+  mockPagamentosApi,
+  mockSaldoApi,
+} from '@/mocks/mockApi'
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || '/api'
+const apiBaseUrl = API_BASE_URL
 
 const http = axios.create({
   baseURL: apiBaseUrl,
@@ -63,6 +71,7 @@ http.interceptors.response.use(
 // ── Auth ─────────────────────────────────────────────────────
 export const authApi = {
   login: async (payload: LoginPayload) => {
+    if (USE_MOCK_API) return mockAuthApi.login(payload)
     const form = new URLSearchParams({
       username: payload.username,
       password: payload.password,
@@ -74,11 +83,13 @@ export const authApi = {
   },
 
   register: async (payload: RegisterPayload) => {
+    if (USE_MOCK_API) return mockAuthApi.register(payload)
     const { data } = await http.post<Usuario>('/auth/registro', payload)
     return data
   },
 
   me: async () => {
+    if (USE_MOCK_API) return mockAuthApi.me()
     const { data } = await http.get<Usuario>('/auth/me')
     return data
   },
@@ -87,6 +98,7 @@ export const authApi = {
 // ── Saldo ────────────────────────────────────────────────────
 export const saldoApi = {
   resumo: async () => {
+    if (USE_MOCK_API) return mockSaldoApi.resumo()
     const { data } = await http.get<SaldoResumo>('/saldo')
     return data
   },
@@ -95,21 +107,25 @@ export const saldoApi = {
 // ── Dashboard ────────────────────────────────────────────────
 export const dashboardApi = {
   resumo: async () => {
+    if (USE_MOCK_API) return mockDashboardApi.resumo()
     const { data } = await http.get<DashboardResumo>('/dashboard/resumo')
     return data
   },
 
   validacoes: async (params?: { status?: string; limit?: number; offset?: number }) => {
+    if (USE_MOCK_API) return mockDashboardApi.validacoes(params)
     const { data } = await http.get<ValidacaoItem[]>('/dashboard/validacoes', { params })
     return data
   },
 
   consumo: async (params?: { limit?: number; offset?: number }) => {
+    if (USE_MOCK_API) return mockDashboardApi.consumo(params)
     const { data } = await http.get<ConsumoItem[]>('/dashboard/consumo', { params })
     return data
   },
 
   simulador: async (quantidade: number) => {
+    if (USE_MOCK_API) return mockDashboardApi.simulador(quantidade)
     const { data } = await http.get<SimuladorResponse>('/dashboard/simulador', {
       params: { quantidade },
     })
@@ -120,6 +136,7 @@ export const dashboardApi = {
 // ── Pagamentos ───────────────────────────────────────────────
 export const pagamentosApi = {
   iniciar: async (metodo: 'PIX' | 'BOLETO', valor: number) => {
+    if (USE_MOCK_API) return mockPagamentosApi.iniciar(metodo, valor)
     const { data } = await http.post<IniciarPagamentoResponse>('/pagamentos/iniciar', {
       metodo,
       valor,
@@ -128,6 +145,7 @@ export const pagamentosApi = {
   },
 
   listar: async () => {
+    if (USE_MOCK_API) return mockPagamentosApi.listar()
     const { data } = await http.get<Pagamento[]>('/pagamentos')
     return data
   },
@@ -141,11 +159,13 @@ export const fiscalApi = {
     cpf_destinatario?: string
     valor_total?: number
   }) => {
+    if (USE_MOCK_API) return mockFiscalApi.validar(payload)
     const { data } = await http.post('/validar-nota', payload)
     return data
   },
 
   consultar: async (id: string) => {
+    if (USE_MOCK_API) return mockFiscalApi.consultar(id)
     const { data } = await http.get(`/validar-nota/${id}`)
     return data
   },

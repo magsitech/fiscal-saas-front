@@ -1,6 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { Wifi } from 'lucide-react'
+import { USE_MOCK_API } from '@/config/runtime'
 
 const PAGE_TITLES: Record<string, string> = {
   '/app':             'Dashboard',
@@ -25,9 +26,9 @@ export function AppLayout() {
         <header className="h-14 px-8 flex items-center justify-between bg-[var(--surface)] border-b border-[var(--border)] shrink-0">
           <h1 className="text-[15px] font-semibold">{title}</h1>
           <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
-            <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-pulse" />
+            <span className={`w-2 h-2 rounded-full animate-pulse ${USE_MOCK_API ? 'bg-[var(--warn)]' : 'bg-[var(--accent)]'}`} />
             <Wifi size={13} />
-            API conectada
+            {USE_MOCK_API ? 'modo demonstracao ativo' : 'API conectada'}
           </div>
         </header>
 

@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 import { authApi } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
 import { Spinner } from '@/components/ui'
+import { USE_MOCK_API } from '@/config/runtime'
 
 type Mode = 'login' | 'tipo' | 'form-pf' | 'form-pj'
 
@@ -218,6 +219,11 @@ export function AuthPage() {
                   <input type={showPass ? 'text' : 'password'} placeholder="••••••••" value={loginForm.senha} onChange={e => setLoginForm({ ...loginForm, senha: e.target.value })} style={S.inp(!!loginErros.senha)} />
                 </IcInput>
               </Field>
+              {USE_MOCK_API && (
+                <div style={{ marginBottom:'12px', padding:'10px 12px', borderRadius:'8px', background:'var(--accent-dim)', border:'1px solid var(--accent-glow)', fontSize:'12px', lineHeight:1.5, color:'var(--text-muted)' }}>
+                  Demo: <strong style={{ color:'var(--text)' }}>demo@validaenota.com.br</strong> / <strong style={{ color:'var(--text)' }}>Demo@123</strong>
+                </div>
+              )}
               <button type="submit" disabled={loading} style={S.submitBtn(loading)}>
                 {loading ? <Spinner size={16} /> : <>Entrar <ArrowRight size={16} /></>}
               </button>
