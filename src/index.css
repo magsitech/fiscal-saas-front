@@ -103,8 +103,8 @@ input, select, textarea { font-family: inherit; }
   .auth-right { order: 1; padding: 20px 16px 28px !important; }
   .auth-form { max-width: 100% !important; }
   .auth-type-grid { grid-template-columns: 1fr !important; }
-  .auth-topbar { align-items: flex-start !important; flex-direction: column !important; }
-  .auth-topbar-actions { width: 100%; justify-content: space-between !important; }
+  .auth-topbar { align-items: center !important; flex-direction: row !important; justify-content: space-between !important; }
+  .auth-topbar-actions { width: auto !important; justify-content: flex-end !important; }
   .auth-heading-row { align-items: flex-start !important; flex-direction: column !important; }
   .profile-grid-2, .dashboard-kpis, .dashboard-bottom-grid, .management-grid-3, .simulator-results-grid, .pricing-card-header, .credit-result-actions { grid-template-columns: 1fr !important; flex-direction: column !important; }
   .dashboard-hero-top, .dashboard-hero-meta, .card-header-responsive, .simulator-controls, .perfil-header, .danger-row, .credit-method-row { flex-direction: column !important; align-items: stretch !important; }
