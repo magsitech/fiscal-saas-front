@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { ThemeToggle } from '@/components/ui/ThemeToggle'
+import { PublicNav } from '@/components/layout/PublicNav'
 
 function ShieldIcon() {
   return (
@@ -131,48 +131,7 @@ export function LandingPage() {
         minHeight: '100vh',
       }}
     >
-      <nav
-        className="landing-nav"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '20px',
-          padding: '0 40px',
-          height: '60px',
-          background: 'rgba(10,12,15,0.97)',
-          borderBottom: '1px solid var(--border)',
-          position: 'sticky',
-          top: 0,
-          zIndex: 100,
-        }}
-      >
-        <div className="landing-nav-links" style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-          <NavLink to="/" label="Home" />
-          <NavLink to="/pricing" label="Pricing" />
-        </div>
-
-        <div className="landing-theme-wrap"><ThemeToggle /></div>
-
-        <div className="landing-nav-cta">
-          <button
-            onClick={() => navigate('/login')}
-            style={{
-              padding: '8px 20px',
-              background: 'var(--accent)',
-              color: '#000',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '13px',
-              fontWeight: 700,
-              cursor: 'pointer',
-              fontFamily: 'var(--sans)',
-            }}
-          >
-            Area do Cliente
-          </button>
-        </div>
-      </nav>
+      <PublicNav current="home" />
 
       <section
         className="landing-section landing-hero"
@@ -446,31 +405,6 @@ export function LandingPage() {
         </span>
       </footer>
     </div>
-  )
-}
-
-function NavLink({ to, label }: { to: string; label: string }) {
-  const navigate = useNavigate()
-  const active = window.location.pathname === to
-
-  return (
-    <button
-      onClick={() => navigate(to)}
-      style={{
-        padding: '7px 16px',
-        borderRadius: '8px',
-        cursor: 'pointer',
-        fontSize: '14px',
-        fontWeight: 500,
-        color: active ? 'var(--text)' : 'var(--text-muted)',
-        background: active ? 'var(--surface-2)' : 'transparent',
-        border: 'none',
-        fontFamily: 'var(--sans)',
-        transition: 'all .15s',
-      }}
-    >
-      {label}
-    </button>
   )
 }
 

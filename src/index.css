@@ -93,11 +93,8 @@ input, select, textarea { font-family: inherit; }
   .app-sidebar { position: fixed !important; top: 0; left: 0; height: 100dvh !important; width: min(82vw, 320px) !important; z-index: 60; transform: translateX(-100%); transition: transform var(--transition); box-shadow: var(--shadow); }
   .app-sidebar.is-open { transform: translateX(0); }
   .app-sidebar-backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.48); z-index: 50; }
-  .landing-nav, .pricing-nav { height: auto !important; padding: 12px 16px !important; flex-wrap: wrap; gap: 12px !important; }
-  .landing-nav-links, .pricing-nav-links { width: 100%; justify-content: center; flex-wrap: wrap; }
-  .landing-theme-wrap, .pricing-brand { width: 100%; display: flex; justify-content: center; }
-  .landing-nav-cta, .pricing-nav-cta { width: 100%; }
-  .landing-nav-cta button, .pricing-nav-cta button { width: 100%; }
+  .landing-nav, .pricing-nav { height: auto !important; padding: 12px 16px !important; }
+  .landing-theme-wrap, .pricing-brand { width: auto; display: flex; justify-content: center; }
   .landing-section, .pricing-section { padding-left: 16px !important; padding-right: 16px !important; }
   .landing-hero h1, .pricing-hero h1 { font-size: 32px !important; }
   .landing-grid-4, .landing-grid-3, .pricing-grid-2 { grid-template-columns: 1fr !important; }

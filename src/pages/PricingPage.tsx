@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { ThemeToggle } from '@/components/ui/ThemeToggle'
+import { PublicNav } from '@/components/layout/PublicNav'
 
 const FAIXAS = [
   { range: '1 - 500', base: 'R$ 0,19', fixed: 'R$ 0,03', final: 'R$ 0,22', pct: 100 },
@@ -16,20 +16,7 @@ export function PricingPage() {
 
   return (
     <div style={{ background: 'var(--bg)', color: 'var(--text)', fontFamily: 'var(--sans)', minHeight: '100vh' }}>
-      <nav className="pricing-nav" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 40px', height: '60px', background: 'rgba(10,12,15,0.97)', borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 100 }}>
-        <div className="pricing-brand" style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }} onClick={() => navigate('/')}>
-          <div style={{ width: '32px', height: '32px', background: 'var(--accent)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--mono)', fontSize: '12px', fontWeight: 700, color: '#000' }}>VN</div>
-          <span style={{ fontSize: '15px', fontWeight: 700 }}>validaeNota</span>
-        </div>
-        <div className="pricing-nav-links" style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-          <NavBtn label="Home" onClick={() => navigate('/')} />
-          <NavBtn label="Pricing" active onClick={() => navigate('/pricing')} />
-        </div>
-        <div className="pricing-brand"><ThemeToggle /></div>
-        <div className="pricing-nav-cta">
-          <button onClick={() => navigate('/login')} style={{ padding: '8px 20px', background: 'var(--accent)', color: '#000', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--sans)' }}>Area do Cliente</button>
-        </div>
-      </nav>
+      <PublicNav current="pricing" />
 
       <div className="pricing-section pricing-hero" style={{ padding: '56px 40px 40px', textAlign: 'center', maxWidth: '680px', margin: '0 auto' }}>
         <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: '10px' }}>Precos transparentes</div>
@@ -103,17 +90,6 @@ export function PricingPage() {
         </InfoBox>
       </div>
     </div>
-  )
-}
-
-function NavBtn({ label, active, onClick }: { label: string; active?: boolean; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{ padding: '7px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 500, color: active ? 'var(--text)' : 'var(--text-muted)', background: active ? 'var(--surface-2)' : 'transparent', border: 'none', fontFamily: 'var(--sans)' }}
-    >
-      {label}
-    </button>
   )
 }
 

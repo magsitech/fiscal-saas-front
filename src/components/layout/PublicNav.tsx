@@ -1,0 +1,195 @@
+import { useState } from 'react'
+import { Menu, X } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { ThemeToggle } from '@/components/ui/ThemeToggle'
+
+export function PublicNav({ current }: { current: 'home' | 'pricing' }) {
+  const navigate = useNavigate()
+  const [mobileOpen, setMobileOpen] = useState(false)
+
+  function go(path: '/' | '/pricing' | '/login') {
+    setMobileOpen(false)
+    navigate(path)
+  }
+
+  return (
+    <>
+      <nav
+        className="landing-nav"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '0 40px',
+          height: '60px',
+          background: 'rgba(10,12,15,0.97)',
+          borderBottom: '1px solid var(--border)',
+          position: 'sticky',
+          top: 0,
+          zIndex: 100,
+        }}
+      >
+        <div
+          className="app-desktop-only"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '16px',
+            width: '100%',
+          }}
+        >
+          <div className="landing-nav-links" style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+            <PublicNavButton label="Home" active={current === 'home'} onClick={() => go('/')} />
+            <PublicNavButton label="Pricing" active={current === 'pricing'} onClick={() => go('/pricing')} />
+          </div>
+
+          <div className="landing-theme-wrap">
+            <ThemeToggle />
+          </div>
+
+          <div className="landing-nav-cta">
+            <button
+              onClick={() => go('/login')}
+              style={{
+                padding: '8px 20px',
+                background: 'var(--accent)',
+                color: '#000',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '13px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                fontFamily: 'var(--sans)',
+              }}
+            >
+              Area do Cliente
+            </button>
+          </div>
+        </div>
+
+        <div
+          className="app-mobile-only"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            width: '100%',
+            gap: '10px',
+          }}
+        >
+          <ThemeToggle />
+          <button
+            type="button"
+            onClick={() => setMobileOpen((value) => !value)}
+            style={{
+              border: '1px solid var(--border)',
+              background: 'var(--surface-2)',
+              color: 'var(--text)',
+              borderRadius: '999px',
+              padding: '9px 14px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontSize: '13px',
+              fontWeight: 700,
+            }}
+            aria-label={mobileOpen ? 'Fechar menu da area do cliente' : 'Abrir menu da area do cliente'}
+          >
+            {mobileOpen ? <X size={16} /> : <Menu size={16} />}
+            Area do Cliente
+          </button>
+        </div>
+      </nav>
+
+      {mobileOpen && (
+        <div
+          className="app-mobile-only"
+          style={{
+            position: 'sticky',
+            top: '60px',
+            zIndex: 95,
+            padding: '12px 16px 0',
+            background: 'var(--bg)',
+          }}
+        >
+          <div
+            style={{
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              borderRadius: '16px',
+              padding: '12px',
+              boxShadow: 'var(--shadow)',
+              display: 'grid',
+              gap: '10px',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => go('/login')}
+              style={{
+                width: '100%',
+                border: 'none',
+                borderRadius: '12px',
+                background: 'var(--accent)',
+                color: '#000',
+                fontSize: '13px',
+                fontWeight: 700,
+                padding: '12px 14px',
+                textAlign: 'left',
+              }}
+            >
+              Painel do Usuario
+            </button>
+            <div style={{ display: 'grid', gap: '6px' }}>
+              <PublicMenuButton label="Home" active={current === 'home'} onClick={() => go('/')} />
+              <PublicMenuButton label="Pricing" active={current === 'pricing'} onClick={() => go('/pricing')} />
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
+function PublicNavButton({ label, active, onClick }: { label: string; active?: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        padding: '7px 16px',
+        borderRadius: '8px',
+        cursor: 'pointer',
+        fontSize: '14px',
+        fontWeight: 500,
+        color: active ? 'var(--text)' : 'var(--text-muted)',
+        background: active ? 'var(--surface-2)' : 'transparent',
+        border: 'none',
+        fontFamily: 'var(--sans)',
+      }}
+    >
+      {label}
+    </button>
+  )
+}
+
+function PublicMenuButton({ label, active, onClick }: { label: string; active?: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        width: '100%',
+        border: '1px solid transparent',
+        borderRadius: '12px',
+        background: active ? 'var(--accent-dim)' : 'var(--surface-2)',
+        color: active ? 'var(--accent)' : 'var(--text)',
+        fontSize: '13px',
+        fontWeight: 600,
+        padding: '11px 12px',
+        textAlign: 'left',
+      }}
+    >
+      {label}
+    </button>
+  )
+}
