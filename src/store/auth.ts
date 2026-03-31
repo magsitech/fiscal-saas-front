@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Usuario } from '@/types'
+import { USE_MOCK_API } from '@/config/runtime'
+import { clearMockSession } from '@/mocks/mockApi'
 
 interface AuthState {
   usuario: Usuario | null
@@ -32,6 +34,7 @@ export const useAuthStore = create<AuthState>()(
       logout: () => {
         localStorage.removeItem('access_token')
         localStorage.removeItem('refresh_token')
+        if (USE_MOCK_API) clearMockSession()
         set({ usuario: null, accessToken: null, refreshToken: null, isAuthenticated: false })
       },
     }),

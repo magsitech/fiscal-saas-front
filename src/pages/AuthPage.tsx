@@ -73,7 +73,10 @@ export function AuthPage() {
   const { setTokens, setUsuario } = useAuthStore()
   const navigate = useNavigate()
 
-  const [loginForm, setLoginForm] = useState({ email: '', senha: '' })
+  const [loginForm, setLoginForm] = useState({
+    email: USE_MOCK_API ? 'demo@validaenota.com.br' : '',
+    senha: USE_MOCK_API ? 'Demo@123' : '',
+  })
   const [loginErros, setLoginErros] = useState<Record<string, string>>({})
 
   const [pfForm, setPfForm] = useState({ nome: '', email: '', cpf: '', senha: '', confirmar: '' })
@@ -163,6 +166,11 @@ export function AuthPage() {
     </button>
   )
 
+  function preencherDemo() {
+    setLoginForm({ email: 'demo@validaenota.com.br', senha: 'Demo@123' })
+    setLoginErros({})
+  }
+
   return (
     <div style={S.root}>
       {/* ── Painel esquerdo ────────────────────────────── */}
@@ -222,6 +230,11 @@ export function AuthPage() {
               {USE_MOCK_API && (
                 <div style={{ marginBottom:'12px', padding:'10px 12px', borderRadius:'8px', background:'var(--accent-dim)', border:'1px solid var(--accent-glow)', fontSize:'12px', lineHeight:1.5, color:'var(--text-muted)' }}>
                   Demo: <strong style={{ color:'var(--text)' }}>demo@validaenota.com.br</strong> / <strong style={{ color:'var(--text)' }}>Demo@123</strong>
+                  <div style={{ marginTop:'8px' }}>
+                    <button type="button" onClick={preencherDemo} style={{ background:'transparent', border:'1px solid var(--accent-glow)', color:'var(--accent)', borderRadius:'6px', padding:'6px 8px', cursor:'pointer', fontSize:'11px', fontWeight:700 }}>
+                      Preencher credenciais demo
+                    </button>
+                  </div>
                 </div>
               )}
               <button type="submit" disabled={loading} style={S.submitBtn(loading)}>

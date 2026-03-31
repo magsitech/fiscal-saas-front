@@ -87,6 +87,18 @@ function createDefaultDb(): MockDb {
   }
 }
 
+function ensureMockDb(db: MockDb): MockDb {
+  const hasDemoUser = db.users.some((user) => user.email.toLowerCase() === DEMO_USER.email.toLowerCase())
+
+  return {
+    users: hasDemoUser ? db.users : [DEMO_USER, ...db.users],
+    pagamentos: Array.isArray(db.pagamentos) ? db.pagamentos : DEFAULT_PAGAMENTOS,
+    validacoes: Array.isArray(db.validacoes) ? db.validacoes : DEFAULT_VALIDACOES,
+    consumos: Array.isArray(db.consumos) ? db.consumos : DEFAULT_CONSUMOS,
+    saldo: db.saldo ?? DEFAULT_SALDO,
+  }
+}
+
 function readDb(): MockDb {
   const raw = localStorage.getItem(DB_KEY)
   if (!raw) {
@@ -94,11 +106,25 @@ function readDb(): MockDb {
     writeDb(seeded)
     return seeded
   }
-  return JSON.parse(raw) as MockDb
+
+  try {
+    const parsed = JSON.parse(raw) as MockDb
+    const safeDb = ensureMockDb(parsed)
+    writeDb(safeDb)
+    return safeDb
+  } catch {
+    const seeded = createDefaultDb()
+    writeDb(seeded)
+    return seeded
+  }
 }
 
 function writeDb(db: MockDb) {
   localStorage.setItem(DB_KEY, JSON.stringify(db))
+}
+
+export function clearMockSession() {
+  localStorage.removeItem(SESSION_KEY)
 }
 
 function sanitizeUser(user: MockUser): Usuario {
