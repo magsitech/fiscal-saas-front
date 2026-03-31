@@ -5,7 +5,6 @@ import toast from 'react-hot-toast'
 import { authApi } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
 import { Spinner } from '@/components/ui'
-import { USE_MOCK_API } from '@/config/runtime'
 
 type Mode = 'login' | 'tipo' | 'form-pf' | 'form-pj'
 
@@ -73,10 +72,7 @@ export function AuthPage() {
   const { setTokens, setUsuario } = useAuthStore()
   const navigate = useNavigate()
 
-  const [loginForm, setLoginForm] = useState({
-    email: USE_MOCK_API ? 'demo@validaenota.com.br' : '',
-    senha: USE_MOCK_API ? 'Demo@123' : '',
-  })
+  const [loginForm, setLoginForm] = useState({ email: '', senha: '' })
   const [loginErros, setLoginErros] = useState<Record<string, string>>({})
 
   const [pfForm, setPfForm] = useState({ nome: '', email: '', cpf: '', senha: '', confirmar: '' })
@@ -166,15 +162,10 @@ export function AuthPage() {
     </button>
   )
 
-  function preencherDemo() {
-    setLoginForm({ email: 'demo@validaenota.com.br', senha: 'Demo@123' })
-    setLoginErros({})
-  }
-
   return (
-    <div style={S.root}>
+    <div style={S.root} className="auth-root">
       {/* ── Painel esquerdo ────────────────────────────── */}
-      <div style={S.left}>
+      <div style={S.left} className="auth-left">
         <div style={S.glow} />
         <div style={{ position:'relative', zIndex:1 }}>
           <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'30px', cursor:'pointer' }} onClick={() => navigate('/')}>
@@ -203,8 +194,8 @@ export function AuthPage() {
       </div>
 
       {/* ── Painel direito ─────────────────────────────── */}
-      <div style={S.right}>
-        <div style={S.form}>
+      <div style={S.right} className="auth-right">
+        <div style={S.form} className="auth-form">
 
           {/* Tab switcher — visível sempre */}
           <div style={S.tabBar}>
@@ -227,16 +218,6 @@ export function AuthPage() {
                   <input type={showPass ? 'text' : 'password'} placeholder="••••••••" value={loginForm.senha} onChange={e => setLoginForm({ ...loginForm, senha: e.target.value })} style={S.inp(!!loginErros.senha)} />
                 </IcInput>
               </Field>
-              {USE_MOCK_API && (
-                <div style={{ marginBottom:'12px', padding:'10px 12px', borderRadius:'8px', background:'var(--accent-dim)', border:'1px solid var(--accent-glow)', fontSize:'12px', lineHeight:1.5, color:'var(--text-muted)' }}>
-                  Demo: <strong style={{ color:'var(--text)' }}>demo@validaenota.com.br</strong> / <strong style={{ color:'var(--text)' }}>Demo@123</strong>
-                  <div style={{ marginTop:'8px' }}>
-                    <button type="button" onClick={preencherDemo} style={{ background:'transparent', border:'1px solid var(--accent-glow)', color:'var(--accent)', borderRadius:'6px', padding:'6px 8px', cursor:'pointer', fontSize:'11px', fontWeight:700 }}>
-                      Preencher credenciais demo
-                    </button>
-                  </div>
-                </div>
-              )}
               <button type="submit" disabled={loading} style={S.submitBtn(loading)}>
                 {loading ? <Spinner size={16} /> : <>Entrar <ArrowRight size={16} /></>}
               </button>
@@ -251,7 +232,7 @@ export function AuthPage() {
               <p style={{ fontSize:'13px', color:'var(--text-muted)', marginBottom:'28px', lineHeight:1.6 }}>
                 Selecione como deseja se cadastrar para continuar
               </p>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'14px', marginBottom:'20px' }}>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'14px', marginBottom:'20px' }} className="auth-type-grid">
                 {/* Card PF */}
                 <button
                   onClick={() => setMode('form-pf')}
@@ -286,7 +267,7 @@ export function AuthPage() {
           {/* ── PASSO 2a: Formulário PF ─────────────────── */}
           {mode === 'form-pf' && (
             <form onSubmit={handleCadastroPF} noValidate>
-              <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'16px' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'16px' }} className="auth-heading-row">
                 <button type="button" onClick={() => setMode('tipo')} style={{ background:'var(--surface-2)', border:'1px solid var(--border)', borderRadius:'7px', padding:'6px 10px', cursor:'pointer', color:'var(--text-muted)', display:'flex', alignItems:'center', gap:'5px', fontSize:'12px', fontFamily:'var(--sans)' }}>
                   <ArrowLeft size={13} /> Voltar
                 </button>
@@ -330,7 +311,7 @@ export function AuthPage() {
           {/* ── PASSO 2b: Formulário PJ ─────────────────── */}
           {mode === 'form-pj' && (
             <form onSubmit={handleCadastroPJ} noValidate>
-              <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'16px' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'16px' }} className="auth-heading-row">
                 <button type="button" onClick={() => setMode('tipo')} style={{ background:'var(--surface-2)', border:'1px solid var(--border)', borderRadius:'7px', padding:'6px 10px', cursor:'pointer', color:'var(--text-muted)', display:'flex', alignItems:'center', gap:'5px', fontSize:'12px', fontFamily:'var(--sans)' }}>
                   <ArrowLeft size={13} /> Voltar
                 </button>

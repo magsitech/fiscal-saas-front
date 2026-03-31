@@ -29,6 +29,30 @@
   --transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+:root[data-theme='light'] {
+  --bg: #f4f7fb;
+  --surface: #ffffff;
+  --surface-2: #eef3f8;
+  --surface-3: #e3ebf4;
+  --border: #d7e0ea;
+  --border-bright: #c2cfdb;
+  --text: #10202f;
+  --text-muted: #5d7286;
+  --text-dim: #8393a4;
+  --accent: #009f83;
+  --accent-dim: rgba(0, 159, 131, 0.1);
+  --accent-glow: rgba(0, 159, 131, 0.2);
+  --warn: #d97706;
+  --warn-dim: rgba(217, 119, 6, 0.12);
+  --danger: #dc2626;
+  --danger-dim: rgba(220, 38, 38, 0.1);
+  --info: #2563eb;
+  --info-dim: rgba(37, 99, 235, 0.1);
+  --success: #16a34a;
+  --success-dim: rgba(22, 163, 74, 0.1);
+  --shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+}
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html { font-size: 16px; }
@@ -55,3 +79,36 @@ input, select, textarea { font-family: inherit; }
 
 /* Selection */
 ::selection { background: var(--accent-dim); color: var(--accent); }
+
+.app-mobile-only { display: none; }
+.app-desktop-only { display: initial; }
+
+@media (max-width: 900px) {
+  .app-mobile-only { display: initial; }
+  .app-desktop-only { display: none !important; }
+  .app-shell { flex-direction: column; }
+  .app-header { height: auto; padding: 14px 16px; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+  .app-header-actions { width: 100%; justify-content: space-between; flex-wrap: wrap; }
+  .app-main { padding: 16px; }
+  .app-sidebar { position: fixed !important; top: 0; left: 0; height: 100dvh !important; width: min(82vw, 320px) !important; z-index: 60; transform: translateX(-100%); transition: transform var(--transition); box-shadow: var(--shadow); }
+  .app-sidebar.is-open { transform: translateX(0); }
+  .app-sidebar-backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.48); z-index: 50; }
+  .landing-nav, .pricing-nav { height: auto !important; padding: 12px 16px !important; flex-wrap: wrap; gap: 12px !important; }
+  .landing-nav-links, .pricing-nav-links { width: 100%; justify-content: center; flex-wrap: wrap; }
+  .landing-theme-wrap, .pricing-brand { width: 100%; display: flex; justify-content: center; }
+  .landing-nav-cta, .pricing-nav-cta { width: 100%; }
+  .landing-nav-cta button, .pricing-nav-cta button { width: 100%; }
+  .landing-section, .pricing-section { padding-left: 16px !important; padding-right: 16px !important; }
+  .landing-hero h1, .pricing-hero h1 { font-size: 32px !important; }
+  .landing-grid-4, .landing-grid-3, .pricing-grid-2 { grid-template-columns: 1fr !important; }
+  .auth-root { flex-direction: column; }
+  .auth-left { width: 100% !important; border-right: none !important; border-bottom: 1px solid rgba(0,212,170,.15); }
+  .auth-right { padding: 24px 16px !important; }
+  .auth-form { max-width: 100% !important; }
+  .auth-type-grid { grid-template-columns: 1fr !important; }
+  .auth-heading-row { align-items: flex-start !important; flex-direction: column !important; }
+  .profile-grid-2, .dashboard-kpis, .dashboard-bottom-grid, .management-grid-3, .simulator-results-grid, .pricing-card-header, .credit-result-actions { grid-template-columns: 1fr !important; flex-direction: column !important; }
+  .dashboard-hero-top, .dashboard-hero-meta, .card-header-responsive, .simulator-controls, .perfil-header, .danger-row, .credit-method-row { flex-direction: column !important; align-items: stretch !important; }
+  .simulator-input { width: 100% !important; }
+  .profile-header-status { align-items: flex-start !important; }
+}

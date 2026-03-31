@@ -105,7 +105,7 @@ export function PerfilPage() {
     <div className="max-w-3xl space-y-6">
 
       {/* ── Cabeçalho do perfil ─────────────────────────────── */}
-      <div className="flex items-center gap-5 p-6 rounded-xl border border-[var(--border)] bg-[var(--surface)]">
+      <div className="flex items-center gap-5 p-6 rounded-xl border border-[var(--border)] bg-[var(--surface)] perfil-header">
         <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[var(--accent)] to-[var(--info)] flex items-center justify-center text-xl font-bold text-black shrink-0 select-none">
           {usuario?.nome?.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase()}
         </div>
@@ -114,7 +114,7 @@ export function PerfilPage() {
           <p className="text-sm text-[var(--text-muted)] truncate">{usuario?.email}</p>
           <p className="text-xs text-[var(--text-dim)] mt-1">Conta criada em {criadoEm}</p>
         </div>
-        <div className="flex flex-col items-end gap-2 shrink-0">
+        <div className="flex flex-col items-end gap-2 shrink-0 profile-header-status">
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[var(--accent-dim)] text-[var(--accent)] border border-[var(--accent-glow)]">
             <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
             Ativo
@@ -136,7 +136,7 @@ export function PerfilPage() {
           </CardTitle>
         </CardHeader>
         <form onSubmit={salvarPerfil} className="p-6 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 profile-grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
             <Input
               label="Nome completo"
               value={perfil.nome}
@@ -151,7 +151,7 @@ export function PerfilPage() {
               icon={<Mail size={14} />}
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 profile-grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide">CPF</label>
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--surface-2)] border border-[var(--border)]">
@@ -178,7 +178,7 @@ export function PerfilPage() {
 
       {/* ── Alterar senha ────────────────────────────────────── */}
       <Card>
-        <CardHeader>
+        <CardHeader className="card-header-responsive">
           <CardTitle>
             <span className="flex items-center gap-2">
               <Lock size={15} className="text-[var(--accent)]" />
@@ -204,7 +204,7 @@ export function PerfilPage() {
               error={senhaErros.atual}
               icon={<Lock size={14} />}
             />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4 profile-grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
               <Input
                 label="Nova senha"
                 type="password"
@@ -271,7 +271,7 @@ export function PerfilPage() {
           <p className="text-sm text-[var(--text-muted)] leading-relaxed">
             Vincule empresas ao seu perfil para organizar as validações por CNPJ emitente.
           </p>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 profile-grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
             <Input
               label="Razão social"
               placeholder="Empresa Exemplo LTDA"
@@ -288,7 +288,7 @@ export function PerfilPage() {
               inputMode="numeric"
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 profile-grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide">UF</label>
               <select
@@ -318,7 +318,7 @@ export function PerfilPage() {
           </CardTitle>
         </CardHeader>
         <div className="p-6 space-y-4">
-          <div className="flex items-center justify-between p-4 rounded-lg border border-[var(--border)] bg-[var(--surface-2)]">
+          <div className="flex items-center justify-between p-4 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] danger-row">
             <div>
               <div className="text-sm font-semibold">Encerrar sessão</div>
               <div className="text-xs text-[var(--text-muted)] mt-0.5">Sair de todos os dispositivos</div>
@@ -333,7 +333,7 @@ export function PerfilPage() {
               Sair agora
             </Button>
           </div>
-          <div className="flex items-center justify-between p-4 rounded-lg border border-[var(--danger-dim)] bg-[var(--danger-dim)]">
+          <div className="flex items-center justify-between p-4 rounded-lg border border-[var(--danger-dim)] bg-[var(--danger-dim)] danger-row">
             <div>
               <div className="text-sm font-semibold text-[var(--danger)]">Excluir conta</div>
               <div className="text-xs text-[var(--text-muted)] mt-0.5">

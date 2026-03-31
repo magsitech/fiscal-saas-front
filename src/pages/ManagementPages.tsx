@@ -33,7 +33,7 @@ export function ValidacoesPage() {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="card-header-responsive">
         <CardTitle>Histórico de Validações</CardTitle>
         <Select
           value={status}
@@ -109,7 +109,7 @@ export function ConsumoPage() {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-4 management-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
         {[
           { label: 'Total de Consultas', value: items.length.toLocaleString('pt-BR'), color: 'var(--info)' },
           { label: 'Total Debitado', value: `R$ ${totalGasto.toFixed(2)}`, color: 'var(--danger)' },
@@ -125,7 +125,7 @@ export function ConsumoPage() {
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="card-header-responsive">
           <CardTitle>Auditoria de Consumo de Saldo</CardTitle>
           <span className="text-xs text-[var(--text-muted)]">Débito ocorre a cada solicitação de consulta</span>
         </CardHeader>
@@ -178,7 +178,7 @@ export function PagamentosPage() {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="card-header-responsive">
         <CardTitle>Histórico de Pagamentos</CardTitle>
       </CardHeader>
       <Table>
@@ -255,7 +255,7 @@ export function SimuladorPage() {
             acumulado no seu período atual. A faixa de cobrança é aplicada de forma cumulativa — quanto mais consultar,
             menor o custo por consulta.
           </p>
-          <div className="flex gap-4 items-end">
+          <div className="flex gap-4 items-end simulator-controls" style={{ gap: '16px' }}>
             <Input
               label="Quantidade de consultas a simular"
               type="number"
@@ -263,7 +263,7 @@ export function SimuladorPage() {
               onChange={(e) => setQtd(e.target.value)}
               min={1}
               max={100000}
-              className="w-56"
+              className="simulator-input"
             />
             <Button onClick={simular} loading={loading}>Calcular</Button>
           </div>
@@ -272,7 +272,7 @@ export function SimuladorPage() {
 
       {resultado && (
         <>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-4 simulator-results-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
             {[
               { label: 'Custo Total', value: `R$ ${parseFloat(resultado.custo_total).toFixed(2)}`, color: 'var(--accent)' },
               { label: 'Custo Médio / Consulta', value: `R$ ${resultado.custo_medio_por_consulta}`, color: 'var(--info)' },
@@ -289,7 +289,7 @@ export function SimuladorPage() {
 
           {resultado.detalhes_por_faixa.length > 0 && (
             <Card>
-              <CardHeader><CardTitle>Breakdown por Faixa</CardTitle></CardHeader>
+              <CardHeader className="card-header-responsive"><CardTitle>Breakdown por Faixa</CardTitle></CardHeader>
               <Table>
                 <thead>
                   <tr>
@@ -377,7 +377,7 @@ export function CreditosPage() {
           {/* Método */}
           <div>
             <div className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-2">Método de Pagamento</div>
-            <div className="flex gap-3">
+            <div className="flex gap-3 credit-method-row" style={{ gap: '12px' }}>
               {(['PIX', 'BOLETO'] as const).map(m => (
                 <button
                   key={m}
@@ -456,7 +456,7 @@ export function CreditosPage() {
             <div className="font-mono text-xs break-all text-[var(--text-muted)] bg-[var(--surface-2)] border border-[var(--border)] rounded-lg p-4">
               {resultado.boleto}
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-3 credit-result-actions" style={{ gap: '12px' }}>
               <button
                 onClick={() => copiar(resultado.boleto!)}
                 className="flex-1 py-2 rounded-lg bg-[var(--surface-2)] border border-[var(--border)] text-sm font-semibold hover:border-[var(--border-bright)] transition-all"

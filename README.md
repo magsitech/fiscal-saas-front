@@ -1,114 +1,122 @@
 # fiscal-saas-front
 
-Frontend da Plataforma SaaS Fiscal — painel do gestor.
-Repositório separado do back-end (`fiscal-saas`).
+Frontend do validaeNota.
+
+Hoje este projeto roda como frontend React + Vite publicado no Vercel, com suporte a dados mockados para testes antes da integracao com a API no Railway e com o PostgreSQL.
 
 ## Stack
 
-| Tecnologia | Uso |
-|---|---|
-| React 18 + TypeScript | UI e tipagem |
-| Vite | Build e dev server |
-| React Router v6 | Roteamento (SPA) |
-| Zustand | Estado global (auth) |
-| Axios | HTTP + refresh token automático |
-| lucide-react | Ícones |
-| react-hot-toast | Notificações |
-| date-fns | Formatação de datas |
-| Nginx | Serve build + proxy API |
+- React 18 + TypeScript
+- Vite
+- React Router v6
+- Zustand
+- Axios
+- lucide-react
+- react-hot-toast
+- date-fns
 
-## Estrutura
+## Estado atual do projeto
 
-```
+- Landing page publica em `/`
+- Painel do usuario em `/app`
+- Tema com modos `claro`, `escuro` e `sistema`
+- Modo mock para autenticacao, dashboard, consumo, pagamentos e simulacoes
+- Deploy principal via Vercel
+- Dominio do app: `app.validaenota.com.br`
+
+## Estrutura principal
+
+```text
 src/
-├── App.tsx                    # Rotas (React Router)
-├── main.tsx                   # Entrypoint
-├── index.css                  # Design tokens (CSS vars)
-├── types/index.ts             # Todos os tipos TypeScript
-├── services/api.ts            # Axios + interceptor JWT
-├── store/auth.ts              # Zustand (usuário + tokens)
-├── hooks/useFetch.ts          # Hooks de fetching e polling
-├── utils/fmt.ts               # Formatadores (BRL, CNPJ, CPF…)
-└── components/
-    ├── ui/index.tsx           # Button, Badge, Card, Table, Input…
-    ├── layout/
-    │   ├── Sidebar.tsx        # Navegação lateral com NavLink
-    │   └── AppLayout.tsx      # Layout com topbar
-    └── auth/
-        └── ProtectedRoute.tsx # Guards de rota
-└── pages/
-    ├── AuthPage.tsx           # Login + Cadastro (tab único)
-    ├── DashboardPage.tsx      # KPIs, saldo, faixas, últimas NFs
-    ├── ManagementPages.tsx    # Validações, Consumo, Pagamentos,
-    │                          # Simulador, Comprar Créditos
-    └── PerfilPage.tsx         # Perfil, senha, empresa, zona perigo
+  components/
+    auth/
+    layout/
+    ui/
+  config/
+  hooks/
+  mocks/
+  pages/
+  services/
+  store/
+  types/
+  utils/
 ```
 
-## Rodando localmente
+## Desenvolvimento local
 
 ```bash
-# Instalar dependências
 npm install
-
-# Dev server com proxy para API local (localhost:8000)
 npm run dev
+```
 
-# Build de produção
+## Build
+
+```bash
 npm run build
-
-# Preview do build
 npm run preview
 ```
 
-## Docker
+## Variaveis de ambiente
 
-```bash
-# Build da imagem
-docker build -t fiscal-saas-front .
+Use o arquivo `.env.example` como base.
 
-# Rodar (API deve estar acessível em http://api:8000)
-docker run -p 3000:80 fiscal-saas-front
+```env
+VITE_USE_MOCK_API=true
+VITE_API_BASE_URL=http://localhost:8000
 ```
 
-## Deploy no Railway
+### Significado
 
-1. Criar novo serviço no Railway apontando para este repositório
-2. Railway detecta o `Dockerfile` automaticamente
-3. Configurar variável `API_URL` se necessário (ver `nginx.conf`)
-4. O serviço de frontend é independente do back-end
+- `VITE_USE_MOCK_API=true`
+  Mantem a aplicacao funcionando com dados mockados.
+
+- `VITE_USE_MOCK_API=false`
+  Faz o frontend consumir a API real usando `VITE_API_BASE_URL`.
+
+- `VITE_API_BASE_URL`
+  URL base da API real quando o mock estiver desligado.
+
+## Credenciais mock para teste
+
+```text
+demo@validaenota.com.br
+Demo@123
+```
 
 ## Deploy no Vercel
 
-1. Importar este repositório no Vercel
-2. Framework preset: `Vite`
-3. Build command: `npm run build`
-4. Output directory: `dist`
-5. Configurar a variável de ambiente `VITE_API_BASE_URL` com a URL pública do back-end
+Configuracao usada hoje:
 
-O arquivo `vercel.json` já inclui o rewrite necessário para o `BrowserRouter` funcionar em rotas diretas.
+- Framework Preset: `Vite`
+- Build Command: `npm run build`
+- Output Directory: `dist`
+- Install Command: `npm install`
 
-## Páginas
+### Variaveis no Vercel
 
-| Rota | Página | Autenticação |
-|---|---|---|
-| `/login` | Login + Cadastro | Pública |
-| `/app` | Dashboard | Protegida |
-| `/app/validacoes` | Histórico de validações | Protegida |
-| `/app/consumo` | Auditoria de consumo | Protegida |
-| `/app/creditos` | Comprar créditos | Protegida |
-| `/app/pagamentos` | Histórico de pagamentos | Protegida |
-| `/app/simulador` | Simulador de custos | Protegida |
-| `/app/perfil` | Perfil do usuário | Protegida |
+Para testar com mocks no dominio real:
 
-## Autenticação
+```env
+VITE_USE_MOCK_API=true
+VITE_API_BASE_URL=https://api.validaenota.com.br
+```
 
-- Access token (15 min) armazenado no Zustand + localStorage
-- Refresh token (30 dias) renovado automaticamente via interceptor Axios
-- Rotas protegidas redirecionam para `/login` se não autenticado
-- Rotas públicas redirecionam para `/app` se já autenticado
+### Dominios
 
-## Design
+- `validaenota.com.br`: landing page
+- `www.validaenota.com.br`: redireciona para `validaenota.com.br`
+- `app.validaenota.com.br`: painel/app
 
-Paleta escura com tokens CSS em `src/index.css`. Todos os componentes
-consomem as variáveis diretamente — trocar o tema é alterar as variáveis
-na raiz. Fontes: Space Grotesk (UI) + IBM Plex Mono (valores numéricos).
+## Proximo passo de integracao
+
+Quando o backend real estiver pronto:
+
+1. manter o deploy no Vercel
+2. alterar `VITE_USE_MOCK_API` para `false`
+3. manter `VITE_API_BASE_URL=https://api.validaenota.com.br`
+
+## Observacao sobre Docker
+
+O projeto nao usa mais Docker no fluxo atual.
+
+Como o frontend e publicado no Vercel como app estatico do Vite, os arquivos de Docker/Nginx foram removidos para simplificar o repositorio e evitar manutencao desnecessaria.

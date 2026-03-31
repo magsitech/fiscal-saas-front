@@ -58,7 +58,7 @@ export function DashboardPage() {
         <div className="absolute top-0 right-0 w-64 h-64 pointer-events-none"
           style={{ background: 'radial-gradient(circle at top right, rgba(0,212,170,0.12) 0%, transparent 70%)' }} />
 
-        <div className="flex items-start justify-between mb-6 relative z-10">
+        <div className="flex items-start justify-between mb-6 relative z-10 dashboard-hero-top" style={{ gap: '16px' }}>
           <div>
             <div className="text-xs font-bold uppercase tracking-widest text-[var(--accent)] mb-2">
               Saldo Disponível
@@ -108,7 +108,7 @@ export function DashboardPage() {
               }}
             />
           </div>
-          <div className="flex justify-between mt-2 text-xs text-[var(--text-muted)]">
+          <div className="flex justify-between mt-2 text-xs text-[var(--text-muted)] dashboard-hero-meta" style={{ gap: '8px' }}>
             <span>{pct}% do saldo inicial utilizado</span>
             <span>{(saldo?.consultas_no_periodo ?? 0).toLocaleString('pt-BR')} consultas no período</span>
           </div>
@@ -116,7 +116,7 @@ export function DashboardPage() {
       </div>
 
       {/* ── KPIs ───────────────────────────────────────────── */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-4 gap-4 dashboard-kpis" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
         {[
           {
             label: 'Consultas Hoje',
@@ -158,7 +158,7 @@ export function DashboardPage() {
       </div>
 
       {/* ── Bottom grid ────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4 dashboard-bottom-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
 
         {/* Tabela de faixas */}
         <Card>
