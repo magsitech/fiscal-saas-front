@@ -60,32 +60,32 @@ const VANTAGENS = [
   {
     icon: <ShieldIcon />,
     title: '100% oficial SEFAZ',
-    desc: 'Integracao exclusiva via Web Services NFeConsultaProtocolo. Nenhum portal de terceiros, nenhum scraping, so resultado com validade legal.',
+    desc: 'Integração exclusiva via Web Services NFeConsultaProtocolo. Nenhum portal de terceiros, nenhum scraping, só resultado com validade legal.',
   },
   {
     icon: <ActivityIcon />,
     title: 'Anti-bloqueio garantido',
-    desc: 'Arquitetura com fila RabbitMQ, rate limiting de 1 req/1,5s e SSLContext reutilizado. Certificado A1 ICP-Brasil em producao.',
+    desc: 'Arquitetura com fila RabbitMQ, rate limiting de 1 req/1,5s e SSLContext reutilizado. Certificado A1 ICP-Brasil em produção.',
   },
   {
     icon: <ClockIcon />,
     title: 'Cache inteligente de 7 dias',
-    desc: 'Resultados armazenados no Redis por 7 dias. Consultas repetidas nao debitam saldo e sua equipe nunca paga duas vezes pela mesma NF.',
+    desc: 'Resultados armazenados no Redis por 7 dias. Consultas repetidas não debitam saldo e sua equipe nunca paga duas vezes pela mesma NF.',
   },
   {
     icon: <DollarIcon />,
-    title: 'Cobranca progressiva',
-    desc: 'Modelo de escada cumulativa: quanto mais consultas no periodo, menor o custo unitario. Similar ao modelo de AWS, GCP e Azure.',
+    title: 'Cobrança progressiva',
+    desc: 'Modelo de escada cumulativa: quanto mais consultas no período, menor o custo unitário. Similar ao modelo de AWS, GCP e Azure.',
   },
   {
     icon: <MonitorIcon />,
-    title: 'Painel de gestao completo',
-    desc: 'Dashboard com historico fiscal, auditoria de consumo, simulador de custos e compra de creditos via PIX ou boleto.',
+    title: 'Painel de gestão completo',
+    desc: 'Dashboard com histórico fiscal, auditoria de consumo, simulador de custos e compra de créditos via PIX ou boleto.',
   },
   {
     icon: <UsersIcon />,
     title: 'Multi-tenant seguro',
-    desc: 'Cada gestor tem saldo isolado, historico proprio e empresas vinculadas. Ideal para programas de nota fiscal de prefeituras.',
+    desc: 'Cada gestor tem saldo isolado, histórico próprio e empresas vinculadas. Ideal para programas de nota fiscal de prefeituras.',
   },
 ]
 
@@ -93,12 +93,12 @@ const STEPS = [
   {
     num: '01',
     title: 'Leitura do QR Code',
-    desc: 'Seu app le o QR Code ou codigo de barras da NF-e ou NFC-e e envia para a nossa API.',
+    desc: 'Seu app lê o QR Code ou código de barras da NF-e ou NFC-e e envia para a nossa API.',
   },
   {
     num: '02',
-    title: 'Envio a API',
-    desc: 'Sua aplicacao envia a URL do QR Code, CNPJ do emitente, CPF do destinatario e valor total da nota.',
+    title: 'Envio à API',
+    desc: 'Sua aplicação envia a URL do QR Code, CNPJ do emitente, CPF do destinatário e valor total da nota.',
   },
   {
     num: '03',
@@ -108,7 +108,7 @@ const STEPS = [
   {
     num: '04',
     title: 'Resultado validado',
-    desc: 'Retornamos status, protocolo, valores e dados completos da nota. O cache evita cobrancas duplicadas.',
+    desc: 'Retornamos status, protocolo, valores e dados completos da nota. O cache evita cobranças duplicadas.',
   },
 ]
 
@@ -180,7 +180,7 @@ export function LandingPage() {
             letterSpacing: '-0.5px',
           }}
         >
-          Validacao de NF-e e NFC-e <span style={{ color: 'var(--accent)' }}>direto na SEFAZ oficial</span>
+          Validação de NF-e e NFC-e <span style={{ color: 'var(--accent)' }}>direto na SEFAZ oficial</span>
         </h1>
 
         <p
@@ -193,7 +193,7 @@ export function LandingPage() {
           }}
         >
           Consulte notas fiscais em tempo real via Web Services oficiais da Receita Federal. Sem scraping, sem
-          portais, sem riscos, so resultado confiavel para sua prefeitura ou empresa.
+          portais, sem riscos, só resultado confiável para sua prefeitura ou empresa.
         </p>
 
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -202,7 +202,7 @@ export function LandingPage() {
             style={{
               padding: '13px 28px',
               background: 'var(--accent)',
-              color: '#000',
+              color: '#04110d',
               border: 'none',
               borderRadius: '9px',
               fontSize: '15px',
@@ -211,7 +211,7 @@ export function LandingPage() {
               fontFamily: 'var(--sans)',
             }}
           >
-            Comecar gratuitamente
+            Começar gratuitamente
           </button>
           <button
             onClick={() => navigate('/pricing')}
@@ -227,7 +227,7 @@ export function LandingPage() {
               fontFamily: 'var(--sans)',
             }}
           >
-            Ver precos →
+            Ver preços →
           </button>
         </div>
       </section>
@@ -239,9 +239,9 @@ export function LandingPage() {
           className="landing-grid-4"
           style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginTop: '36px' }}
         >
-          {STEPS.map((s) => (
+          {STEPS.map((step) => (
             <div
-              key={s.num}
+              key={step.num}
               style={{
                 background: 'var(--surface)',
                 border: '1px solid var(--border)',
@@ -274,11 +274,11 @@ export function LandingPage() {
                     fontSize: '10px',
                   }}
                 >
-                  {s.num}
+                  {step.num}
                 </span>
               </div>
-              <h3 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '8px' }}>{s.title}</h3>
-              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.65 }}>{s.desc}</p>
+              <h3 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '8px' }}>{step.title}</h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.65 }}>{step.desc}</p>
             </div>
           ))}
         </div>
@@ -291,9 +291,9 @@ export function LandingPage() {
           className="landing-grid-3"
           style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginTop: '36px' }}
         >
-          {VANTAGENS.map((v) => (
+          {VANTAGENS.map((vantagem) => (
             <div
-              key={v.title}
+              key={vantagem.title}
               style={{
                 background: 'var(--surface)',
                 border: '1px solid var(--border)',
@@ -315,10 +315,10 @@ export function LandingPage() {
                   marginBottom: '16px',
                 }}
               >
-                {v.icon}
+                {vantagem.icon}
               </div>
-              <h3 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '8px' }}>{v.title}</h3>
-              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.65 }}>{v.desc}</p>
+              <h3 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '8px' }}>{vantagem.title}</h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.65 }}>{vantagem.desc}</p>
             </div>
           ))}
         </div>
@@ -326,14 +326,14 @@ export function LandingPage() {
 
       <div style={{ height: '1px', background: 'var(--border)', margin: '0 40px' }} />
       <section className="landing-section" style={{ padding: '56px 40px', maxWidth: '1040px', margin: '0 auto' }}>
-        <SectionHeader label="Numeros" title="Plataforma confiavel em producao" />
+        <SectionHeader label="Números" title="Plataforma confiável em produção" />
         <div
           className="landing-grid-4"
           style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginTop: '36px' }}
         >
-          {STATS.map((s) => (
+          {STATS.map((stat) => (
             <div
-              key={s.label}
+              key={stat.label}
               style={{
                 background: 'var(--surface)',
                 border: '1px solid var(--border)',
@@ -352,9 +352,9 @@ export function LandingPage() {
                   marginBottom: '10px',
                 }}
               >
-                {s.value}
+                {stat.value}
               </div>
-              <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{s.label}</div>
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{stat.label}</div>
             </div>
           ))}
         </div>
@@ -362,7 +362,7 @@ export function LandingPage() {
 
       <div
         style={{
-          background: 'linear-gradient(135deg, #0e1a14, #0a1410)',
+          background: 'linear-gradient(135deg, color-mix(in srgb, var(--surface) 82%, var(--accent-dim) 18%), var(--surface))',
           borderTop: '1px solid var(--border)',
           borderBottom: '1px solid var(--border)',
           padding: '56px 40px',
@@ -371,14 +371,14 @@ export function LandingPage() {
       >
         <h2 style={{ fontSize: '28px', fontWeight: 700, marginBottom: '12px' }}>Pronto para validar suas notas fiscais?</h2>
         <p style={{ color: 'var(--text-muted)', fontSize: '15px', marginBottom: '28px' }}>
-          Crie sua conta em menos de 2 minutos. Sem cartao de credito para comecar.
+          Crie sua conta em menos de 2 minutos. Sem cartão de crédito para começar.
         </p>
         <button
           onClick={() => navigate('/login')}
           style={{
             padding: '13px 32px',
             background: 'var(--accent)',
-            color: '#000',
+            color: '#04110d',
             border: 'none',
             borderRadius: '9px',
             fontSize: '15px',

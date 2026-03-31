@@ -22,7 +22,7 @@ export function PublicNav({ current }: { current: 'home' | 'pricing' }) {
           zIndex: 100,
           padding: '0 40px',
           height: '60px',
-          background: 'rgba(10,12,15,0.97)',
+          background: 'color-mix(in srgb, var(--surface) 92%, transparent)',
           borderBottom: '1px solid var(--border)',
         }}
       >
@@ -64,7 +64,7 @@ export function PublicNav({ current }: { current: 'home' | 'pricing' }) {
                   style={{
                     padding: '8px 20px',
                     background: 'var(--accent)',
-                    color: '#000',
+                    color: '#04110d',
                     border: 'none',
                     borderRadius: '8px',
                     fontSize: '13px',
@@ -73,7 +73,7 @@ export function PublicNav({ current }: { current: 'home' | 'pricing' }) {
                     fontFamily: 'var(--sans)',
                   }}
                 >
-                  Area do Cliente
+                  Área do Cliente
                 </button>
               </div>
             </div>
@@ -89,7 +89,7 @@ export function PublicNav({ current }: { current: 'home' | 'pricing' }) {
               alignItems: 'center',
             }}
           >
-            <ThemeToggle modes={['light', 'dark']} />
+            <ThemeToggle />
           </div>
         </div>
 
@@ -103,7 +103,7 @@ export function PublicNav({ current }: { current: 'home' | 'pricing' }) {
             gap: '10px',
           }}
         >
-          <ThemeToggle modes={['light', 'dark']} />
+          <ThemeToggle />
           <button
             type="button"
             onClick={() => setMobileOpen((value) => !value)}
@@ -119,10 +119,10 @@ export function PublicNav({ current }: { current: 'home' | 'pricing' }) {
               fontSize: '13px',
               fontWeight: 700,
             }}
-            aria-label={mobileOpen ? 'Fechar menu da area do cliente' : 'Abrir menu da area do cliente'}
+            aria-label={mobileOpen ? 'Fechar menu da Área do Cliente' : 'Abrir menu da Área do Cliente'}
           >
             {mobileOpen ? <X size={16} /> : <Menu size={16} />}
-            Area do Cliente
+            Área do Cliente
           </button>
         </div>
       </nav>
@@ -157,14 +157,14 @@ export function PublicNav({ current }: { current: 'home' | 'pricing' }) {
                 border: 'none',
                 borderRadius: '12px',
                 background: 'var(--accent)',
-                color: '#000',
+                color: '#04110d',
                 fontSize: '13px',
                 fontWeight: 700,
                 padding: '12px 14px',
                 textAlign: 'left',
               }}
             >
-              Painel do Usuario
+              Painel do Usuário
             </button>
             <div style={{ display: 'grid', gap: '6px' }}>
               <PublicMenuButton label="Home" active={current === 'home'} onClick={() => go('/')} />

@@ -9,8 +9,7 @@ import {
   EyeOff,
   Lock,
   Mail,
-  PanelLeftClose,
-  PanelLeftOpen,
+  Menu,
   User,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -76,17 +75,24 @@ const S = {
     gap: '10px',
     flexWrap: 'wrap',
   },
+  topBarLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+  },
   ghostBtn: {
     border: '1px solid var(--border)',
     background: 'var(--surface)',
     color: 'var(--text-muted)',
     borderRadius: '999px',
-    padding: '10px 14px',
+    padding: '10px',
     display: 'inline-flex',
     alignItems: 'center',
-    gap: '8px',
+    justifyContent: 'center',
     fontSize: '12px',
     fontWeight: 700,
+    width: '38px',
+    height: '38px',
   },
   card: {
     background: 'var(--surface)',
@@ -199,7 +205,7 @@ function SenhaBar({ senha }: { senha: string }) {
   const checks = [senha.length >= 8, /[A-Z]/.test(senha), /\d/.test(senha), /[^A-Za-z0-9]/.test(senha)]
   const n = checks.filter(Boolean).length
   const colors = ['', '#ef4444', '#f59e0b', '#3b82f6', '#00d4aa']
-  const labels = ['8+ chars', 'Maiuscula', 'Numero', 'Simbolo']
+  const labels = ['8+ chars', 'Maiúscula', 'Número', 'Símbolo']
   if (!senha) return null
   return (
     <div style={{ marginTop: '6px' }}>
@@ -247,36 +253,36 @@ export function AuthPage() {
 
   function validarLogin() {
     const e: Record<string, string> = {}
-    if (!loginForm.email) e.email = 'Obrigatorio'
-    else if (!/\S+@\S+\.\S+/.test(loginForm.email)) e.email = 'E-mail invalido'
-    if (!loginForm.senha) e.senha = 'Obrigatorio'
+    if (!loginForm.email) e.email = 'Obrigatório'
+    else if (!/\S+@\S+\.\S+/.test(loginForm.email)) e.email = 'E-mail inválido'
+    if (!loginForm.senha) e.senha = 'Obrigatório'
     setLoginErros(e)
     return !Object.keys(e).length
   }
 
   function validarPF() {
     const e: Record<string, string> = {}
-    if (!pfForm.nome || pfForm.nome.length < 3) e.nome = 'Minimo 3 caracteres'
-    if (!pfForm.email || !/\S+@\S+\.\S+/.test(pfForm.email)) e.email = 'E-mail invalido'
-    if (!/^\d{11}$/.test(pfForm.cpf.replace(/\D/g, ''))) e.cpf = 'CPF: 11 digitos'
-    if (pfForm.senha.length < 8) e.senha = 'Minimo 8 caracteres'
-    if (!/[A-Z]/.test(pfForm.senha)) e.senha = 'Precisa de uma maiuscula'
-    if (!/\d/.test(pfForm.senha)) e.senha = 'Precisa de um numero'
-    if (pfForm.senha !== pfForm.confirmar) e.confirmar = 'Senhas nao coincidem'
+    if (!pfForm.nome || pfForm.nome.length < 3) e.nome = 'Mínimo de 3 caracteres'
+    if (!pfForm.email || !/\S+@\S+\.\S+/.test(pfForm.email)) e.email = 'E-mail inválido'
+    if (!/^\d{11}$/.test(pfForm.cpf.replace(/\D/g, ''))) e.cpf = 'CPF: 11 dígitos'
+    if (pfForm.senha.length < 8) e.senha = 'Mínimo de 8 caracteres'
+    if (!/[A-Z]/.test(pfForm.senha)) e.senha = 'Precisa de uma maiúscula'
+    if (!/\d/.test(pfForm.senha)) e.senha = 'Precisa de um número'
+    if (pfForm.senha !== pfForm.confirmar) e.confirmar = 'As senhas não coincidem'
     setPfErros(e)
     return !Object.keys(e).length
   }
 
   function validarPJ() {
     const e: Record<string, string> = {}
-    if (!pjForm.razao_social.trim()) e.razao_social = 'Obrigatorio'
-    if (!/^\d{14}$/.test(pjForm.cnpj.replace(/\D/g, ''))) e.cnpj = 'CNPJ: 14 digitos'
-    if (!pjForm.responsavel.trim()) e.responsavel = 'Obrigatorio'
-    if (!pjForm.email || !/\S+@\S+\.\S+/.test(pjForm.email)) e.email = 'E-mail invalido'
-    if (pjForm.senha.length < 8) e.senha = 'Minimo 8 caracteres'
-    if (!/[A-Z]/.test(pjForm.senha)) e.senha = 'Precisa de uma maiuscula'
-    if (!/\d/.test(pjForm.senha)) e.senha = 'Precisa de um numero'
-    if (pjForm.senha !== pjForm.confirmar) e.confirmar = 'Senhas nao coincidem'
+    if (!pjForm.razao_social.trim()) e.razao_social = 'Obrigatório'
+    if (!/^\d{14}$/.test(pjForm.cnpj.replace(/\D/g, ''))) e.cnpj = 'CNPJ: 14 dígitos'
+    if (!pjForm.responsavel.trim()) e.responsavel = 'Obrigatório'
+    if (!pjForm.email || !/\S+@\S+\.\S+/.test(pjForm.email)) e.email = 'E-mail inválido'
+    if (pjForm.senha.length < 8) e.senha = 'Mínimo de 8 caracteres'
+    if (!/[A-Z]/.test(pjForm.senha)) e.senha = 'Precisa de uma maiúscula'
+    if (!/\d/.test(pjForm.senha)) e.senha = 'Precisa de um número'
+    if (pjForm.senha !== pjForm.confirmar) e.confirmar = 'As senhas não coincidem'
     setPjErros(e)
     return !Object.keys(e).length
   }
@@ -293,7 +299,7 @@ export function AuthPage() {
       toast.success(`Bem-vindo, ${me.nome.split(' ')[0]}!`)
       navigate('/app')
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail ?? 'Credenciais invalidas')
+      toast.error(err?.response?.data?.detail ?? 'Credenciais inválidas')
     } finally {
       setLoading(false)
     }
@@ -305,7 +311,7 @@ export function AuthPage() {
     setLoading(true)
     try {
       await authApi.register({ nome: pfForm.nome, email: pfForm.email, cpf: pfForm.cpf.replace(/\D/g, ''), senha: pfForm.senha })
-      toast.success('Conta criada! Faca o login.')
+      toast.success('Conta criada! Faça o login.')
       setMode('login')
       setLoginForm({ email: pfForm.email, senha: '' })
     } catch (err: any) {
@@ -321,7 +327,7 @@ export function AuthPage() {
     setLoading(true)
     try {
       await authApi.register({ nome: pjForm.responsavel, email: pjForm.email, cpf: '', senha: pjForm.senha })
-      toast.success('Conta criada! Faca o login.')
+      toast.success('Conta criada! Faça o login.')
       setMode('login')
       setLoginForm({ email: pjForm.email, senha: '' })
     } catch (err: any) {
@@ -346,16 +352,15 @@ export function AuthPage() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '28px' }}>
               <ThemeToggle />
               <button type="button" onClick={() => setShowAside(false)} style={S.ghostBtn}>
-                <PanelLeftClose size={15} />
-                Ocultar painel
+                <Menu size={15} />
               </button>
             </div>
 
             {[
-              ['Validacao oficial SEFAZ', 'NF-e 55 e NFC-e 65 via Web Services'],
+              ['Validação oficial SEFAZ', 'NF-e 55 e NFC-e 65 via Web Services'],
               ['Anti-bloqueio garantido', 'Fila + rate limit + SSL reutilizado'],
-              ['Cache inteligente 7 dias', 'Sem debito duplicado na mesma NF'],
-              ['Cobranca progressiva', 'Quanto mais usar, menor o custo'],
+              ['Cache inteligente 7 dias', 'Sem débito duplicado na mesma NF'],
+              ['Cobrança progressiva', 'Quanto mais usar, menor o custo'],
             ].map(([title, description]) => (
               <div key={title} style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
                 <div style={{ width: '26px', height: '26px', flexShrink: 0, borderRadius: '6px', background: 'var(--accent-dim)', border: '1px solid var(--accent-glow)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '1px' }}>
@@ -370,7 +375,7 @@ export function AuthPage() {
           </div>
 
           <div style={{ position: 'relative', zIndex: 1 }}>
-            <div style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-dim)', marginBottom: '10px' }}>Precos por faixa</div>
+            <div style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-dim)', marginBottom: '10px' }}>Preços por faixa</div>
             {[
               ['1 - 500', 'R$ 0,22'],
               ['501 - 2.000', 'R$ 0,18'],
@@ -390,19 +395,19 @@ export function AuthPage() {
       <main style={S.right} className="auth-right">
         <div style={S.formShell}>
           <div style={S.topBar} className="auth-topbar">
-            <button type="button" onClick={() => navigate('/')} style={S.ghostBtn}>
-              <ArrowLeft size={15} />
-              Voltar
-            </button>
-
-            <div style={S.topBarActions} className="auth-topbar-actions">
+            <div style={S.topBarLeft}>
+              {!showAside && <ThemeToggle />}
               {!showAside && (
                 <button type="button" onClick={() => setShowAside(true)} style={S.ghostBtn}>
-                  <PanelLeftOpen size={15} />
-                  Mostrar painel
+                  <Menu size={15} />
                 </button>
               )}
-              <ThemeToggle />
+            </div>
+
+            <div style={S.topBarActions} className="auth-topbar-actions">
+              <button type="button" onClick={() => navigate('/')} style={S.ghostBtn}>
+                <ArrowLeft size={15} />
+              </button>
             </div>
           </div>
 
@@ -435,7 +440,7 @@ export function AuthPage() {
                     {loading ? <Spinner size={16} /> : <>Entrar <ArrowRight size={16} /></>}
                   </button>
                   <p style={S.linkTxt}>
-                    Nao tem conta? <span style={S.linkSpan} onClick={switchToCadastro}>Criar conta</span>
+                    Não tem conta? <span style={S.linkSpan} onClick={switchToCadastro}>Criar conta</span>
                   </p>
                 </form>
               )}
@@ -463,8 +468,8 @@ export function AuthPage() {
                       <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'var(--surface-2)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px', color: 'var(--text-muted)' }}>
                         <User size={20} />
                       </div>
-                      <div style={{ fontSize: '15px', fontWeight: 700, marginBottom: '6px' }}>Pessoa Fisica</div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5 }}>Cadastro com CPF para pessoas fisicas</div>
+                      <div style={{ fontSize: '15px', fontWeight: 700, marginBottom: '6px' }}>Pessoa Física</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5 }}>Cadastro com CPF para pessoas físicas</div>
                     </button>
 
                     <button
@@ -483,12 +488,12 @@ export function AuthPage() {
                       <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'var(--surface-2)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px', color: 'var(--text-muted)' }}>
                         <Building2 size={20} />
                       </div>
-                      <div style={{ fontSize: '15px', fontWeight: 700, marginBottom: '6px' }}>Pessoa Juridica</div>
+                      <div style={{ fontSize: '15px', fontWeight: 700, marginBottom: '6px' }}>Pessoa Jurídica</div>
                       <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5 }}>Cadastro com CNPJ para empresas</div>
                     </button>
                   </div>
                   <p style={S.linkTxt}>
-                    Ja tem conta? <span style={S.linkSpan} onClick={switchToLogin}>Entrar</span>
+                    Já tem conta? <span style={S.linkSpan} onClick={switchToLogin}>Entrar</span>
                   </p>
                 </div>
               )}
@@ -498,10 +503,9 @@ export function AuthPage() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }} className="auth-heading-row">
                     <button type="button" onClick={() => setMode('tipo')} style={S.ghostBtn}>
                       <ArrowLeft size={14} />
-                      Voltar
                     </button>
                     <div>
-                      <div style={{ fontSize: '20px', fontWeight: 700, lineHeight: 1 }}>Pessoa Fisica</div>
+                      <div style={{ fontSize: '20px', fontWeight: 700, lineHeight: 1 }}>Pessoa Física</div>
                       <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>Preencha seus dados pessoais</div>
                     </div>
                   </div>
@@ -522,7 +526,7 @@ export function AuthPage() {
                   </Field>
                   <Field label="Senha" error={pfErros.senha}>
                     <IcInput icon={<Lock size={15} />} right={eyeBtn}>
-                      <input type={showPass ? 'text' : 'password'} placeholder="Min. 8 caracteres" value={pfForm.senha} onChange={(e) => setPfForm({ ...pfForm, senha: e.target.value })} style={S.inp(!!pfErros.senha)} />
+                      <input type={showPass ? 'text' : 'password'} placeholder="Mín. 8 caracteres" value={pfForm.senha} onChange={(e) => setPfForm({ ...pfForm, senha: e.target.value })} style={S.inp(!!pfErros.senha)} />
                     </IcInput>
                     <SenhaBar senha={pfForm.senha} />
                   </Field>
@@ -542,14 +546,13 @@ export function AuthPage() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }} className="auth-heading-row">
                     <button type="button" onClick={() => setMode('tipo')} style={S.ghostBtn}>
                       <ArrowLeft size={14} />
-                      Voltar
                     </button>
                     <div>
-                      <div style={{ fontSize: '20px', fontWeight: 700, lineHeight: 1 }}>Pessoa Juridica</div>
+                      <div style={{ fontSize: '20px', fontWeight: 700, lineHeight: 1 }}>Pessoa Jurídica</div>
                       <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>Preencha os dados da empresa</div>
                     </div>
                   </div>
-                  <Field label="Razao social" error={pjErros.razao_social}>
+                  <Field label="Razão social" error={pjErros.razao_social}>
                     <IcInput icon={<Building2 size={15} />}>
                       <input placeholder="Empresa Exemplo LTDA" value={pjForm.razao_social} onChange={(e) => setPjForm({ ...pjForm, razao_social: e.target.value })} style={S.inp(!!pjErros.razao_social)} />
                     </IcInput>
@@ -559,9 +562,9 @@ export function AuthPage() {
                       <input placeholder="00.000.000/0001-00" maxLength={18} inputMode="numeric" value={pjForm.cnpj} onChange={(e) => setPjForm({ ...pjForm, cnpj: e.target.value.replace(/\D/g, '').slice(0, 14) })} style={S.inp(!!pjErros.cnpj)} />
                     </IcInput>
                   </Field>
-                  <Field label="Nome do responsavel" error={pjErros.responsavel}>
+                  <Field label="Nome do responsável" error={pjErros.responsavel}>
                     <IcInput icon={<User size={15} />}>
-                      <input placeholder="Joao da Silva" value={pjForm.responsavel} onChange={(e) => setPjForm({ ...pjForm, responsavel: e.target.value })} style={S.inp(!!pjErros.responsavel)} />
+                      <input placeholder="João da Silva" value={pjForm.responsavel} onChange={(e) => setPjForm({ ...pjForm, responsavel: e.target.value })} style={S.inp(!!pjErros.responsavel)} />
                     </IcInput>
                   </Field>
                   <Field label="E-mail corporativo" error={pjErros.email}>
@@ -571,7 +574,7 @@ export function AuthPage() {
                   </Field>
                   <Field label="Senha" error={pjErros.senha}>
                     <IcInput icon={<Lock size={15} />} right={eyeBtn}>
-                      <input type={showPass ? 'text' : 'password'} placeholder="Min. 8 caracteres" value={pjForm.senha} onChange={(e) => setPjForm({ ...pjForm, senha: e.target.value })} style={S.inp(!!pjErros.senha)} />
+                      <input type={showPass ? 'text' : 'password'} placeholder="Mín. 8 caracteres" value={pjForm.senha} onChange={(e) => setPjForm({ ...pjForm, senha: e.target.value })} style={S.inp(!!pjErros.senha)} />
                     </IcInput>
                     <SenhaBar senha={pjForm.senha} />
                   </Field>
