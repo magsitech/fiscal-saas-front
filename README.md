@@ -1,16 +1,17 @@
 # fiscal-saas-front
 
-Frontend do `validaeNota`, publicado no Vercel e preparado para operar com dados mockados enquanto a integração com a API no Railway e com o PostgreSQL não é ativada.
+Frontend do `validaeNota`, publicado no Vercel, com producao conectada ao backend no Railway e um ambiente `staging` separado para operar com dados mockados.
 
-## Visão geral
+## Visao geral
 
 Hoje o projeto entrega:
 
-- landing page pública em `https://validaenota.com.br`
-- página de preços em `https://validaenota.com.br/pricing`
-- área do cliente em `https://app.validaenota.com.br`
-- autenticação e dados de demonstração com mock local
-- tema com alternância entre modo `escuro` e `claro`
+- landing page publica em `https://validaenota.com.br`
+- pagina de precos em `https://validaenota.com.br/pricing`
+- area do cliente em `https://app.validaenota.com.br`
+- autenticacao e consumo da API real em producao
+- ambiente `staging` com dados de demonstracao via mock local
+- tema com alternancia entre modo `escuro` e `claro`
 - responsividade para desktop e mobile
 
 ## Stack
@@ -44,9 +45,9 @@ src/
 public/
 ```
 
-## Execução local
+## Execucao local
 
-Instale as dependências:
+Instale as dependencias:
 
 ```bash
 npm install
@@ -58,43 +59,43 @@ Inicie o ambiente local:
 npm run dev
 ```
 
-## Build de produção
+## Build de producao
 
 ```bash
 npm run build
 npm run preview
 ```
 
-## Variáveis de ambiente
+## Variaveis de ambiente
 
 Use o arquivo `.env.example` como base para o ambiente local.
 
 ```env
-VITE_USE_MOCK_API=true
-VITE_API_BASE_URL=http://localhost:8000
+VITE_USE_MOCK_API=false
+VITE_API_BASE_URL=https://api.validaenota.com.br
 ```
 
 ### Significado
 
 - `VITE_USE_MOCK_API=true`
-  Mantém a aplicação funcionando com dados mockados.
+  Mantem a aplicacao funcionando com dados mockados. Deve ser usado apenas no ambiente `staging`.
 
 - `VITE_USE_MOCK_API=false`
-  Faz o frontend consumir a API real usando `VITE_API_BASE_URL`.
+  Faz o frontend consumir a API real usando `VITE_API_BASE_URL`. Este deve ser o valor da `main`.
 
 - `VITE_API_BASE_URL`
   Define a URL base da API real quando o mock estiver desligado.
 
 ## Modo mock
 
-Enquanto a integração real não estiver ativa, o projeto pode ser testado com mock de:
+O mock continua disponivel para homologacao em `staging`, cobrindo:
 
-- autenticação
+- autenticacao
 - dashboard
-- histórico de validações
+- historico de validacoes
 - consumo
 - pagamentos
-- créditos
+- creditos
 - simulador
 
 ### Credenciais de teste
@@ -106,47 +107,52 @@ Demo@123
 
 ## Deploy no Vercel
 
-Configuração atual do projeto:
+Configuracao atual do projeto:
 
 - Framework Preset: `Vite`
 - Build Command: `npm run build`
 - Output Directory: `dist`
 - Install Command: `npm install`
 
-### Variáveis no Vercel
+### Variaveis no Vercel
 
-Para publicar com mocks ativos:
+#### Producao (`main`)
+
+```env
+VITE_USE_MOCK_API=false
+VITE_API_BASE_URL=https://api.validaenota.com.br
+```
+
+#### Staging (`staging`)
 
 ```env
 VITE_USE_MOCK_API=true
 VITE_API_BASE_URL=https://api.validaenota.com.br
 ```
 
-## Domínios
+No Vercel, configure a branch `staging` para gerar um ambiente separado e associe o dominio `staging.validaenota.com.br` a esse deploy.
+
+## Dominios
 
 - `validaenota.com.br`: landing page principal
 - `www.validaenota.com.br`: redirecionamento para `validaenota.com.br`
-- `app.validaenota.com.br`: área do cliente
-- `api.validaenota.com.br`: reservado para a API
+- `app.validaenota.com.br`: area do cliente
+- `api.validaenota.com.br`: backend publicado no Railway
+- `staging.validaenota.com.br`: frontend de homologacao no Vercel usando mock
 
-## Identidade visual atual
+## Fluxo recomendado
 
-- favicon configurado com `public/validaenota.png`
-- rodapé padronizado nas páginas públicas e na área autenticada
-- tema padrão em modo escuro
-- modo claro persistido quando o usuário selecionar manualmente
+Para manter os ambientes separados:
 
-## Próximo passo de integração
+1. manter `main` publicada no Vercel com `VITE_USE_MOCK_API=false`
+2. criar e publicar a branch `staging` a partir da `main`
+3. definir `VITE_USE_MOCK_API=true` apenas na branch `staging`
+4. manter `VITE_API_BASE_URL=https://api.validaenota.com.br` para producao e futuras validacoes reais
+5. apontar `staging.validaenota.com.br` para o projeto no Vercel
 
-Quando a API real estiver pronta:
+## Infra atual
 
-1. manter o frontend no Vercel
-2. alterar `VITE_USE_MOCK_API` para `false`
-3. manter `VITE_API_BASE_URL=https://api.validaenota.com.br`
-4. conectar o backend e o banco PostgreSQL
+O frontend nao utiliza Docker no deploy.
 
-## Observação sobre Docker
-
-O projeto não utiliza Docker no fluxo atual.
-
-Como o frontend é publicado no Vercel como aplicação estática do Vite, a estrutura foi simplificada para esse modelo de deploy.
+O backend roda em container com PostgreSQL no ambiente de aplicacao e esta publicado no Railway.
+Como o frontend e publicado no Vercel como aplicacao estatica do Vite, a separacao entre producao e staging deve ser feita por branch, variaveis de ambiente e dominio.
