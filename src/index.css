@@ -109,6 +109,7 @@ input, select, textarea { font-family: inherit; }
 .app-desktop-only { display: block !important; }
 
 .app-shell {
+  display: flex;
   align-items: stretch;
   min-height: 100vh;
   overflow: visible;
@@ -120,6 +121,8 @@ input, select, textarea { font-family: inherit; }
 }
 
 .app-workspace {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   min-height: 100vh;
   overflow: visible;
@@ -130,6 +133,11 @@ input, select, textarea { font-family: inherit; }
   width: 100%;
   overflow: visible;
   flex: 1 0 auto;
+  padding-bottom: 32px;
+}
+
+.app-workspace > footer {
+  flex-shrink: 0;
 }
 
 .app-content-stack {
@@ -502,6 +510,20 @@ input, select, textarea { font-family: inherit; }
   .card-header-responsive { align-items: stretch !important; }
   .card-header-responsive > button:last-child { width: 100%; }
   th, td { padding-left: 12px !important; padding-right: 12px !important; }
+}
+
+@media (min-width: 901px) {
+  .app-shell {
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .app-workspace {
+    min-height: 0;
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
 }
 
 @media (max-width: 640px) {

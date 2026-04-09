@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { formatDistanceToNow, parseISO } from 'date-fns'
+import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
@@ -21,12 +21,12 @@ import {
 } from '@/components/ui'
 
 const FAIXAS = [
-  { label: '1-500', preco: 0.22, pct: 100 },
-  { label: '501-2.000', preco: 0.18, pct: 82 },
-  { label: '2.001-5.000', preco: 0.16, pct: 73 },
-  { label: '5.001-10.000', preco: 0.15, pct: 68 },
-  { label: '10.001-30.000', preco: 0.13, pct: 59 },
-  { label: '30.001-50.000', preco: 0.12, pct: 55 },
+  { label: '1–500', preco: 0.22, pct: 100 },
+  { label: '501–2.000', preco: 0.18, pct: 82 },
+  { label: '2.001–5.000', preco: 0.16, pct: 73 },
+  { label: '5.001–10.000', preco: 0.15, pct: 68 },
+  { label: '10.001–30.000', preco: 0.13, pct: 59 },
+  { label: '30.001–50.000', preco: 0.12, pct: 55 },
   { label: '50.001+', preco: 0.11, pct: 50 },
 ]
 
@@ -34,7 +34,7 @@ function fmt(val: string | number) {
   return Number(val).toLocaleString('pt-BR', { minimumFractionDigits: 2 })
 }
 
-function SummaryValueCard({
+function KpiCard({
   label,
   value,
   note,
@@ -48,21 +48,34 @@ function SummaryValueCard({
   featured?: boolean
 }) {
   return (
-    <Card className={`app-kpi-card ${featured ? 'app-kpi-card-featured' : ''}`}>
-      <div className={featured ? 'p-7' : 'p-6'}>
-        <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--text-dim)] mb-4">
+    <Card className={`app-kpi-card${featured ? ' app-kpi-card-featured' : ''}`}>
+      <div style={{ padding: featured ? '28px' : '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div style={{
+          fontSize: '10px',
+          fontWeight: 700,
+          textTransform: 'uppercase',
+          letterSpacing: '0.16em',
+          color: 'var(--text-dim)',
+        }}>
           {label}
         </div>
-        <div
-          className={featured ? 'font-mono text-[36px] font-semibold leading-none mb-4' : 'font-mono text-[30px] font-semibold leading-none mb-4'}
-          style={{ color: tone }}
-        >
+        <div style={{
+          fontFamily: 'var(--mono)',
+          fontSize: featured ? '34px' : '28px',
+          fontWeight: 600,
+          lineHeight: 1,
+          letterSpacing: '-0.02em',
+          color: tone,
+        }}>
           {value}
         </div>
-        <div
-          className="rounded-[18px] border px-4 py-3 text-sm leading-relaxed text-[var(--text-muted)]"
-          style={{ borderColor: 'var(--border)', background: 'color-mix(in srgb, var(--surface-2) 86%, transparent)' }}
-        >
+        <div style={{
+          fontSize: '12px',
+          color: 'var(--text-muted)',
+          lineHeight: 1.6,
+          paddingTop: '4px',
+          borderTop: '1px solid var(--border)',
+        }}>
           {note}
         </div>
       </div>
@@ -99,62 +112,128 @@ export function DashboardPage() {
     ? Math.ceil((new Date(saldo.expira_em).getTime() - Date.now()) / 86_400_000)
     : null
 
-  return (
-    <div className="space-y-10">
-      <section
-        className="dashboard-summary-hero rounded-[24px] border relative overflow-hidden"
-        style={{ boxShadow: 'var(--shadow)' }}
-      >
-        <div
-          className="absolute -top-12 -right-12 w-56 h-56 rounded-full"
-          style={{ background: 'var(--dashboard-hero-orb)' }}
-        />
-        <div
-          className="absolute bottom-0 left-0 right-0 h-px"
-          style={{ background: 'var(--dashboard-hero-line)' }}
-        />
+  const kpis = [
+    {
+      label: 'Consultas hoje',
+      value: loading ? null : (resumo?.consultas_hoje ?? '-'),
+      note: `R$ ${fmt(resumo?.gasto_hoje ?? '0')} consumidos hoje`,
+      tone: 'var(--accent)',
+      featured: true,
+    },
+    {
+      label: 'Consultas no período',
+      value: loading ? null : (resumo?.consultas_periodo ?? 0).toLocaleString('pt-BR'),
+      note: `R$ ${fmt(resumo?.gasto_periodo ?? '0')} debitados no período`,
+      tone: 'var(--info)',
+      featured: true,
+    },
+    {
+      label: 'Saldo utilizado',
+      value: loading ? null : `R$ ${fmt(usado)}`,
+      note: `de R$ ${fmt(valorInicial)} disponíveis`,
+      tone: 'var(--warn)',
+      featured: false,
+    },
+    {
+      label: 'Status do saldo',
+      value: loading ? null : (saldo?.status ?? '-'),
+      note: diasRestantes !== null ? `${diasRestantes} dias restantes` : 'Sem saldo ativo',
+      tone: saldo?.status === 'ATIVO' ? 'var(--accent)' : 'var(--danger)',
+      featured: false,
+    },
+  ]
 
-        <div className="p-9 space-y-9 relative z-10">
-          <div className="flex items-start justify-between gap-6 dashboard-hero-top">
-            <div className="space-y-5">
-              <div className="text-[11px] font-bold uppercase tracking-[0.22em] dashboard-summary-kicker">
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
+
+      {/* ── Hero financeiro ── */}
+      <section
+        className="dashboard-summary-hero"
+        style={{
+          borderRadius: '24px',
+          border: '1px solid var(--dashboard-hero-border)',
+          position: 'relative',
+          overflow: 'hidden',
+          boxShadow: 'var(--shadow)',
+        }}
+      >
+        <div style={{
+          position: 'absolute', top: '-56px', right: '-56px',
+          width: '240px', height: '240px', borderRadius: '50%',
+          background: 'var(--dashboard-hero-orb)', pointerEvents: 'none',
+        }} />
+        <div style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0, height: '1px',
+          background: 'var(--dashboard-hero-line)', pointerEvents: 'none',
+        }} />
+
+        <div style={{ position: 'relative', zIndex: 1, padding: '40px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
+
+          {/* Valor + painel lateral */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '32px' }} className="dashboard-hero-top">
+
+            {/* Esquerda: saldo */}
+            <div style={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{
+                fontSize: '10px', fontWeight: 700, textTransform: 'uppercase',
+                letterSpacing: '0.22em',
+              }} className="dashboard-summary-kicker">
                 Resumo financeiro
               </div>
+
               {loading ? (
                 <Skeleton className="w-52 h-11" />
               ) : (
-                <div className="font-mono text-[44px] font-semibold leading-none dashboard-summary-value">
-                  <span className="text-xl dashboard-summary-currency mr-2">R$</span>
-                  {fmt(saldo?.saldo_disponivel ?? '0')}
+                <div style={{ fontFamily: 'var(--mono)', lineHeight: 1, letterSpacing: '-0.03em' }} className="dashboard-summary-value">
+                  <span style={{ fontSize: '20px', marginRight: '6px', opacity: 0.65 }} className="dashboard-summary-currency">R$</span>
+                  <span style={{ fontSize: '52px', fontWeight: 600 }}>{fmt(saldo?.saldo_disponivel ?? '0')}</span>
                 </div>
               )}
-              <p className="text-[15px] dashboard-summary-copy max-w-[46ch] leading-8">
+
+              <p style={{ fontSize: '14px', lineHeight: 1.75, maxWidth: '46ch' }} className="dashboard-summary-copy">
                 Acompanhe o saldo disponível, o consumo do período e a proximidade de expiração dos créditos.
               </p>
             </div>
 
-            <div
-              className="dashboard-summary-panel rounded-[22px] border p-6 min-w-[320px]"
-            >
-              <div className="text-[10px] font-bold uppercase tracking-[0.18em] dashboard-summary-panel-label mb-4">
+            {/* Direita: situação */}
+            <div className="dashboard-summary-panel" style={{
+              borderRadius: '20px',
+              border: '1px solid',
+              padding: '24px',
+              minWidth: '268px',
+              flexShrink: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0',
+            }}>
+              <div style={{
+                fontSize: '10px', fontWeight: 700, textTransform: 'uppercase',
+                letterSpacing: '0.18em', marginBottom: '10px',
+              }} className="dashboard-summary-panel-label">
                 Situação atual
               </div>
-              <div className="text-base font-semibold dashboard-summary-panel-value mb-3">
+              <div style={{ fontSize: '16px', fontWeight: 600, marginBottom: '6px' }} className="dashboard-summary-panel-value">
                 {resumo?.saldo_status ?? 'Sem saldo'}
               </div>
-              <div className="text-sm dashboard-summary-panel-copy leading-7">
+              <div style={{ fontSize: '13px', lineHeight: 1.6, marginBottom: '20px' }} className="dashboard-summary-panel-copy">
                 {resumo?.saldo_expira_em
                   ? `Créditos válidos até ${new Date(resumo.saldo_expira_em).toLocaleDateString('pt-BR')}`
                   : 'Sem expiração ativa no momento.'}
               </div>
-              <div className="grid grid-cols-2 gap-5 mt-6">
-                <div className="dashboard-summary-stat rounded-2xl border p-5">
-                  <div className="text-[10px] uppercase tracking-[0.14em] dashboard-summary-stat-label mb-2">Consultas</div>
-                  <div className="font-mono text-base font-semibold dashboard-summary-stat-value">{(saldo?.consultas_no_periodo ?? 0).toLocaleString('pt-BR')}</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div className="dashboard-summary-stat" style={{ borderRadius: '14px', border: '1px solid', padding: '14px 16px' }}>
+                  <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.13em', marginBottom: '6px' }} className="dashboard-summary-stat-label">
+                    Consultas
+                  </div>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: '14px', fontWeight: 600 }} className="dashboard-summary-stat-value">
+                    {(saldo?.consultas_no_periodo ?? 0).toLocaleString('pt-BR')}
+                  </div>
                 </div>
-                <div className="dashboard-summary-stat rounded-2xl border p-5">
-                  <div className="text-[10px] uppercase tracking-[0.14em] dashboard-summary-stat-label mb-2">Expiração</div>
-                  <div className="font-mono text-base font-semibold dashboard-summary-stat-value">
+                <div className="dashboard-summary-stat" style={{ borderRadius: '14px', border: '1px solid', padding: '14px 16px' }}>
+                  <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.13em', marginBottom: '6px' }} className="dashboard-summary-stat-label">
+                    Expiração
+                  </div>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: '14px', fontWeight: 600 }} className="dashboard-summary-stat-value">
                     {diasRestantes !== null ? `${diasRestantes} dias` : '-'}
                   </div>
                 </div>
@@ -162,123 +241,124 @@ export function DashboardPage() {
             </div>
           </div>
 
+          {/* Barra de progresso */}
           <div>
-            <div className="h-2 rounded-full dashboard-summary-track overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-1000"
-                style={{
-                  width: `${pct}%`,
-                  background: 'var(--dashboard-hero-progress)',
-                }}
-              />
+            <div style={{ height: '6px', borderRadius: '999px', overflow: 'hidden' }} className="dashboard-summary-track">
+              <div style={{
+                height: '100%', borderRadius: '999px',
+                width: `${pct}%`,
+                background: 'var(--dashboard-hero-progress)',
+                transition: 'width 1.2s cubic-bezier(0.4,0,0.2,1)',
+              }} />
             </div>
-            <div className="flex justify-between mt-4 text-sm dashboard-summary-meta dashboard-hero-meta" style={{ gap: '18px' }}>
-              <span>{pct}% do saldo atual comprometido</span>
+            <div style={{
+              display: 'flex', justifyContent: 'space-between',
+              marginTop: '12px', fontSize: '12px', gap: '16px',
+            }} className="dashboard-summary-meta dashboard-hero-meta">
+              <span>{pct}% do saldo comprometido</span>
               <span>{(saldo?.consultas_no_periodo ?? 0).toLocaleString('pt-BR')} consultas no período</span>
             </div>
           </div>
         </div>
       </section>
 
-      <div
-        className="grid grid-cols-4 gap-4 dashboard-kpis"
-        style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px' }}
-      >
-        {[
-          {
-            label: 'Consultas hoje',
-            value: resumo?.consultas_hoje ?? '-',
-            sub: `R$ ${fmt(resumo?.gasto_hoje ?? '0')} consumidos hoje`,
-            color: 'var(--accent)',
-            featured: true,
-          },
-          {
-            label: 'Consultas no período',
-            value: (resumo?.consultas_periodo ?? 0).toLocaleString('pt-BR'),
-            sub: `R$ ${fmt(resumo?.gasto_periodo ?? '0')} debitados no período`,
-            color: 'var(--info)',
-            featured: true,
-          },
-          {
-            label: 'Saldo utilizado',
-            value: `R$ ${fmt(usado)}`,
-            sub: `de R$ ${fmt(valorInicial)} monitorados`,
-            color: 'var(--warn)',
-            featured: false,
-          },
-          {
-            label: 'Status do saldo',
-            value: saldo?.status ?? '-',
-            sub: diasRestantes !== null ? `${diasRestantes} dias restantes` : 'Sem saldo ativo',
-            color: saldo?.status === 'ATIVO' ? 'var(--accent)' : 'var(--danger)',
-            featured: false,
-          },
-        ].map((k) =>
+      {/* ── KPIs ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }} className="dashboard-kpis">
+        {kpis.map((k) =>
           loading ? (
             <Card key={k.label} className="app-kpi-card">
-              <div className="p-6">
-                <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--text-dim)] mb-4">
-                  {k.label}
-                </div>
-                <Skeleton className="w-24 h-7 mb-4" />
-                <Skeleton className="h-10 w-full" />
+              <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <Skeleton className="h-3 w-28" />
+                <Skeleton className="h-8 w-20" />
+                <Skeleton className="h-3 w-full" />
               </div>
             </Card>
           ) : (
-            <SummaryValueCard
+            <KpiCard
               key={k.label}
               label={k.label}
               value={k.value}
-              note={k.sub}
-              tone={k.color}
+              note={k.note}
+              tone={k.tone}
               featured={k.featured}
             />
           )
         )}
       </div>
 
-      <div
-        className="grid grid-cols-2 gap-4 dashboard-bottom-grid"
-        style={{ display: 'grid', gridTemplateColumns: '1.08fr 1.4fr', gap: '28px' }}
-      >
+      {/* ── Faixas + Últimas auditorias ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: '28px' }} className="dashboard-bottom-grid">
+
+        {/* Tabela de faixas */}
         <Card className="app-dashboard-panel">
           <CardHeader>
             <CardTitle>Tabela de preços por faixa</CardTitle>
-            <span className="text-xs text-[var(--text-muted)]">Base de cálculo do simulador</span>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Base de cálculo do simulador</span>
           </CardHeader>
-          <div className="p-7 space-y-6">
+          <div style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {FAIXAS.map((f) => (
-              <div key={f.label} className="space-y-2.5">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="font-mono text-[11px] text-[var(--text-dim)]">{f.label}</span>
-                  <span className="font-mono text-xs font-semibold text-[var(--text)]">R$ {f.preco.toFixed(2)}</span>
+              <div key={f.label} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: '11px', color: 'var(--text-muted)' }}>{f.label}</span>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: '12px', fontWeight: 600, color: 'var(--text)' }}>
+                    R$ {f.preco.toFixed(2)}
+                  </span>
                 </div>
-                <div className="h-2 rounded-full bg-[var(--surface-2)] overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-[var(--accent)]"
-                    style={{ width: `${f.pct}%`, opacity: 0.55 + f.pct / 220 }}
-                  />
+                <div style={{ height: '5px', borderRadius: '999px', background: 'var(--surface-2)', overflow: 'hidden' }}>
+                  <div style={{
+                    height: '100%', borderRadius: '999px',
+                    width: `${f.pct}%`,
+                    background: 'var(--accent)',
+                    opacity: 0.4 + f.pct / 180,
+                  }} />
                 </div>
               </div>
             ))}
           </div>
         </Card>
 
+        {/* Últimas auditorias */}
         <Card className="app-dashboard-panel">
           <CardHeader>
-            <div className="space-y-2">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <CardTitle>Últimas auditorias</CardTitle>
-              <div className="text-xs text-[var(--text-muted)] leading-6">Acompanhe as consultas fiscais mais recentes</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Consultas fiscais mais recentes</div>
             </div>
-            <Button
+            <button
               type="button"
-              variant="soft"
-              size="sm"
-              icon={<ArrowRight size={13} />}
               onClick={() => navigate('/app/auditoria')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 16px',
+                borderRadius: '999px',
+                border: '1px solid var(--accent-glow)',
+                background: 'var(--accent-dim)',
+                color: 'var(--accent)',
+                fontFamily: 'var(--sans)',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                letterSpacing: '0.01em',
+                transition: 'border-color 0.15s, box-shadow 0.15s, transform 0.1s',
+                whiteSpace: 'nowrap',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.borderColor = 'var(--accent)'
+                e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-dim)'
+                e.currentTarget.style.transform = 'translateY(-1px)'
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = 'var(--accent-glow)'
+                e.currentTarget.style.boxShadow = 'none'
+                e.currentTarget.style.transform = 'translateY(0)'
+              }}
+              onMouseDown={e => { e.currentTarget.style.transform = 'translateY(0)' }}
             >
               Ver todas
-            </Button>
+              <ArrowRight size={13} />
+            </button>
           </CardHeader>
 
           <div className="app-data-desktop app-table-shell">
@@ -288,7 +368,7 @@ export function DashboardPage() {
                   <Th>Chave NF</Th>
                   <Th>Modelo</Th>
                   <Th>Status</Th>
-                  <Th>Quando</Th>
+                  <Th>Data</Th>
                 </tr>
               </thead>
               <tbody>
@@ -308,14 +388,17 @@ export function DashboardPage() {
                     <TrHover key={v.id}>
                       <Td><ChaveNF chave={v.chave_nf} /></Td>
                       <Td>
-                        <span className={`text-xs font-mono font-semibold ${v.modelo === '55' ? 'text-[var(--info)]' : 'text-[var(--accent)]'}`}>
+                        <span style={{
+                          fontSize: '11px', fontFamily: 'var(--mono)', fontWeight: 600,
+                          color: v.modelo === '55' ? 'var(--info)' : 'var(--accent)',
+                        }}>
                           NF-{v.modelo === '55' ? 'e' : 'Ce'}
                         </span>
                       </Td>
                       <Td><Badge status={v.status} /></Td>
                       <Td>
-                        <span className="text-xs">
-                          {formatDistanceToNow(parseISO(v.criado_em), { addSuffix: true, locale: ptBR })}
+                        <span style={{ fontSize: '12px', fontFamily: 'var(--mono)', color: 'var(--text-muted)' }}>
+                          {format(parseISO(v.criado_em), 'dd/MM/yyyy', { locale: ptBR })}
                         </span>
                       </Td>
                     </TrHover>
@@ -325,12 +408,12 @@ export function DashboardPage() {
             </Table>
           </div>
 
-          <div className="app-data-mobile p-4">
-            <div className="app-mobile-card-list">
+          <div className="app-data-mobile" style={{ padding: '16px' }}>
+            <div style={{ display: 'grid', gap: '10px' }}>
               {loading ? (
                 Array.from({ length: 3 }).map((_, i) => (
                   <Card key={i}>
-                    <div className="p-4 space-y-3">
+                    <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       <Skeleton className="h-4 w-24" />
                       <Skeleton className="h-4 w-full" />
                       <Skeleton className="h-4 w-3/5" />
@@ -342,26 +425,26 @@ export function DashboardPage() {
               ) : (
                 ultimas.map((v) => (
                   <Card key={v.id}>
-                    <div className="p-4 space-y-3">
-                      <div className="flex items-start justify-between gap-3">
+                    <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
                         <div>
-                          <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-dim)] mb-1">
+                          <div style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-dim)', marginBottom: '4px' }}>
                             Chave NF
                           </div>
                           <ChaveNF chave={v.chave_nf} />
                         </div>
                         <Badge status={v.status} />
                       </div>
-                      <div className="flex items-center justify-between gap-3 py-2 border-t border-[var(--border)]">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-dim)]">Modelo</span>
-                        <span className={`text-xs font-mono font-semibold ${v.modelo === '55' ? 'text-[var(--info)]' : 'text-[var(--accent)]'}`}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', paddingTop: '8px', borderTop: '1px solid var(--border)' }}>
+                        <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-dim)' }}>Modelo</span>
+                        <span style={{ fontSize: '11px', fontFamily: 'var(--mono)', fontWeight: 600, color: v.modelo === '55' ? 'var(--info)' : 'var(--accent)' }}>
                           NF-{v.modelo === '55' ? 'e' : 'Ce'}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-dim)]">Quando</span>
-                        <span className="text-xs text-[var(--text-muted)]">
-                          {formatDistanceToNow(parseISO(v.criado_em), { addSuffix: true, locale: ptBR })}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                        <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-dim)' }}>Data</span>
+                        <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                          {format(parseISO(v.criado_em), 'dd/MM/yyyy', { locale: ptBR })}
                         </span>
                       </div>
                     </div>
