@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { format, formatDistanceToNow, parseISO, startOfDay, subDays } from 'date-fns'
+import { format, parseISO, startOfDay, subDays } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Banknote, Copy, Download, ExternalLink, Landmark, Sparkles } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -16,6 +16,7 @@ import {
   Input,
   Select,
   Skeleton,
+  Spinner,
   Table,
   Td,
   Th,
@@ -26,11 +27,11 @@ type PeriodoFiltro = 'all' | 'today' | '7d' | '30d' | 'custom'
 
 function fmtDate(iso: string | null) {
   if (!iso) return '-'
-  return format(parseISO(iso), 'dd/MM/yy HH:mm', { locale: ptBR })
+  return format(parseISO(iso), 'dd/MM/yyyy', { locale: ptBR })
 }
 
 function fmtAgo(iso: string) {
-  return formatDistanceToNow(parseISO(iso), { addSuffix: true, locale: ptBR })
+  return format(parseISO(iso), 'dd/MM/yyyy', { locale: ptBR })
 }
 
 function toInputDate(value: Date) {
@@ -132,17 +133,40 @@ function MetricCard({
   tone?: string
 }) {
   return (
-    <Card className="app-kpi-card">
-      <div className="p-5">
-        <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--text-dim)] mb-2">
+    <div className="app-kpi-card" style={{
+      background: 'var(--surface)',
+      border: '1px solid var(--border)',
+      borderRadius: '20px',
+      overflow: 'hidden',
+      position: 'relative',
+      boxShadow: '0 16px 40px rgba(0,0,0,0.10)',
+    }}>
+      {/* Accent bar */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0,
+        height: '3px',
+        background: `linear-gradient(90deg, ${tone}, color-mix(in srgb, ${tone} 30%, transparent))`,
+      }} />
+      <div style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div style={{
+          fontSize: '10px', fontWeight: 800, letterSpacing: '0.16em',
+          textTransform: 'uppercase', color: 'var(--text-dim)',
+        }}>
           {label}
         </div>
-        <div className="font-mono text-[26px] font-semibold leading-none mb-2" style={{ color: tone }}>
+        <div style={{
+          fontFamily: 'var(--mono)', fontSize: '32px', fontWeight: 700,
+          lineHeight: 1, color: tone, letterSpacing: '-0.02em',
+        }}>
           {value}
         </div>
-        {note && <div className="text-xs text-[var(--text-muted)] leading-relaxed">{note}</div>}
+        {note && (
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.65 }}>
+            {note}
+          </div>
+        )}
       </div>
-    </Card>
+    </div>
   )
 }
 
@@ -285,12 +309,13 @@ export function ValidacoesPage() {
     toast.success('CSV de auditoria exportado.')
   }
 
+  const exportDisabled = filteredItems.length === 0 || loading
+
   return (
-    <div className="space-y-4">
-      <div
-        className="grid grid-cols-3 gap-4 management-grid-3"
-        style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}
-      >
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+
+      {/* KPIs */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
         <MetricCard
           label="Consultas filtradas"
           value={filteredItems.length.toLocaleString('pt-BR')}
@@ -311,120 +336,177 @@ export function ValidacoesPage() {
         />
       </div>
 
-      <Card>
-      <CardHeader className="card-header-responsive">
-        <div>
-          <CardTitle>Histórico de auditoria fiscal</CardTitle>
-          <div className="text-xs text-[var(--text-muted)] mt-1">Filtre por status, período e exporte o resultado atual.</div>
-        </div>
-        <Button
-          variant="ghost"
-          icon={<Download size={14} />}
-          onClick={handleExport}
-          disabled={filteredItems.length === 0 || loading}
-          className="min-w-[152px]"
-        >
-          Exportar CSV
-        </Button>
-      </CardHeader>
+      {/* Card principal */}
+      <div style={{
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
+        borderRadius: '24px',
+        overflow: 'hidden',
+        boxShadow: '0 16px 40px rgba(0,0,0,0.10)',
+      }}>
+        {/* Header */}
+        <div style={{
+          display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between',
+          gap: '16px', padding: '24px 28px',
+          borderBottom: '1px solid var(--border)',
+          flexWrap: 'wrap',
+        }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
+            <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+              Histórico de auditoria fiscal
+            </div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.55 }}>
+              Filtre por status, período e exporte o resultado atual.
+            </div>
+          </div>
 
-      <div className="app-filter-panel space-y-3">
-        <div className="grid gap-3 app-filter-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
-          <Select label="Status" value={status} onChange={(e) => setStatus(e.target.value)}>
-            <option value="">Todos os status</option>
-            {['AUTORIZADA', 'CANCELADA', 'DENEGADA', 'PENDENTE', 'PROCESSANDO', 'ERRO', 'CACHE_HIT'].map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </Select>
-          <DateFilters periodo={periodo} onPeriodoChange={setPeriodo} inicio={inicio} onInicioChange={setInicio} fim={fim} onFimChange={setFim} />
+          {/* Botão Exportar CSV */}
+          <button
+            type="button"
+            onClick={handleExport}
+            disabled={exportDisabled}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '8px',
+              padding: '11px 20px', borderRadius: '14px',
+              border: '1px solid var(--border)',
+              background: exportDisabled
+                ? 'color-mix(in srgb, var(--surface-2) 70%, transparent)'
+                : 'color-mix(in srgb, var(--surface-2) 92%, transparent)',
+              color: exportDisabled ? 'var(--text-dim)' : 'var(--text)',
+              fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 700,
+              cursor: exportDisabled ? 'not-allowed' : 'pointer',
+              opacity: exportDisabled ? 0.55 : 1,
+              transition: 'border-color 0.15s, box-shadow 0.15s, transform 0.1s',
+              whiteSpace: 'nowrap', flexShrink: 0,
+            }}
+            onMouseEnter={e => {
+              if (!exportDisabled) {
+                e.currentTarget.style.borderColor = 'var(--border-bright)'
+                e.currentTarget.style.transform = 'translateY(-1px)'
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.10)'
+              }
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.borderColor = 'var(--border)'
+              e.currentTarget.style.transform = 'translateY(0)'
+              e.currentTarget.style.boxShadow = 'none'
+            }}
+            onMouseDown={e => { e.currentTarget.style.transform = 'translateY(0)' }}
+          >
+            <Download size={14} />
+            Exportar CSV
+          </button>
         </div>
-      </div>
 
-      <div className="app-data-desktop app-table-shell">
-        <Table>
-          <thead>
-            <tr>
-              <Th>Chave NF-e</Th>
-              <Th>Modelo</Th>
-              <Th>CNPJ emitente</Th>
-              <Th>Status</Th>
-              <Th>Custo</Th>
-              <Th>Cache</Th>
-              <Th>Data</Th>
-              <Th>Processado</Th>
-            </tr>
-          </thead>
-          <tbody>
+        {/* Filtros */}
+        <div className="app-filter-panel">
+          <div className="app-filter-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+            <Select label="Status" value={status} onChange={(e) => setStatus(e.target.value)}>
+              <option value="">Todos os status</option>
+              {['AUTORIZADA', 'CANCELADA', 'DENEGADA', 'PENDENTE', 'PROCESSANDO', 'ERRO', 'CACHE_HIT'].map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </Select>
+            <DateFilters periodo={periodo} onPeriodoChange={setPeriodo} inicio={inicio} onInicioChange={setInicio} fim={fim} onFimChange={setFim} />
+          </div>
+        </div>
+
+        {/* Tabela desktop */}
+        <div className="app-data-desktop app-table-shell">
+          <Table>
+            <thead>
+              <tr>
+                <Th>Chave NF-e</Th>
+                <Th>Modelo</Th>
+                <Th>CNPJ emitente</Th>
+                <Th>Status</Th>
+                <Th>Custo</Th>
+                <Th>Cache</Th>
+                <Th>Data</Th>
+                <Th>Processado</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                Array.from({ length: 6 }).map((_, i) => (
+                  <TrHover key={i}>
+                    {Array.from({ length: 8 }).map((__, j) => (
+                      <Td key={j}><Skeleton className="h-4 w-full" /></Td>
+                    ))}
+                  </TrHover>
+                ))
+              ) : filteredItems.length === 0 ? (
+                <tr><td colSpan={8}><Empty message="Nenhuma auditoria encontrada para os filtros selecionados" /></td></tr>
+              ) : (
+                pageItems.map((v) => (
+                  <TrHover key={v.id}>
+                    <Td><ChaveNF chave={v.chave_nf} /></Td>
+                    <Td>
+                      <span style={{
+                        fontFamily: 'var(--mono)', fontSize: '12px', fontWeight: 700,
+                        color: v.modelo === '55' ? 'var(--info)' : 'var(--accent)',
+                      }}>
+                        NF-{v.modelo === '55' ? 'e' : 'Ce'}
+                      </span>
+                    </Td>
+                    <Td mono>{v.cnpj_emitente}</Td>
+                    <Td><Badge status={v.status} /></Td>
+                    <Td><span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>{v.custo_consulta ? `R$ ${Number(v.custo_consulta).toFixed(4)}` : '-'}</span></Td>
+                    <Td>{v.cache_hit ? <Badge status="CACHE_HIT" label="Sim" /> : <span style={{ color: 'var(--text-dim)', fontSize: '12px' }}>-</span>}</Td>
+                    <Td><span style={{ fontSize: '12px' }}>{fmtAgo(v.criado_em)}</span></Td>
+                    <Td><span style={{ fontSize: '12px' }}>{fmtDate(v.processado_em)}</span></Td>
+                  </TrHover>
+                ))
+              )}
+            </tbody>
+          </Table>
+          <Pagination
+            page={safePage}
+            totalPages={totalPages}
+            totalItems={filteredItems.length}
+            label="Auditoria"
+            onPageChange={setPage}
+          />
+        </div>
+
+        {/* Cards mobile */}
+        <div className="app-data-mobile" style={{ padding: '16px' }}>
+          <div className="app-mobile-card-list">
             {loading ? (
-              Array.from({ length: 6 }).map((_, i) => (
-                <TrHover key={i}>
-                  {Array.from({ length: 8 }).map((__, j) => (
-                    <Td key={j}><Skeleton className="h-4 w-full" /></Td>
-                  ))}
-                </TrHover>
-              ))
+              <MobileSkeletonCards />
             ) : filteredItems.length === 0 ? (
-              <tr><td colSpan={8}><Empty message="Nenhuma auditoria encontrada para os filtros selecionados" /></td></tr>
+              <Empty message="Nenhuma auditoria encontrada para os filtros selecionados" />
             ) : (
               pageItems.map((v) => (
-                <TrHover key={v.id}>
-                  <Td><ChaveNF chave={v.chave_nf} /></Td>
-                  <Td>
-                    <span className={`font-mono text-xs font-semibold ${v.modelo === '55' ? 'text-[var(--info)]' : 'text-[var(--accent)]'}`}>
-                      NF-{v.modelo === '55' ? 'e' : 'Ce'}
-                    </span>
-                  </Td>
-                  <Td mono>{v.cnpj_emitente}</Td>
-                  <Td><Badge status={v.status} /></Td>
-                  <Td><span className="font-mono text-xs">{v.custo_consulta ? `R$ ${Number(v.custo_consulta).toFixed(4)}` : '-'}</span></Td>
-                  <Td>{v.cache_hit ? <Badge status="CACHE_HIT" label="Sim" /> : <span className="text-[var(--text-dim)] text-xs">-</span>}</Td>
-                  <Td><span className="text-xs">{fmtAgo(v.criado_em)}</span></Td>
-                  <Td><span className="text-xs">{fmtDate(v.processado_em)}</span></Td>
-                </TrHover>
-              ))
-            )}
-          </tbody>
-        </Table>
-        <Pagination
-          page={safePage}
-          totalPages={totalPages}
-          totalItems={filteredItems.length}
-          label="Auditoria"
-          onPageChange={setPage}
-        />
-      </div>
-
-      <div className="app-data-mobile p-4">
-        <div className="app-mobile-card-list">
-          {loading ? (
-            <MobileSkeletonCards />
-          ) : filteredItems.length === 0 ? (
-            <Empty message="Nenhuma auditoria encontrada para os filtros selecionados" />
-          ) : (
-            pageItems.map((v) => (
-              <Card key={v.id}>
-                <div className="p-4">
-                  <div className="flex items-start justify-between gap-3 mb-2">
-                    <div>
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-dim)] mb-1">Chave NF-e</div>
+                <div key={v.id} style={{
+                  background: 'var(--surface)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '16px',
+                  padding: '18px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <div style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-dim)' }}>Chave NF-e</div>
                       <ChaveNF chave={v.chave_nf} />
                     </div>
                     <Badge status={v.status} />
                   </div>
-                  <MobileField label="Modelo" value={<span className={`font-mono text-xs font-semibold ${v.modelo === '55' ? 'text-[var(--info)]' : 'text-[var(--accent)]'}`}>NF-{v.modelo === '55' ? 'e' : 'Ce'}</span>} />
-                  <MobileField label="CNPJ emitente" value={<span className="font-mono text-xs">{v.cnpj_emitente}</span>} />
-                  <MobileField label="Custo" value={<span className="font-mono text-xs">{v.custo_consulta ? `R$ ${Number(v.custo_consulta).toFixed(4)}` : '-'}</span>} />
-                  <MobileField label="Cache" value={v.cache_hit ? <Badge status="CACHE_HIT" label="Sim" /> : <span className="text-xs text-[var(--text-dim)]">Não</span>} />
-                  <MobileField label="Criado" value={<span className="text-xs">{fmtAgo(v.criado_em)}</span>} />
-                  <MobileField label="Processado" value={<span className="text-xs">{fmtDate(v.processado_em)}</span>} />
+                  <MobileField label="Modelo" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px', fontWeight: 700, color: v.modelo === '55' ? 'var(--info)' : 'var(--accent)' }}>NF-{v.modelo === '55' ? 'e' : 'Ce'}</span>} />
+                  <MobileField label="CNPJ emitente" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>{v.cnpj_emitente}</span>} />
+                  <MobileField label="Custo" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>{v.custo_consulta ? `R$ ${Number(v.custo_consulta).toFixed(4)}` : '-'}</span>} />
+                  <MobileField label="Cache" value={v.cache_hit ? <Badge status="CACHE_HIT" label="Sim" /> : <span style={{ fontSize: '12px', color: 'var(--text-dim)' }}>Não</span>} />
+                  <MobileField label="Criado" value={<span style={{ fontSize: '12px' }}>{fmtAgo(v.criado_em)}</span>} />
+                  <MobileField label="Processado" value={<span style={{ fontSize: '12px' }}>{fmtDate(v.processado_em)}</span>} />
                 </div>
-              </Card>
-            ))
-          )}
+              ))
+            )}
+          </div>
+          <Pagination page={safePage} totalPages={totalPages} totalItems={filteredItems.length} label="Auditoria" onPageChange={setPage} />
         </div>
-        <Pagination page={safePage} totalPages={totalPages} totalItems={filteredItems.length} label="Auditoria" onPageChange={setPage} />
       </div>
-    </Card>
     </div>
   )
 }
@@ -481,12 +563,13 @@ export function ConsumoPage() {
     toast.success('CSV do extrato exportado.')
   }
 
+  const exportDisabled = filteredItems.length === 0 || loading
+
   return (
-    <div className="space-y-4">
-      <div
-        className="grid grid-cols-3 gap-4 management-grid-3"
-        style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}
-      >
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+
+      {/* KPIs */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
         <MetricCard
           label="Lançamentos"
           value={filteredItems.length.toLocaleString('pt-BR')}
@@ -496,7 +579,7 @@ export function ConsumoPage() {
         <MetricCard
           label="Movimentado"
           value={`R$ ${total.toFixed(2)}`}
-          note={`Soma financeira do recorte atual.`}
+          note="Soma financeira do recorte atual."
           tone="var(--danger)"
         />
         <MetricCard
@@ -507,25 +590,71 @@ export function ConsumoPage() {
         />
       </div>
 
-      <Card>
-        <CardHeader className="card-header-responsive">
-          <div>
-            <CardTitle>Extrato financeiro</CardTitle>
-            <div className="text-xs text-[var(--text-muted)] mt-1">Filtre os lançamentos por tipo e período.</div>
+      {/* Card principal */}
+      <div style={{
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
+        borderRadius: '24px',
+        overflow: 'hidden',
+        boxShadow: '0 16px 40px rgba(0,0,0,0.10)',
+      }}>
+        {/* Header */}
+        <div style={{
+          display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between',
+          gap: '16px', padding: '24px 28px',
+          borderBottom: '1px solid var(--border)',
+          flexWrap: 'wrap',
+        }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
+            <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+              Extrato financeiro
+            </div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.55 }}>
+              Filtre os lançamentos por tipo e período.
+            </div>
           </div>
-          <Button
-            variant="ghost"
-            icon={<Download size={14} />}
-            onClick={handleExport}
-            disabled={filteredItems.length === 0 || loading}
-            className="min-w-[152px]"
-          >
-            Exportar CSV
-          </Button>
-        </CardHeader>
 
-        <div className="app-filter-panel space-y-3">
-          <div className="grid gap-3 app-filter-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
+          {/* Botão Exportar CSV */}
+          <button
+            type="button"
+            onClick={handleExport}
+            disabled={exportDisabled}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '8px',
+              padding: '11px 20px', borderRadius: '14px',
+              border: '1px solid var(--border)',
+              background: exportDisabled
+                ? 'color-mix(in srgb, var(--surface-2) 70%, transparent)'
+                : 'color-mix(in srgb, var(--surface-2) 92%, transparent)',
+              color: exportDisabled ? 'var(--text-dim)' : 'var(--text)',
+              fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 700,
+              cursor: exportDisabled ? 'not-allowed' : 'pointer',
+              opacity: exportDisabled ? 0.55 : 1,
+              transition: 'border-color 0.15s, box-shadow 0.15s, transform 0.1s',
+              whiteSpace: 'nowrap', flexShrink: 0,
+            }}
+            onMouseEnter={e => {
+              if (!exportDisabled) {
+                e.currentTarget.style.borderColor = 'var(--border-bright)'
+                e.currentTarget.style.transform = 'translateY(-1px)'
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.10)'
+              }
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.borderColor = 'var(--border)'
+              e.currentTarget.style.transform = 'translateY(0)'
+              e.currentTarget.style.boxShadow = 'none'
+            }}
+            onMouseDown={e => { e.currentTarget.style.transform = 'translateY(0)' }}
+          >
+            <Download size={14} />
+            Exportar CSV
+          </button>
+        </div>
+
+        {/* Filtros */}
+        <div className="app-filter-panel">
+          <div className="app-filter-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
             <Select label="Tipo" value={tipo} onChange={(e) => setTipo(e.target.value)}>
               <option value="">Todos os tipos</option>
               {['CREDITO', 'DEBITO', 'EXPIRACAO', 'ESTORNO'].map((item) => (
@@ -536,6 +665,7 @@ export function ConsumoPage() {
           </div>
         </div>
 
+        {/* Tabela desktop */}
         <div className="app-data-desktop app-table-shell">
           <Table>
             <thead>
@@ -563,13 +693,20 @@ export function ConsumoPage() {
                 pageItems.map((c) => (
                   <TrHover key={c.id}>
                     <Td><Badge status="PROCESSANDO" label={c.tipo} /></Td>
-                    <Td><span className={`font-mono text-xs font-semibold ${c.tipo === 'DEBITO' ? 'text-[var(--danger)]' : 'text-[var(--accent)]'}`}>{c.tipo === 'DEBITO' ? '-' : '+'} R$ {Number(c.valor).toFixed(4)}</span></Td>
+                    <Td>
+                      <span style={{
+                        fontFamily: 'var(--mono)', fontSize: '12px', fontWeight: 700,
+                        color: c.tipo === 'DEBITO' ? 'var(--danger)' : 'var(--accent)',
+                      }}>
+                        {c.tipo === 'DEBITO' ? '-' : '+'} R$ {Number(c.valor).toFixed(4)}
+                      </span>
+                    </Td>
                     <Td mono>R$ {Number(c.saldo_resultante).toFixed(2)}</Td>
                     <Td>{c.descricao ?? '-'}</Td>
-                    <Td mono>{c.pedido_id ? `${c.pedido_id.slice(0, 8)}...` : '-'}</Td>
-                    <Td mono>{c.log_auditoria_id ? `${c.log_auditoria_id.slice(0, 8)}...` : '-'}</Td>
-                    <Td><span className="text-xs">{fmtDate(c.expira_em)}</span></Td>
-                    <Td><span className="text-xs">{fmtAgo(c.criado_em)}</span></Td>
+                    <Td mono>{c.pedido_id ? `${c.pedido_id.slice(0, 8)}…` : '-'}</Td>
+                    <Td mono>{c.log_auditoria_id ? `${c.log_auditoria_id.slice(0, 8)}…` : '-'}</Td>
+                    <Td><span style={{ fontSize: '12px' }}>{fmtDate(c.expira_em)}</span></Td>
+                    <Td><span style={{ fontSize: '12px' }}>{fmtAgo(c.criado_em)}</span></Td>
                   </TrHover>
                 ))
               )}
@@ -584,7 +721,8 @@ export function ConsumoPage() {
           />
         </div>
 
-        <div className="app-data-mobile p-4">
+        {/* Cards mobile */}
+        <div className="app-data-mobile" style={{ padding: '16px' }}>
           <div className="app-mobile-card-list">
             {loading ? (
               <MobileSkeletonCards />
@@ -592,28 +730,37 @@ export function ConsumoPage() {
               <Empty message="Nenhum lançamento encontrado para os filtros selecionados" />
             ) : (
               pageItems.map((c) => (
-                <Card key={c.id}>
-                  <div className="p-4">
-                    <div className="flex items-start justify-between gap-3 mb-2">
-                      <Badge status="PROCESSANDO" label={c.tipo} />
-                      <span className={`font-mono text-xs font-semibold ${c.tipo === 'DEBITO' ? 'text-[var(--danger)]' : 'text-[var(--accent)]'}`}>
-                        {c.tipo === 'DEBITO' ? '-' : '+'} R$ {Number(c.valor).toFixed(4)}
-                      </span>
-                    </div>
-                    <MobileField label="Saldo resultante" value={<span className="font-mono text-xs">R$ {Number(c.saldo_resultante).toFixed(2)}</span>} />
-                    <MobileField label="Descrição" value={c.descricao ?? '-'} />
-                    <MobileField label="Pedido" value={<span className="font-mono text-xs">{c.pedido_id ? `${c.pedido_id.slice(0, 8)}...` : '-'}</span>} />
-                    <MobileField label="Auditoria" value={<span className="font-mono text-xs">{c.log_auditoria_id ? `${c.log_auditoria_id.slice(0, 8)}...` : '-'}</span>} />
-                    <MobileField label="Expira em" value={<span className="text-xs">{fmtDate(c.expira_em)}</span>} />
-                    <MobileField label="Data" value={<span className="text-xs">{fmtAgo(c.criado_em)}</span>} />
+                <div key={c.id} style={{
+                  background: 'var(--surface)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '16px',
+                  padding: '18px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                    <Badge status="PROCESSANDO" label={c.tipo} />
+                    <span style={{
+                      fontFamily: 'var(--mono)', fontSize: '12px', fontWeight: 700,
+                      color: c.tipo === 'DEBITO' ? 'var(--danger)' : 'var(--accent)',
+                    }}>
+                      {c.tipo === 'DEBITO' ? '-' : '+'} R$ {Number(c.valor).toFixed(4)}
+                    </span>
                   </div>
-                </Card>
+                  <MobileField label="Saldo resultante" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>R$ {Number(c.saldo_resultante).toFixed(2)}</span>} />
+                  <MobileField label="Descrição" value={c.descricao ?? '-'} />
+                  <MobileField label="Pedido" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>{c.pedido_id ? `${c.pedido_id.slice(0, 8)}…` : '-'}</span>} />
+                  <MobileField label="Auditoria" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>{c.log_auditoria_id ? `${c.log_auditoria_id.slice(0, 8)}…` : '-'}</span>} />
+                  <MobileField label="Expira em" value={<span style={{ fontSize: '12px' }}>{fmtDate(c.expira_em)}</span>} />
+                  <MobileField label="Data" value={<span style={{ fontSize: '12px' }}>{fmtAgo(c.criado_em)}</span>} />
+                </div>
               ))
             )}
           </div>
           <Pagination page={safePage} totalPages={totalPages} totalItems={filteredItems.length} label="Extrato" onPageChange={setPage} />
         </div>
-      </Card>
+      </div>
     </div>
   )
 }
@@ -956,121 +1103,330 @@ export function CreditosPage() {
   }
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div style={{ maxWidth: '680px', display: 'flex', flexDirection: 'column', gap: '28px' }}>
+
+      {/* Card principal */}
       <Card>
         <CardHeader>
           <CardTitle>Comprar créditos</CardTitle>
         </CardHeader>
-        <div className="p-6 space-y-5">
-          <div className="p-4 rounded-lg bg-[var(--accent-dim)] border border-[var(--accent-glow)] text-sm leading-relaxed">
-            <span className="text-[var(--accent)] font-semibold">Modelo pré-pago.</span>{' '}
-            <span className="text-[var(--text-muted)]">
-              O backend registra compras em <strong className="text-[var(--text)]">pedidos</strong> e o saldo em
-              <strong className="text-[var(--text)]"> financeiro</strong>. O débito ocorre por consulta.
+
+        <div style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
+
+          {/* Info pré-pago */}
+          <div style={{
+            padding: '18px 20px',
+            borderRadius: '16px',
+            background: 'var(--accent-dim)',
+            border: '1px solid var(--accent-glow)',
+            fontSize: '13px',
+            lineHeight: 1.7,
+          }}>
+            <span style={{ color: 'var(--accent)', fontWeight: 700 }}>Modelo pré-pago.</span>{' '}
+            <span style={{ color: 'var(--text-muted)' }}>
+              O backend registra compras em <strong style={{ color: 'var(--text)', fontWeight: 600 }}>pedidos</strong> e
+              o saldo em <strong style={{ color: 'var(--text)', fontWeight: 600 }}>financeiro</strong>. O débito ocorre por consulta.
             </span>
           </div>
 
-          <div>
-            <div className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-2">Método de pagamento</div>
-            <div className="flex gap-3 credit-method-row" style={{ gap: '12px' }}>
-              {(['PIX', 'BOLETO'] as const).map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => setMetodo(m)}
-                  className={`flex-1 flex items-center justify-between gap-3 px-4 py-3.5 rounded-[20px] text-sm font-semibold border transition-all shadow-[0_14px_34px_rgba(15,23,42,0.08)] hover:-translate-y-[1px] ${
-                    metodo === m
-                      ? 'border-[var(--accent-glow)] bg-[linear-gradient(135deg,var(--accent-dim),color-mix(in_srgb,var(--info-dim)_40%,transparent))] text-[var(--text)]'
-                      : 'border-[var(--border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface-2)_92%,transparent),color-mix(in_srgb,var(--surface)_98%,transparent))] text-[var(--text-muted)] hover:border-[var(--border-bright)] hover:bg-[var(--surface-3)]'
-                  }`}
-                >
-                  <span className="flex items-center gap-3 min-w-0">
-                    <span
-                      className={`inline-flex h-10 w-10 items-center justify-center rounded-2xl border ${
-                        metodo === m
-                          ? 'border-[var(--accent-glow)] bg-[rgba(255,255,255,0.08)] text-[var(--accent)]'
-                          : 'border-[var(--border)] bg-[color-mix(in_srgb,var(--surface-2)_92%,transparent)] text-[var(--text-dim)]'
-                      }`}
-                    >
-                      {m === 'PIX' ? <Sparkles size={16} /> : <Landmark size={16} />}
-                    </span>
-                    <span className="flex flex-col items-start">
-                      <span>{m === 'PIX' ? 'PIX (imediato)' : 'Boleto (1-3 dias úteis)'}</span>
-                      <span className={`text-[11px] font-medium ${metodo === m ? 'text-[var(--text-muted)]' : 'text-[var(--text-dim)]'}`}>
-                        {m === 'PIX' ? 'Confirmação quase instantânea' : 'Prazo bancário tradicional'}
+          {/* Método de pagamento */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{
+              fontSize: '11px', fontWeight: 700, textTransform: 'uppercase',
+              letterSpacing: '0.14em', color: 'var(--text-dim)',
+            }}>
+              Método de pagamento
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }} className="credit-method-row">
+              {(['PIX', 'BOLETO'] as const).map((m) => {
+                const ativo = metodo === m
+                return (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setMetodo(m)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '12px',
+                      padding: '18px 20px',
+                      borderRadius: '20px',
+                      border: `1px solid ${ativo ? 'var(--accent-glow)' : 'var(--border)'}`,
+                      background: ativo
+                        ? 'linear-gradient(135deg, var(--accent-dim), color-mix(in srgb, var(--info-dim) 40%, transparent))'
+                        : 'color-mix(in srgb, var(--surface-2) 92%, transparent)',
+                      cursor: 'pointer',
+                      transition: 'border-color 0.15s, background 0.15s',
+                      textAlign: 'left',
+                      fontFamily: 'var(--sans)',
+                    }}
+                  >
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0 }}>
+                      <span style={{
+                        width: '42px', height: '42px', borderRadius: '14px', flexShrink: 0,
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                        border: `1px solid ${ativo ? 'var(--accent-glow)' : 'var(--border)'}`,
+                        background: ativo ? 'rgba(0,212,170,0.08)' : 'color-mix(in srgb, var(--surface-2) 90%, transparent)',
+                        color: ativo ? 'var(--accent)' : 'var(--text-dim)',
+                      }}>
+                        {m === 'PIX' ? <Sparkles size={16} /> : <Landmark size={16} />}
+                      </span>
+                      <span style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                        <span style={{ fontSize: '13px', fontWeight: 600, color: ativo ? 'var(--text)' : 'var(--text-muted)' }}>
+                          {m === 'PIX' ? 'PIX' : 'Boleto'}
+                        </span>
+                        <span style={{ fontSize: '11px', color: ativo ? 'var(--text-muted)' : 'var(--text-dim)' }}>
+                          {m === 'PIX' ? 'Confirmação instantânea' : '1-3 dias úteis'}
+                        </span>
                       </span>
                     </span>
-                  </span>
-                  <span className={`h-2.5 w-2.5 rounded-full ${metodo === m ? 'bg-[var(--accent)] shadow-[0_0_0_6px_rgba(0,212,170,0.10)]' : 'bg-[var(--border-bright)]'}`} />
-                </button>
-              ))}
+                    <span style={{
+                      width: '10px', height: '10px', borderRadius: '50%', flexShrink: 0,
+                      background: ativo ? 'var(--accent)' : 'var(--border-bright)',
+                      boxShadow: ativo ? '0 0 0 4px rgba(0,212,170,0.15)' : 'none',
+                      transition: 'background 0.15s, box-shadow 0.15s',
+                    }} />
+                  </button>
+                )
+              })}
             </div>
           </div>
 
-          <div>
-            <div className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-2">Valor</div>
-            <div className="flex gap-2 mb-3 flex-wrap">
-              {['50', '100', '200', '500', '1000'].map((v) => (
-                <button
-                  key={v}
-                  type="button"
-                  onClick={() => setValor(v)}
-                  className={`px-4 py-2.5 rounded-[18px] text-sm font-mono font-semibold border transition-all shadow-[0_12px_28px_rgba(15,23,42,0.06)] hover:-translate-y-[1px] ${
-                    valor === v
-                      ? 'border-[var(--accent-glow)] bg-[linear-gradient(135deg,var(--accent-dim),color-mix(in_srgb,var(--accent-dim)_78%,white_4%))] text-[var(--accent)]'
-                      : 'border-[var(--border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface-2)_88%,transparent),color-mix(in_srgb,var(--surface)_98%,transparent))] text-[var(--text-muted)] hover:border-[var(--border-bright)] hover:bg-[var(--surface-3)]'
-                  }`}
-                >
-                  <span className="text-[10px] font-sans uppercase tracking-[0.14em] opacity-70 mr-1">R$</span>{v}
-                </button>
-              ))}
+          {/* Valor */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{
+              fontSize: '11px', fontWeight: 700, textTransform: 'uppercase',
+              letterSpacing: '0.14em', color: 'var(--text-dim)',
+            }}>
+              Valor
             </div>
-            <Input
-              type="number"
-              placeholder="Ou insira outro valor"
-              value={valor}
-              onChange={(e) => setValor(e.target.value)}
-              min={50}
-            />
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+              {['50', '100', '200', '500', '1000'].map((v) => {
+                const ativo = valor === v
+                return (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setValor(v)}
+                    style={{
+                      padding: '10px 20px',
+                      borderRadius: '999px',
+                      border: `1px solid ${ativo ? 'var(--accent-glow)' : 'var(--border)'}`,
+                      background: ativo
+                        ? 'var(--accent-dim)'
+                        : 'color-mix(in srgb, var(--surface-2) 88%, transparent)',
+                      color: ativo ? 'var(--accent)' : 'var(--text-muted)',
+                      fontFamily: 'var(--mono)',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'border-color 0.15s, background 0.15s, color 0.15s',
+                    }}
+                  >
+                    <span style={{ fontSize: '10px', opacity: 0.7, marginRight: '3px' }}>R$</span>{v}
+                  </button>
+                )
+              })}
+            </div>
+            {/* Input de valor customizado */}
+            <div style={{ position: 'relative' }}>
+              <span style={{
+                position: 'absolute',
+                left: '18px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                fontFamily: 'var(--mono)',
+                fontSize: '14px',
+                fontWeight: 700,
+                color: 'var(--text-dim)',
+                pointerEvents: 'none',
+                userSelect: 'none',
+              }}>
+                R$
+              </span>
+              <input
+                type="number"
+                placeholder="0,00"
+                value={valor}
+                onChange={(e) => setValor(e.target.value)}
+                min={50}
+                style={{
+                  width: '100%',
+                  paddingLeft: '48px',
+                  paddingRight: '18px',
+                  paddingTop: '16px',
+                  paddingBottom: '16px',
+                  borderRadius: '16px',
+                  border: '1px solid var(--border)',
+                  background: 'color-mix(in srgb, var(--surface-2) 94%, transparent)',
+                  color: 'var(--text)',
+                  fontFamily: 'var(--mono)',
+                  fontSize: '18px',
+                  fontWeight: 600,
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                  transition: 'border-color 0.15s, box-shadow 0.15s',
+                }}
+                onFocus={e => {
+                  e.currentTarget.style.borderColor = 'var(--accent)'
+                  e.currentTarget.style.boxShadow = '0 0 0 4px var(--accent-dim)'
+                }}
+                onBlur={e => {
+                  e.currentTarget.style.borderColor = 'var(--border)'
+                  e.currentTarget.style.boxShadow = 'none'
+                }}
+              />
+            </div>
+            <p style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '-4px' }}>
+              Valor mínimo: R$ 50,00
+            </p>
           </div>
 
-          <Button onClick={iniciar} loading={loading} size="lg" icon={<Banknote size={16} />} className="w-full justify-center py-3">
-            Gerar {metodo === 'PIX' ? 'pedido PIX' : 'boleto'}
-          </Button>
+          {/* CTA */}
+          <button
+            type="button"
+            onClick={iniciar}
+            disabled={loading}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '10px',
+              padding: '18px 24px',
+              borderRadius: '20px',
+              border: '1px solid rgba(255,255,255,0.14)',
+              background: loading
+                ? 'color-mix(in srgb, var(--accent) 60%, transparent)'
+                : 'linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 72%, white))',
+              color: '#041311',
+              fontFamily: 'var(--sans)',
+              fontSize: '15px',
+              fontWeight: 700,
+              cursor: loading ? 'not-allowed' : 'pointer',
+              opacity: loading ? 0.7 : 1,
+              boxShadow: '0 8px 28px rgba(0,212,170,0.22)',
+              transition: 'opacity 0.15s, box-shadow 0.15s, transform 0.1s',
+              letterSpacing: '-0.01em',
+            }}
+            onMouseEnter={e => {
+              if (!loading) {
+                e.currentTarget.style.boxShadow = '0 12px 36px rgba(0,212,170,0.35)'
+                e.currentTarget.style.transform = 'translateY(-1px)'
+              }
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.boxShadow = '0 8px 28px rgba(0,212,170,0.22)'
+              e.currentTarget.style.transform = 'translateY(0)'
+            }}
+            onMouseDown={e => { e.currentTarget.style.transform = 'translateY(0)' }}
+          >
+            {loading
+              ? <Spinner size={16} />
+              : <Banknote size={18} />
+            }
+            {loading
+              ? 'Gerando pedido…'
+              : `Gerar ${metodo === 'PIX' ? 'pedido PIX' : 'boleto'} · R$ ${parseFloat(valor) > 0 ? parseFloat(valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '—'}`
+            }
+          </button>
         </div>
       </Card>
 
+      {/* Resultado PIX */}
       {resultado?.pix && (
         <Card>
-          <CardHeader><CardTitle>PIX copia e cola</CardTitle></CardHeader>
-          <div className="p-5">
+          <CardHeader>
+            <CardTitle>PIX copia e cola</CardTitle>
+          </CardHeader>
+          <div style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div
-              className="font-mono text-xs break-all text-[var(--text-muted)] bg-[var(--surface-2)] border border-[var(--border)] rounded-lg p-4 cursor-pointer hover:border-[var(--accent)] transition-colors"
+              style={{
+                fontFamily: 'var(--mono)',
+                fontSize: '12px',
+                wordBreak: 'break-all',
+                color: 'var(--text-muted)',
+                background: 'var(--surface-2)',
+                border: '1px solid var(--border)',
+                borderRadius: '14px',
+                padding: '18px',
+                cursor: 'pointer',
+                lineHeight: 1.7,
+                transition: 'border-color 0.15s',
+              }}
               onClick={() => resultado.pix && copiar(resultado.pix)}
             >
               {resultado.pix}
             </div>
-            <Button type="button" onClick={() => resultado.pix && copiar(resultado.pix)} icon={<Copy size={14} />} className="mt-3 w-full">
+            <button
+              type="button"
+              onClick={() => resultado.pix && copiar(resultado.pix)}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '10px',
+                padding: '16px 24px',
+                borderRadius: '18px',
+                border: '1px solid var(--accent-glow)',
+                background: 'linear-gradient(135deg, var(--accent-dim), color-mix(in srgb, var(--info-dim) 40%, transparent))',
+                color: 'var(--accent)',
+                fontFamily: 'var(--sans)',
+                fontSize: '14px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                letterSpacing: '-0.01em',
+                transition: 'border-color 0.15s, box-shadow 0.15s, transform 0.1s',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.borderColor = 'var(--accent)'
+                e.currentTarget.style.boxShadow = '0 0 0 4px var(--accent-dim)'
+                e.currentTarget.style.transform = 'translateY(-1px)'
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = 'var(--accent-glow)'
+                e.currentTarget.style.boxShadow = 'none'
+                e.currentTarget.style.transform = 'translateY(0)'
+              }}
+              onMouseDown={e => { e.currentTarget.style.transform = 'translateY(0)' }}
+            >
+              <Copy size={16} />
               Copiar código PIX
-            </Button>
+            </button>
           </div>
         </Card>
       )}
 
+      {/* Resultado Boleto */}
       {resultado?.boleto && (
         <Card>
-          <CardHeader><CardTitle>Boleto bancário</CardTitle></CardHeader>
-          <div className="p-5 space-y-3">
-            <div className="font-mono text-xs break-all text-[var(--text-muted)] bg-[var(--surface-2)] border border-[var(--border)] rounded-lg p-4">
+          <CardHeader>
+            <CardTitle>Boleto bancário</CardTitle>
+          </CardHeader>
+          <div style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{
+              fontFamily: 'var(--mono)',
+              fontSize: '12px',
+              wordBreak: 'break-all',
+              color: 'var(--text-muted)',
+              background: 'var(--surface-2)',
+              border: '1px solid var(--border)',
+              borderRadius: '14px',
+              padding: '18px',
+              lineHeight: 1.7,
+            }}>
               {resultado.boleto}
             </div>
-            <div className="flex gap-3 credit-result-actions" style={{ gap: '12px' }}>
+            <div style={{ display: 'flex', gap: '12px' }} className="credit-result-actions">
               <Button
                 type="button"
                 variant="ghost"
+                size="lg"
                 icon={<Copy size={14} />}
                 onClick={() => resultado.boleto && copiar(resultado.boleto)}
-                className="flex-1"
+                style={{ flex: 1 }}
               >
                 Copiar linha digitável
               </Button>
@@ -1079,7 +1435,23 @@ export function CreditosPage() {
                   href={resultado.boletoUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-center rounded-[18px] bg-[linear-gradient(135deg,var(--accent),color-mix(in_srgb,var(--accent)_72%,white))] border border-[rgba(255,255,255,0.18)] text-[#041311] text-sm font-semibold shadow-[0_14px_34px_rgba(15,23,42,0.10)] hover:-translate-y-[1px] transition-all"
+                  style={{
+                    flex: 1,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    padding: '0 20px',
+                    borderRadius: '14px',
+                    background: 'var(--accent)',
+                    border: '1px solid rgba(255,255,255,0.14)',
+                    color: '#041311',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    textDecoration: 'none',
+                    transition: 'opacity 0.15s',
+                    minHeight: '44px',
+                  }}
                 >
                   <ExternalLink size={14} />
                   Abrir PDF

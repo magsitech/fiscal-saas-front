@@ -9,6 +9,7 @@ import {
   CreditCard,
   KeyRound,
   Lock,
+  LogOut,
   Mail,
   Phone,
   RefreshCcw,
@@ -20,7 +21,247 @@ import toast from 'react-hot-toast'
 import type { ApiKeyCreateResponse, ApiKeyInfo } from '@/types'
 import { apiKeyApi } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
-import { Button, Card, CardHeader, CardTitle, Input, Skeleton } from '@/components/ui'
+import { Skeleton, Spinner } from '@/components/ui'
+
+// ─── Botão inline reutilizável ────────────────────────────────
+type BtnVariant = 'primary' | 'ghost' | 'danger' | 'soft'
+function Btn({
+  children,
+  onClick,
+  type = 'button',
+  loading = false,
+  disabled = false,
+  variant = 'primary',
+  icon,
+  fullWidth = false,
+}: {
+  children: React.ReactNode
+  onClick?: () => void
+  type?: 'button' | 'submit'
+  loading?: boolean
+  disabled?: boolean
+  variant?: BtnVariant
+  icon?: React.ReactNode
+  fullWidth?: boolean
+}) {
+  const base: React.CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+    padding: '11px 20px',
+    borderRadius: '14px',
+    fontFamily: 'var(--sans)',
+    fontSize: '13px',
+    fontWeight: 700,
+    cursor: loading || disabled ? 'not-allowed' : 'pointer',
+    opacity: loading || disabled ? 0.65 : 1,
+    transition: 'transform 0.1s, box-shadow 0.15s, border-color 0.15s',
+    whiteSpace: 'nowrap',
+    width: fullWidth ? '100%' : undefined,
+    letterSpacing: '-0.01em',
+  }
+
+  const variants: Record<BtnVariant, React.CSSProperties> = {
+    primary: {
+      background: 'linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 72%, white))',
+      border: '1px solid rgba(255,255,255,0.14)',
+      color: '#041311',
+      boxShadow: '0 6px 20px rgba(0,212,170,0.20)',
+    },
+    ghost: {
+      background: 'color-mix(in srgb, var(--surface-2) 92%, transparent)',
+      border: '1px solid var(--border)',
+      color: 'var(--text)',
+    },
+    danger: {
+      background: 'linear-gradient(135deg, var(--danger-dim), rgba(239,68,68,0.16))',
+      border: '1px solid rgba(239,68,68,0.22)',
+      color: 'var(--danger)',
+    },
+    soft: {
+      background: 'var(--accent-dim)',
+      border: '1px solid var(--accent-glow)',
+      color: 'var(--accent)',
+    },
+  }
+
+  return (
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={loading || disabled}
+      style={{ ...base, ...variants[variant] }}
+      onMouseEnter={e => {
+        if (loading || disabled) return
+        if (variant === 'primary') {
+          e.currentTarget.style.boxShadow = '0 10px 28px rgba(0,212,170,0.32)'
+          e.currentTarget.style.transform = 'translateY(-1px)'
+        } else if (variant === 'soft') {
+          e.currentTarget.style.borderColor = 'var(--accent)'
+          e.currentTarget.style.transform = 'translateY(-1px)'
+        } else {
+          e.currentTarget.style.transform = 'translateY(-1px)'
+        }
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.transform = 'translateY(0)'
+        if (variant === 'primary') e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,212,170,0.20)'
+        if (variant === 'soft') e.currentTarget.style.borderColor = 'var(--accent-glow)'
+      }}
+      onMouseDown={e => { e.currentTarget.style.transform = 'translateY(0)' }}
+    >
+      {loading ? <Spinner size={14} /> : icon}
+      {children}
+    </button>
+  )
+}
+
+// ─── Campo de formulário com inline styles ────────────────────
+function Field({
+  label,
+  type = 'text',
+  value,
+  onChange,
+  placeholder,
+  icon,
+  error,
+  readOnly,
+}: {
+  label: string
+  type?: string
+  value?: string
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void
+  placeholder?: string
+  icon?: React.ReactNode
+  error?: string
+  readOnly?: boolean
+}) {
+  const [focused, setFocused] = useState(false)
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <label style={{
+        fontSize: '10px',
+        fontWeight: 800,
+        letterSpacing: '0.14em',
+        textTransform: 'uppercase',
+        color: 'var(--text-dim)',
+      }}>
+        {label}
+      </label>
+
+      <div style={{ position: 'relative' }}>
+        {icon && (
+          <span style={{
+            position: 'absolute',
+            left: '14px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            color: focused ? 'var(--accent)' : 'var(--text-dim)',
+            transition: 'color 0.15s',
+            pointerEvents: 'none',
+            display: 'flex',
+            alignItems: 'center',
+          }}>
+            {icon}
+          </span>
+        )}
+        <input
+          type={type}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          readOnly={readOnly}
+          onFocus={e => {
+            setFocused(true)
+            e.currentTarget.style.borderColor = error ? 'var(--danger)' : 'var(--accent)'
+            e.currentTarget.style.boxShadow = error
+              ? '0 0 0 4px rgba(239,68,68,0.10)'
+              : '0 0 0 4px var(--accent-dim)'
+          }}
+          onBlur={e => {
+            setFocused(false)
+            e.currentTarget.style.borderColor = error ? 'var(--danger)' : 'var(--border)'
+            e.currentTarget.style.boxShadow = 'none'
+          }}
+          style={{
+            width: '100%',
+            paddingLeft: icon ? '42px' : '16px',
+            paddingRight: '16px',
+            paddingTop: '13px',
+            paddingBottom: '13px',
+            borderRadius: '14px',
+            border: `1px solid ${error ? 'var(--danger)' : 'var(--border)'}`,
+            background: readOnly
+              ? 'color-mix(in srgb, var(--surface-2) 60%, transparent)'
+              : 'color-mix(in srgb, var(--surface-2) 94%, transparent)',
+            color: readOnly ? 'var(--text-muted)' : 'var(--text)',
+            fontFamily: 'var(--sans)',
+            fontSize: '14px',
+            fontWeight: 500,
+            outline: 'none',
+            boxSizing: 'border-box',
+            cursor: readOnly ? 'not-allowed' : 'text',
+            transition: 'border-color 0.15s, box-shadow 0.15s',
+          }}
+        />
+      </div>
+
+      {error && (
+        <span style={{ fontSize: '11px', color: 'var(--danger)', fontWeight: 600 }}>
+          {error}
+        </span>
+      )}
+    </div>
+  )
+}
+
+// ─── Label de seção ───────────────────────────────────────────
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{
+      fontSize: '10px',
+      fontWeight: 800,
+      letterSpacing: '0.14em',
+      textTransform: 'uppercase',
+      color: 'var(--text-dim)',
+      marginBottom: '6px',
+    }}>
+      {children}
+    </div>
+  )
+}
+
+// ─── Campo somente leitura ────────────────────────────────────
+function ReadonlyField({ icon, value, badge }: { icon: React.ReactNode; value: React.ReactNode; badge?: string }) {
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '10px',
+      padding: '12px 14px',
+      borderRadius: '14px',
+      background: 'color-mix(in srgb, var(--surface-2) 94%, transparent)',
+      border: '1px solid var(--border)',
+    }}>
+      <span style={{ color: 'var(--text-dim)', flexShrink: 0 }}>{icon}</span>
+      <span style={{ fontFamily: 'var(--mono)', fontSize: '13px', color: 'var(--text-muted)', flex: 1 }}>{value}</span>
+      {badge && (
+        <span style={{
+          fontSize: '10px',
+          fontWeight: 700,
+          color: 'var(--text-dim)',
+          background: 'var(--border)',
+          borderRadius: '6px',
+          padding: '2px 7px',
+        }}>
+          {badge}
+        </span>
+      )}
+    </div>
+  )
+}
 
 export function PerfilPage() {
   const { usuario, setUsuario, logout } = useAuthStore()
@@ -47,25 +288,17 @@ export function PerfilPage() {
     ? format(parseISO(usuario.criado_em), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
     : '-'
 
+  const initials = usuario?.nome?.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase() ?? '?'
+  const documentoLabel = usuario?.tipo === 'PJ' ? 'CNPJ' : 'CPF'
+  const nomeFantasiaDisponivel = usuario?.tipo === 'PJ'
+
   useEffect(() => {
     let active = true
-
     apiKeyApi.obter()
-      .then((result) => {
-        if (!active) return
-        setApiKey(result)
-      })
-      .catch(() => {
-        if (!active) return
-        toast.error('Erro ao carregar o status da API Key.')
-      })
-      .finally(() => {
-        if (active) setLoadingApiKey(false)
-      })
-
-    return () => {
-      active = false
-    }
+      .then((result) => { if (active) setApiKey(result) })
+      .catch(() => { if (active) toast.error('Erro ao carregar o status da API Key.') })
+      .finally(() => { if (active) setLoadingApiKey(false) })
+    return () => { active = false }
   }, [])
 
   async function salvarPerfil(e: React.FormEvent) {
@@ -74,21 +307,10 @@ export function PerfilPage() {
     setSavingPerfil(true)
     try {
       await new Promise((resolve) => setTimeout(resolve, 800))
-      if (usuario) {
-        setUsuario({
-          ...usuario,
-          nome: perfil.nome,
-          nome_fantasia: perfil.nome_fantasia || null,
-          email: perfil.email,
-          telefone: perfil.telefone || null,
-        })
-      }
+      if (usuario) setUsuario({ ...usuario, nome: perfil.nome, nome_fantasia: perfil.nome_fantasia || null, email: perfil.email, telefone: perfil.telefone || null })
       toast.success('Perfil atualizado!')
-    } catch {
-      toast.error('Erro ao salvar perfil')
-    } finally {
-      setSavingPerfil(false)
-    }
+    } catch { toast.error('Erro ao salvar perfil') }
+    finally { setSavingPerfil(false) }
   }
 
   function validarSenha() {
@@ -110,11 +332,8 @@ export function PerfilPage() {
       await new Promise((resolve) => setTimeout(resolve, 800))
       setSenha({ atual: '', nova: '', confirmar: '' })
       toast.success('Senha alterada com sucesso!')
-    } catch {
-      toast.error('Senha atual incorreta')
-    } finally {
-      setSavingSenha(false)
-    }
+    } catch { toast.error('Senha atual incorreta') }
+    finally { setSavingSenha(false) }
   }
 
   async function gerarApiKey() {
@@ -122,18 +341,10 @@ export function PerfilPage() {
     try {
       const result = await apiKeyApi.gerar()
       setNovaApiKey(result)
-      setApiKey({
-        prefixo: result.prefixo,
-        sufixo: result.sufixo,
-        criado_em: result.criado_em,
-        ativa: true,
-      })
+      setApiKey({ prefixo: result.prefixo, sufixo: result.sufixo, criado_em: result.criado_em, ativa: true })
       toast.success('API Key gerada. Copie agora, ela não será exibida novamente.')
-    } catch {
-      toast.error('Erro ao gerar API Key')
-    } finally {
-      setSavingApiKey(false)
-    }
+    } catch { toast.error('Erro ao gerar API Key') }
+    finally { setSavingApiKey(false) }
   }
 
   async function revogarApiKey() {
@@ -143,375 +354,513 @@ export function PerfilPage() {
       setApiKey(null)
       setNovaApiKey(null)
       toast.success('API Key revogada com sucesso!')
-    } catch {
-      toast.error('Erro ao revogar API Key')
-    } finally {
-      setSavingApiKey(false)
-    }
+    } catch { toast.error('Erro ao revogar API Key') }
+    finally { setSavingApiKey(false) }
   }
 
   function copiarApiKey(chave: string) {
-    navigator.clipboard.writeText(chave).then(() => {
-      toast.success('API Key copiada!')
-    })
+    navigator.clipboard.writeText(chave).then(() => toast.success('API Key copiada!'))
   }
 
-  const documentoLabel = usuario?.tipo === 'PJ' ? 'CNPJ' : 'CPF'
-  const nomeFantasiaDisponivel = usuario?.tipo === 'PJ'
+  // ─── Estilos compartilhados ───────────────────────────────
+  const card: React.CSSProperties = {
+    background: 'var(--surface)',
+    border: '1px solid var(--border)',
+    borderRadius: '24px',
+    overflow: 'hidden',
+    boxShadow: '0 16px 40px rgba(0,0,0,0.10)',
+  }
+
+  const cardHeader: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '16px',
+    padding: '22px 28px',
+    borderBottom: '1px solid var(--border)',
+  }
+
+  const cardTitle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    fontSize: '15px',
+    fontWeight: 700,
+    color: 'var(--text)',
+    letterSpacing: '-0.02em',
+  }
+
+  const cardBody: React.CSSProperties = {
+    padding: '28px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '24px',
+  }
+
+  const grid2: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+    gap: '16px',
+  }
 
   return (
-    <div className="max-w-4xl space-y-6">
-      <div className="flex items-center gap-5 p-6 rounded-xl border border-[var(--border)] bg-[var(--surface)] perfil-header">
-        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[var(--accent)] to-[var(--info)] flex items-center justify-center text-xl font-bold text-black shrink-0 select-none">
-          {usuario?.nome?.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase()}
+    <div style={{ maxWidth: '780px', display: 'flex', flexDirection: 'column', gap: '28px' }}>
+
+      {/* ── Header de perfil ─────────────────────────────── */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '24px',
+        padding: '32px',
+        borderRadius: '24px',
+        border: '1px solid var(--border)',
+        background: 'linear-gradient(135deg, color-mix(in srgb, var(--surface) 88%, transparent), color-mix(in srgb, var(--surface-2) 82%, var(--accent-dim) 18%))',
+        boxShadow: '0 16px 40px rgba(0,0,0,0.10)',
+      }}>
+        {/* Avatar */}
+        <div style={{
+          width: '72px',
+          height: '72px',
+          borderRadius: '50%',
+          background: 'linear-gradient(135deg, var(--accent), var(--info))',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '22px',
+          fontWeight: 800,
+          color: '#041311',
+          flexShrink: 0,
+          userSelect: 'none',
+          letterSpacing: '-0.03em',
+          boxShadow: '0 4px 16px rgba(0,212,170,0.25)',
+        }}>
+          {initials}
         </div>
-        <div className="flex-1 min-w-0">
-          <h2 className="text-lg font-bold truncate">{usuario?.nome}</h2>
-          <p className="text-sm text-[var(--text-muted)] truncate">{usuario?.email}</p>
-          <p className="text-xs text-[var(--text-dim)] mt-1">Conta criada em {criadoEm}</p>
+
+        {/* Info principal */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: '20px', fontWeight: 800, letterSpacing: '-0.03em', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {usuario?.nome}
+          </div>
+          <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {usuario?.email}
+          </div>
+          <div style={{ fontSize: '11px', color: 'var(--text-dim)' }}>
+            Conta criada em {criadoEm}
+          </div>
         </div>
-        <div className="flex flex-col items-end gap-2 shrink-0 profile-header-status">
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[var(--accent-dim)] text-[var(--accent)] border border-[var(--accent-glow)]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
+
+        {/* Status e ID */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '10px', flexShrink: 0 }}>
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: '6px',
+            padding: '6px 12px', borderRadius: '999px',
+            background: 'var(--accent-dim)', border: '1px solid var(--accent-glow)',
+            color: 'var(--accent)', fontSize: '11px', fontWeight: 700,
+          }}>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent)' }} />
             {usuario?.ativo ? 'Ativo' : 'Pendente'}
           </span>
-          <span className="text-[11px] text-[var(--text-dim)] font-mono">
-            {usuario?.id?.slice(0, 8)}...
+          <span style={{ fontFamily: 'var(--mono)', fontSize: '10px', color: 'var(--text-dim)' }}>
+            {usuario?.id?.slice(0, 8)}…
           </span>
         </div>
       </div>
 
-      <Card>
-        <CardHeader className="card-header-responsive">
-          <CardTitle>
-            <span className="flex items-center gap-2">
-              <KeyRound size={15} className="text-[var(--accent)]" />
-              API Key
+      {/* ── API Key ──────────────────────────────────────── */}
+      <div style={card}>
+        <div style={cardHeader}>
+          <div style={cardTitle}>
+            <span style={{
+              width: '34px', height: '34px', borderRadius: '12px', flexShrink: 0,
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              background: 'var(--accent-dim)', border: '1px solid var(--accent-glow)',
+              color: 'var(--accent)',
+            }}>
+              <KeyRound size={15} />
             </span>
-          </CardTitle>
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[var(--accent-dim)] text-[var(--accent)] border border-[var(--accent-glow)]">
-            <KeyRound size={12} />
+            API Key
+          </div>
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: '6px',
+            padding: '5px 12px', borderRadius: '999px',
+            background: 'color-mix(in srgb, var(--info-dim) 70%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--info) 20%, transparent)',
+            color: 'var(--info)', fontSize: '11px', fontWeight: 700,
+          }}>
+            <KeyRound size={11} />
             Fluxo pronto no front
           </span>
-        </CardHeader>
-        <div id="api-key" className="p-6 space-y-5">
-          <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4">
-            <div className="text-sm font-semibold text-[var(--text)] mb-1">
-              Integração por API Key
-            </div>
-            <div className="text-sm text-[var(--text-muted)] leading-relaxed">
-              A chave completa só aparece uma vez após a geração. Depois disso, esta tela exibe apenas o prefixo,
-              o sufixo e a data de criação, seguindo o contrato esperado do backend.
-            </div>
+        </div>
+
+        <div style={cardBody}>
+          {/* Info box */}
+          <div style={{
+            padding: '18px 20px', borderRadius: '16px',
+            background: 'color-mix(in srgb, var(--surface-2) 80%, transparent)',
+            border: '1px solid var(--border)',
+            fontSize: '13px', lineHeight: 1.7, color: 'var(--text-muted)',
+          }}>
+            <span style={{ fontWeight: 700, color: 'var(--text)' }}>Integração por API Key.</span>{' '}
+            A chave completa só aparece uma vez após a geração. Depois disso, esta tela exibe apenas o
+            prefixo, o sufixo e a data de criação, seguindo o contrato esperado do backend.
           </div>
 
           {loadingApiKey ? (
-            <div className="space-y-3">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <Skeleton className="h-5 w-36" />
               <Skeleton className="h-20 w-full" />
               <Skeleton className="h-12 w-full" />
             </div>
           ) : (
             <>
+              {/* Nova API Key gerada */}
               {novaApiKey && (
-                <div className="rounded-xl border border-[rgba(0,212,170,.18)] bg-[var(--accent-dim)] p-4 space-y-4">
+                <div style={{
+                  padding: '22px', borderRadius: '18px',
+                  background: 'var(--accent-dim)',
+                  border: '1px solid var(--accent-glow)',
+                  display: 'flex', flexDirection: 'column', gap: '16px',
+                }}>
                   <div>
-                    <div className="text-sm font-semibold text-[var(--text)]">Copie sua nova API Key agora</div>
-                    <div className="text-xs text-[var(--text-muted)] mt-1">
+                    <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)', marginBottom: '4px' }}>
+                      Copie sua nova API Key agora
+                    </div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                       Por segurança, esta é a única vez em que a chave completa será exibida.
                     </div>
                   </div>
-                  <div className="font-mono text-xs break-all text-[var(--text)] bg-[var(--surface)] border border-[var(--accent-glow)] rounded-lg p-4">
+                  <div style={{
+                    fontFamily: 'var(--mono)', fontSize: '12px',
+                    wordBreak: 'break-all', lineHeight: 1.7,
+                    color: 'var(--text)',
+                    background: 'var(--surface)',
+                    border: '1px solid var(--accent-glow)',
+                    borderRadius: '12px', padding: '16px',
+                  }}>
                     {novaApiKey.chave}
                   </div>
-                  <div className="flex gap-3 credit-result-actions" style={{ gap: '12px' }}>
-                    <Button
-                      type="button"
-                      size="lg"
+                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                    <Btn
                       onClick={() => copiarApiKey(novaApiKey.chave)}
                       icon={<Copy size={14} />}
                     >
                       Copiar API Key
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="lg"
-                      onClick={() => setNovaApiKey(null)}
-                    >
+                    </Btn>
+                    <Btn variant="ghost" onClick={() => setNovaApiKey(null)}>
                       Já copiei
-                    </Button>
+                    </Btn>
                   </div>
                 </div>
               )}
 
               {apiKey ? (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4 profile-grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide">Status</label>
-                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--surface-2)] border border-[var(--border)]">
-                        <KeyRound size={14} className="text-[var(--accent)]" />
-                        <span className="text-sm text-[var(--text-muted)]">Chave ativa</span>
-                      </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {/* Grid status / data */}
+                  <div style={grid2}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <SectionLabel>Status</SectionLabel>
+                      <ReadonlyField icon={<KeyRound size={14} />} value="Chave ativa" />
                     </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide">Criada em</label>
-                      <div className="px-3 py-2 rounded-lg bg-[var(--surface-2)] border border-[var(--border)] text-sm text-[var(--text-muted)]">
-                        {format(parseISO(apiKey.criado_em), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 profile-grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide">Prefixo</label>
-                      <div className="px-3 py-2 rounded-lg bg-[var(--surface-2)] border border-[var(--border)] text-sm font-mono text-[var(--text-muted)]">
-                        {apiKey.prefixo}
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide">Sufixo</label>
-                      <div className="px-3 py-2 rounded-lg bg-[var(--surface-2)] border border-[var(--border)] text-sm font-mono text-[var(--text-muted)]">
-                        {apiKey.sufixo}
-                      </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <SectionLabel>Criada em</SectionLabel>
+                      <ReadonlyField
+                        icon={<Shield size={14} />}
+                        value={format(parseISO(apiKey.criado_em), "dd/MM/yyyy", { locale: ptBR })}
+                      />
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between gap-4 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4 danger-row">
+                  {/* Grid prefixo / sufixo */}
+                  <div style={grid2}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <SectionLabel>Prefixo</SectionLabel>
+                      <ReadonlyField icon={<KeyRound size={14} />} value={apiKey.prefixo} />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <SectionLabel>Sufixo</SectionLabel>
+                      <ReadonlyField icon={<KeyRound size={14} />} value={apiKey.sufixo} />
+                    </div>
+                  </div>
+
+                  {/* Ações */}
+                  <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    gap: '16px', flexWrap: 'wrap',
+                    padding: '20px', borderRadius: '16px',
+                    background: 'color-mix(in srgb, var(--surface-2) 80%, transparent)',
+                    border: '1px solid var(--border)',
+                  }}>
                     <div>
-                      <div className="text-sm font-semibold text-[var(--text)]">Gerenciar chave ativa</div>
-                      <div className="text-xs text-[var(--text-muted)] mt-1">
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)', marginBottom: '4px' }}>
+                        Gerenciar chave ativa
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                         Gerar uma nova chave revoga automaticamente a anterior.
                       </div>
                     </div>
-                    <div className="flex gap-3 credit-result-actions" style={{ gap: '12px' }}>
-                      <Button
-                        type="button"
-                        size="lg"
-                        onClick={gerarApiKey}
-                        loading={savingApiKey}
-                        icon={<RefreshCcw size={14} />}
-                      >
-                        Regenerar API Key
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="danger"
-                        size="lg"
-                        onClick={revogarApiKey}
-                        disabled={savingApiKey}
-                        icon={<Trash2 size={14} />}
-                      >
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                      <Btn onClick={gerarApiKey} loading={savingApiKey} icon={<RefreshCcw size={14} />}>
+                        Regenerar
+                      </Btn>
+                      <Btn variant="danger" onClick={revogarApiKey} disabled={savingApiKey} icon={<Trash2 size={14} />}>
                         Revogar
-                      </Button>
+                      </Btn>
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center justify-between gap-4 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4 danger-row">
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  gap: '16px', flexWrap: 'wrap',
+                  padding: '20px', borderRadius: '16px',
+                  background: 'color-mix(in srgb, var(--surface-2) 80%, transparent)',
+                  border: '1px solid var(--border)',
+                }}>
                   <div>
-                    <div className="text-sm font-semibold text-[var(--text)]">Nenhuma API Key ativa</div>
-                    <div className="text-xs text-[var(--text-muted)] mt-1">
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)', marginBottom: '4px' }}>
+                      Nenhuma API Key ativa
+                    </div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                       Gere uma chave para uso em integrações. A chave completa será exibida somente uma vez.
                     </div>
                   </div>
-                  <Button
-                    type="button"
-                    size="lg"
-                    onClick={gerarApiKey}
-                    loading={savingApiKey}
-                    icon={<KeyRound size={14} />}
-                  >
+                  <Btn onClick={gerarApiKey} loading={savingApiKey} icon={<KeyRound size={14} />}>
                     Gerar API Key
-                  </Button>
+                  </Btn>
                 </div>
               )}
             </>
           )}
         </div>
-      </Card>
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            <span className="flex items-center gap-2">
-              <User size={15} className="text-[var(--accent)]" />
-              Dados do cliente
+      {/* ── Dados do cliente ─────────────────────────────── */}
+      <div style={card}>
+        <div style={cardHeader}>
+          <div style={cardTitle}>
+            <span style={{
+              width: '34px', height: '34px', borderRadius: '12px', flexShrink: 0,
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              background: 'var(--accent-dim)', border: '1px solid var(--accent-glow)',
+              color: 'var(--accent)',
+            }}>
+              <User size={15} />
             </span>
-          </CardTitle>
-        </CardHeader>
-        <form onSubmit={salvarPerfil} className="p-6 space-y-4">
-          <div className="grid grid-cols-2 gap-4 profile-grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
-            <Input
+            Dados do cliente
+          </div>
+        </div>
+
+        <form onSubmit={salvarPerfil} style={cardBody}>
+          {/* Linha 1 */}
+          <div style={grid2}>
+            <Field
               label={usuario?.tipo === 'PJ' ? 'Responsável' : 'Nome completo'}
               value={perfil.nome}
               onChange={(e) => setPerfil({ ...perfil, nome: e.target.value })}
-              icon={<User size={14} />}
+              icon={<User size={15} />}
+              placeholder="Seu nome"
             />
             {nomeFantasiaDisponivel ? (
-              <Input
+              <Field
                 label="Nome fantasia"
                 value={perfil.nome_fantasia}
                 onChange={(e) => setPerfil({ ...perfil, nome_fantasia: e.target.value })}
-                icon={<Building2 size={14} />}
+                icon={<Building2 size={15} />}
+                placeholder="Nome fantasia da empresa"
               />
             ) : (
-              <Input
+              <Field
                 label="Telefone"
                 value={perfil.telefone}
                 onChange={(e) => setPerfil({ ...perfil, telefone: e.target.value.replace(/\D/g, '').slice(0, 11) })}
-                icon={<Phone size={14} />}
+                icon={<Phone size={15} />}
+                placeholder="11999999999"
               />
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4 profile-grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
-            <Input
+          {/* Linha 2 */}
+          <div style={grid2}>
+            <Field
               label="E-mail"
               type="email"
               value={perfil.email}
               onChange={(e) => setPerfil({ ...perfil, email: e.target.value })}
-              icon={<Mail size={14} />}
+              icon={<Mail size={15} />}
+              placeholder="email@empresa.com"
             />
             {nomeFantasiaDisponivel ? (
-              <Input
+              <Field
                 label="Telefone"
                 value={perfil.telefone}
                 onChange={(e) => setPerfil({ ...perfil, telefone: e.target.value.replace(/\D/g, '').slice(0, 11) })}
-                icon={<Phone size={14} />}
+                icon={<Phone size={15} />}
+                placeholder="11999999999"
               />
-            ) : (
-              <div />
-            )}
+            ) : <div />}
           </div>
 
-          <div className="grid grid-cols-2 gap-4 profile-grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide">{documentoLabel}</label>
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--surface-2)] border border-[var(--border)]">
-                <CreditCard size={14} className="text-[var(--text-dim)]" />
-                <span className="font-mono text-sm text-[var(--text-muted)]">{usuario?.nr_documento}</span>
-                <span className="ml-auto text-[10px] text-[var(--text-dim)] bg-[var(--border)] px-1.5 py-0.5 rounded">
-                  não editável
-                </span>
-              </div>
+          {/* Linha 3: somente leitura */}
+          <div style={grid2}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <SectionLabel>{documentoLabel}</SectionLabel>
+              <ReadonlyField
+                icon={<CreditCard size={14} />}
+                value={usuario?.nr_documento}
+                badge="não editável"
+              />
             </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide">Tipo de cliente</label>
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--surface-2)] border border-[var(--border)]">
-                <Shield size={14} className="text-[var(--text-dim)]" />
-                <span className="font-mono text-sm text-[var(--text-muted)]">{usuario?.tipo}</span>
-              </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <SectionLabel>Tipo de cliente</SectionLabel>
+              <ReadonlyField icon={<Shield size={14} />} value={usuario?.tipo} />
             </div>
           </div>
 
-          <div className="flex justify-end pt-2">
-            <Button type="submit" loading={savingPerfil} size="lg">Salvar alterações</Button>
+          {/* Salvar */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '4px' }}>
+            <Btn type="submit" loading={savingPerfil}>
+              Salvar alterações
+            </Btn>
           </div>
         </form>
-      </Card>
+      </div>
 
-      <Card>
-        <CardHeader className="card-header-responsive">
-          <CardTitle>
-            <span className="flex items-center gap-2">
-              <Lock size={15} className="text-[var(--accent)]" />
-              Alterar senha
+      {/* ── Alterar senha ────────────────────────────────── */}
+      <div style={card}>
+        <div style={cardHeader}>
+          <div style={cardTitle}>
+            <span style={{
+              width: '34px', height: '34px', borderRadius: '12px', flexShrink: 0,
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              background: 'var(--accent-dim)', border: '1px solid var(--accent-glow)',
+              color: 'var(--accent)',
+            }}>
+              <Lock size={15} />
             </span>
-          </CardTitle>
-          <Button
-            type="button"
+            Alterar senha
+          </div>
+          <Btn
             variant="soft"
-            size="sm"
             onClick={() => setShowSenha(!showSenha)}
             icon={showSenha ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
           >
             {showSenha ? 'Fechar' : 'Expandir'}
-          </Button>
-        </CardHeader>
+          </Btn>
+        </div>
+
         {showSenha && (
-          <form onSubmit={salvarSenha} className="p-6 space-y-4">
-            <Input
+          <form onSubmit={salvarSenha} style={cardBody}>
+            <Field
               label="Senha atual"
               type="password"
-              placeholder="........"
+              placeholder="••••••••"
               value={senha.atual}
               onChange={(e) => setSenha({ ...senha, atual: e.target.value })}
               error={senhaErros.atual}
-              icon={<Lock size={14} />}
+              icon={<Lock size={15} />}
             />
-            <div className="grid grid-cols-2 gap-4 profile-grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
-              <Input
+
+            <div style={grid2}>
+              <Field
                 label="Nova senha"
                 type="password"
                 placeholder="Mín. 8 caracteres"
                 value={senha.nova}
                 onChange={(e) => setSenha({ ...senha, nova: e.target.value })}
                 error={senhaErros.nova}
-                icon={<Lock size={14} />}
+                icon={<Lock size={15} />}
               />
-              <Input
+              <Field
                 label="Confirmar nova senha"
                 type="password"
                 placeholder="Repita a nova senha"
                 value={senha.confirmar}
                 onChange={(e) => setSenha({ ...senha, confirmar: e.target.value })}
                 error={senhaErros.confirmar}
-                icon={<Lock size={14} />}
+                icon={<Lock size={15} />}
               />
             </div>
-            <div className="flex justify-end pt-2">
-              <Button type="submit" loading={savingSenha} size="lg">Alterar senha</Button>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '4px' }}>
+              <Btn type="submit" loading={savingSenha}>
+                Alterar senha
+              </Btn>
             </div>
           </form>
         )}
-      </Card>
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            <span className="flex items-center gap-2 text-[var(--danger)]">
+      {/* ── Zona de perigo ───────────────────────────────── */}
+      <div style={card}>
+        <div style={cardHeader}>
+          <div style={{ ...cardTitle, color: 'var(--danger)' }}>
+            <span style={{
+              width: '34px', height: '34px', borderRadius: '12px', flexShrink: 0,
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              background: 'var(--danger-dim)', border: '1px solid rgba(239,68,68,0.18)',
+              color: 'var(--danger)',
+            }}>
               <Shield size={15} />
-              Zona de perigo
             </span>
-          </CardTitle>
-        </CardHeader>
-        <div className="p-6 space-y-4">
-          <div className="flex items-center justify-between p-4 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] danger-row">
+            Zona de perigo
+          </div>
+        </div>
+
+        <div style={{ ...cardBody, gap: '16px' }}>
+          {/* Encerrar sessão */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            gap: '16px', flexWrap: 'wrap',
+            padding: '20px', borderRadius: '16px',
+            background: 'color-mix(in srgb, var(--surface-2) 80%, transparent)',
+            border: '1px solid var(--border)',
+          }}>
             <div>
-              <div className="text-sm font-semibold">Encerrar sessão</div>
-              <div className="text-xs text-[var(--text-muted)] mt-0.5">Remove access token e refresh token deste navegador</div>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <LogOut size={15} style={{ color: 'var(--text-muted)' }} />
+                Encerrar sessão
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                Remove access token e refresh token deste navegador
+              </div>
             </div>
-            <Button
+            <Btn
               variant="ghost"
-              size="lg"
-              onClick={() => {
-                logout()
-                window.location.href = '/login'
-              }}
+              onClick={() => { logout(); window.location.href = '/login' }}
             >
               Sair agora
-            </Button>
+            </Btn>
           </div>
-          <div className="flex items-center justify-between p-4 rounded-lg border border-[var(--danger-dim)] bg-[var(--danger-dim)] danger-row">
+
+          {/* Excluir conta */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            gap: '16px', flexWrap: 'wrap',
+            padding: '20px', borderRadius: '16px',
+            background: 'var(--danger-dim)',
+            border: '1px solid rgba(239,68,68,0.18)',
+          }}>
             <div>
-              <div className="text-sm font-semibold text-[var(--danger)]">Excluir conta</div>
-              <div className="text-xs text-[var(--text-muted)] mt-0.5">
+              <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--danger)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Trash2 size={15} />
+                Excluir conta
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                 Ação irreversível. Todo histórico de pedidos, financeiro e auditoria pode ser removido.
               </div>
             </div>
-            <Button
+            <Btn
               variant="danger"
-              size="lg"
               onClick={() => toast.error('Entre em contato com o suporte para excluir a conta.')}
               icon={<Trash2 size={14} />}
             >
-              Excluir
-            </Button>
+              Excluir conta
+            </Btn>
           </div>
         </div>
-      </Card>
+      </div>
+
     </div>
   )
 }
