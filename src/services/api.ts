@@ -1,5 +1,7 @@
 import axios from 'axios'
 import type {
+  ApiKeyCreateResponse,
+  ApiKeyInfo,
   AuditoriaItem,
   Cliente,
   DashboardResumo,
@@ -202,6 +204,44 @@ export const fiscalApi = {
     }
     const { data } = await http.get(`/validar-nota/${id}`)
     return data
+  },
+}
+
+export const apiKeyApi = {
+  obter: async () => {
+    if (USE_MOCK_API) {
+      const { mockApiKeyApi } = await loadMockApi()
+      return mockApiKeyApi.obter()
+    }
+
+    try {
+      const { data } = await http.get<ApiKeyInfo>('/clientes/api-key')
+      return data
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
+        return null
+      }
+      throw error
+    }
+  },
+
+  gerar: async () => {
+    if (USE_MOCK_API) {
+      const { mockApiKeyApi } = await loadMockApi()
+      return mockApiKeyApi.gerar()
+    }
+
+    const { data } = await http.post<ApiKeyCreateResponse>('/clientes/api-key')
+    return data
+  },
+
+  revogar: async () => {
+    if (USE_MOCK_API) {
+      const { mockApiKeyApi } = await loadMockApi()
+      return mockApiKeyApi.revogar()
+    }
+
+    await http.delete('/clientes/api-key')
   },
 }
 

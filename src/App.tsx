@@ -1,5 +1,5 @@
-import { useEffect } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect, useLayoutEffect } from 'react'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { ProtectedRoute, PublicOnlyRoute } from '@/components/auth/ProtectedRoute'
 import { AppLayout } from '@/components/layout/AppLayout'
@@ -14,6 +14,7 @@ import {
 import { PerfilPage } from '@/pages/PerfilPage'
 import { authApi } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
+import { resetWindowScroll } from '@/utils/scroll'
 import { getAccessToken, getRefreshToken } from '@/utils/authStorage'
 
 const ts = {
@@ -69,10 +70,56 @@ function AppBootstrap() {
   return null
 }
 
+function ScrollManager() {
+  const { pathname, search } = useLocation()
+
+  useLayoutEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual'
+    }
+
+    const handlePageShow = () => {
+      resetWindowScroll()
+    }
+
+    window.addEventListener('pageshow', handlePageShow)
+
+    return () => {
+      window.removeEventListener('pageshow', handlePageShow)
+
+      if ('scrollRestoration' in window.history) {
+        window.history.scrollRestoration = 'auto'
+      }
+    }
+  }, [])
+
+  useLayoutEffect(() => {
+    resetWindowScroll()
+
+    const frameId = window.requestAnimationFrame(() => {
+      resetWindowScroll()
+    })
+
+    return () => {
+      window.cancelAnimationFrame(frameId)
+    }
+  }, [pathname, search])
+
+  return null
+}
+
+function HomeRoute() {
+  const { isAuthenticated, isBootstrapping } = useAuthStore()
+
+  if (isBootstrapping) return null
+  return isAuthenticated ? <Navigate to="/app" replace /> : <LandingPage />
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <AppBootstrap />
+      <ScrollManager />
       <Toaster position="bottom-right" toastOptions={{
         duration: 4000, style: ts,
         success: { iconTheme: { primary: '#00d4aa', secondary: '#000' }, style: { ...ts, borderLeft: '3px solid #00d4aa' } },
@@ -80,7 +127,7 @@ export default function App() {
       }}
       />
       <Routes>
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/" element={<HomeRoute />} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route element={<PublicOnlyRoute />}>
           <Route path="/login" element={<AuthPage />} />

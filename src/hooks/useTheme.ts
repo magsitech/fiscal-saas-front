@@ -4,6 +4,17 @@ export type ThemeMode = 'light' | 'dark'
 
 const STORAGE_KEY = 'validaenota-theme-mode'
 
+function getSystemTheme(): ThemeMode {
+  if (typeof window === 'undefined') return 'dark'
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+}
+
+function getPreferredTheme(): ThemeMode {
+  if (typeof window === 'undefined') return 'dark'
+  const stored = window.localStorage.getItem(STORAGE_KEY)
+  return stored === 'light' || stored === 'dark' ? stored : getSystemTheme()
+}
+
 function applyTheme(mode: ThemeMode) {
   document.documentElement.dataset.theme = mode
   document.documentElement.dataset.themeMode = mode
@@ -11,11 +22,7 @@ function applyTheme(mode: ThemeMode) {
 }
 
 export function useTheme() {
-  const [mode, setMode] = useState<ThemeMode>(() => {
-    if (typeof window === 'undefined') return 'dark'
-    const stored = window.localStorage.getItem(STORAGE_KEY)
-    return stored === 'light' || stored === 'dark' ? stored : 'dark'
-  })
+  const [mode, setMode] = useState<ThemeMode>(() => getPreferredTheme())
 
   useEffect(() => {
     applyTheme(mode)
@@ -29,7 +36,5 @@ export function useTheme() {
 }
 
 export function initializeTheme() {
-  const stored = window.localStorage.getItem(STORAGE_KEY)
-  const mode: ThemeMode = stored === 'light' || stored === 'dark' ? stored : 'dark'
-  applyTheme(mode)
+  applyTheme(getPreferredTheme())
 }

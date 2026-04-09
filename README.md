@@ -42,6 +42,12 @@ Hoje o projeto entrega:
 - `lucide-react`
 - `date-fns`
 
+## Conteúdo e UX
+
+Para manter consistência editorial nas telas internas, consulte:
+
+- `docs/content-style.md`
+
 ## Execução local
 
 Instale as dependências:

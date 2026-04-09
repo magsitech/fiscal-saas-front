@@ -152,3 +152,14 @@ export interface ValidarNotaResponse {
   status: StatusAuditoria
   cache_hit: boolean
 }
+
+export interface ApiKeyInfo {
+  prefixo: string
+  sufixo: string
+  criado_em: string
+  ativa: boolean
+}
+
+export interface ApiKeyCreateResponse extends ApiKeyInfo {
+  chave: string
+}

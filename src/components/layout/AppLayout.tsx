@@ -1,57 +1,69 @@
-import { useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
+import { AlertTriangle, Menu } from 'lucide-react'
 import { Sidebar } from './Sidebar'
-import { AlertTriangle, Menu, ShieldAlert, Wifi } from 'lucide-react'
-import {
-  API_BASE_URL,
-  APP_ENV,
-  ENVIRONMENT_LABEL,
-  EXPECTED_FRONTEND_URL,
-  USE_MOCK_API,
-} from '@/config/runtime'
-import { ThemeToggle } from '@/components/ui/ThemeToggle'
+import { ENVIRONMENT_LABEL, USE_MOCK_API } from '@/config/runtime'
 
-const PAGE_TITLES: Record<string, string> = {
-  '/app': 'Dashboard',
-  '/app/auditoria': 'Histórico de Auditoria',
-  '/app/extrato': 'Extrato Financeiro',
-  '/app/creditos': 'Comprar Créditos',
-  '/app/pedidos': 'Pedidos',
-  '/app/simulador': 'Simulador de Custos',
-  '/app/perfil': 'Meu Perfil',
+const PAGE_META: Record<string, { title: string; description: string; chips: string[] }> = {
+  '/app': {
+    title: 'Dashboard',
+    description: 'Acompanhe o panorama geral da conta, do saldo e da operação em um único lugar.',
+    chips: ['Resumo da conta', 'Saldo', 'Operação'],
+  },
+  '/app/auditoria': {
+    title: 'Histórico de auditoria',
+    description: 'Revise o status das consultas fiscais, filtre ocorrências e acompanhe o processamento.',
+    chips: ['NF-e e NFC-e', 'Status SEFAZ', 'Filtros'],
+  },
+  '/app/extrato': {
+    title: 'Extrato financeiro',
+    description: 'Consulte créditos, débitos, estornos e expirações para acompanhar o saldo.',
+    chips: ['Créditos', 'Débitos', 'Conciliação'],
+  },
+  '/app/creditos': {
+    title: 'Comprar créditos',
+    description: 'Gere pedidos por PIX ou boleto e mantenha saldo suficiente para o volume planejado.',
+    chips: ['PIX', 'Boleto', 'Pré-pago'],
+  },
+  '/app/pedidos': {
+    title: 'Pedidos',
+    description: 'Acompanhe pagamentos pendentes, concluídos e créditos ainda não confirmados.',
+    chips: ['Histórico', 'Confirmações', 'Pendências'],
+  },
+  '/app/simulador': {
+    title: 'Simulador de custos',
+    description: 'Projete o custo do próximo lote com base no volume acumulado e nas faixas progressivas.',
+    chips: ['Faixas', 'Breakdown', 'Previsão'],
+  },
+  '/app/perfil': {
+    title: 'Meu perfil',
+    description: 'Confira dados da conta, mantenha as informações atualizadas e gerencie o acesso.',
+    chips: ['Cadastro', 'Segurança', 'Sessão'],
+  },
 }
-
-const ENVIRONMENT_STYLES = {
-  main: {
-    dot: 'bg-[var(--accent)]',
-    pillBg: 'rgba(0,212,170,.12)',
-    pillBorder: '1px solid rgba(0,212,170,.28)',
-    pillText: 'var(--accent)',
-    label: 'Produção',
-  },
-  staging: {
-    dot: 'bg-[var(--warn)]',
-    pillBg: 'rgba(245,158,11,.12)',
-    pillBorder: '1px solid rgba(245,158,11,.28)',
-    pillText: 'var(--warn)',
-    label: 'Staging',
-  },
-} as const
 
 export function AppLayout() {
   const { pathname } = useLocation()
-  const title = PAGE_TITLES[pathname] ?? 'validaeNota'
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const environmentUi = ENVIRONMENT_STYLES[APP_ENV]
-  const environmentTitle = USE_MOCK_API
-    ? `Mock ativo em ${ENVIRONMENT_LABEL}. Frontend: ${EXPECTED_FRONTEND_URL} | Backend configurado: ${API_BASE_URL}`
-    : `${ENVIRONMENT_LABEL}. Frontend: ${EXPECTED_FRONTEND_URL} | Backend: ${API_BASE_URL}`
+  const workspaceRef = useRef<HTMLDivElement | null>(null)
+  const mainRef = useRef<HTMLElement | null>(null)
+
+  const page = PAGE_META[pathname] ?? {
+    title: 'validaeNota',
+    description: 'Painel operacional para validação fiscal, consumo e gestão da conta.',
+    chips: ['Operação'],
+  }
+
+  useLayoutEffect(() => {
+    workspaceRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+    mainRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [pathname])
 
   return (
     <div className="flex min-h-screen app-shell">
       <Sidebar mobileOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div ref={workspaceRef} className="app-workspace flex min-h-screen flex-1 flex-col min-w-0">
         {USE_MOCK_API && (
           <div
             style={{
@@ -67,55 +79,84 @@ export function AppLayout() {
               fontWeight: 700,
               textAlign: 'center',
             }}
-            title={environmentTitle}
           >
             <AlertTriangle size={14} />
             Modo mock ativo no ambiente {ENVIRONMENT_LABEL.toLowerCase()}. Não use este modo para validação final de produção.
           </div>
         )}
 
-        <header className="h-14 px-8 flex items-center justify-between bg-[var(--surface)] border-b border-[var(--border)] shrink-0 app-header">
-          <div className="flex items-center gap-3">
+        <main ref={mainRef} className="flex-1 p-8 app-main">
+          <div className="app-content-stack">
             <button
               type="button"
               className="app-mobile-only"
               onClick={() => setMobileMenuOpen(true)}
-              style={{ border: '1px solid var(--border)', background: 'var(--surface-2)', color: 'var(--text)', borderRadius: '8px', padding: '8px', alignItems: 'center', justifyContent: 'center' }}
+              style={{
+                border: '1px solid var(--border)',
+                background: 'var(--surface-2)',
+                color: 'var(--text)',
+                borderRadius: '12px',
+                padding: '8px',
+                marginBottom: '14px',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
               aria-label="Abrir menu"
             >
               <Menu size={18} />
             </button>
-            <h1 className="text-[15px] font-semibold">{title}</h1>
-          </div>
-          <div className="flex items-center gap-3 app-header-actions">
-            <ThemeToggle />
-            <div
-              className="flex items-center gap-2 text-xs font-semibold rounded-full px-3 py-1.5"
-              style={{
-                background: USE_MOCK_API ? 'rgba(239,68,68,.12)' : environmentUi.pillBg,
-                border: USE_MOCK_API ? '1px solid rgba(239,68,68,.28)' : environmentUi.pillBorder,
-                color: USE_MOCK_API ? 'var(--danger)' : environmentUi.pillText,
-              }}
-              title={environmentTitle}
-            >
-              {USE_MOCK_API ? (
-                <>
-                  <ShieldAlert size={13} />
-                  Mock ativo
-                </>
-              ) : (
-                <>
-                  <span className={`w-2 h-2 rounded-full animate-pulse ${environmentUi.dot}`} />
-                  <Wifi size={13} />
-                  {environmentUi.label}
-                </>
-              )}
-            </div>
-          </div>
-        </header>
 
-        <main className="flex-1 p-8 overflow-y-auto app-main">
-          <Outlet />
+            <section
+              className="app-route-hero"
+              style={{
+                marginBottom: '24px',
+                padding: '22px',
+                borderRadius: '24px',
+                border: '1px solid var(--border)',
+                background:
+                  'linear-gradient(135deg, color-mix(in srgb, var(--surface) 88%, transparent), color-mix(in srgb, var(--surface-2) 82%, var(--accent-dim) 18%))',
+              }}
+            >
+              <div
+                className="app-route-hero-top"
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  justifyContent: 'space-between',
+                  gap: '14px',
+                  marginBottom: '14px',
+                }}
+              >
+                <div style={{ maxWidth: '760px', position: 'relative', zIndex: 1 }}>
+                  <h2 style={{ fontSize: '32px', lineHeight: 1.02, letterSpacing: '-0.04em', marginBottom: '12px' }}>
+                    {page.title}
+                  </h2>
+                  <p style={{ color: 'var(--text-muted)', maxWidth: '70ch', fontSize: '15px' }}>{page.description}</p>
+                </div>
+              </div>
+
+              <div className="app-route-chip-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                {page.chips.map((chip) => (
+                  <span
+                    key={chip}
+                    style={{
+                      padding: '6px 10px',
+                      borderRadius: '999px',
+                      background: 'color-mix(in srgb, var(--surface) 94%, transparent)',
+                      border: '1px solid var(--border)',
+                      color: 'var(--text-muted)',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {chip}
+                  </span>
+                ))}
+              </div>
+            </section>
+
+            <Outlet />
+          </div>
         </main>
 
         <footer
@@ -128,7 +169,7 @@ export function AppLayout() {
             textAlign: 'center',
             color: 'var(--text-dim)',
             fontSize: '12px',
-            background: 'var(--surface)',
+            background: 'color-mix(in srgb, var(--surface) 94%, transparent)',
           }}
         >
           © 2026 validaeNota. Plataforma de validação fiscal brasileira.

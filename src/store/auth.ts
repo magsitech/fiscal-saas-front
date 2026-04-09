@@ -57,6 +57,7 @@ export const useAuthStore = create<AuthState>()(
         clearAuthTokens()
         if (USE_MOCK_API && typeof window !== 'undefined') {
           window.localStorage.removeItem('validaenota-mock-session')
+          window.localStorage.removeItem('validaenota-mock-session-v2')
         }
         set({
           usuario: null,

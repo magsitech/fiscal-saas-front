@@ -1,4 +1,6 @@
 import type {
+  ApiKeyCreateResponse,
+  ApiKeyInfo,
   AuditoriaItem,
   Cliente,
   DashboardResumo,
@@ -19,6 +21,12 @@ import type {
 type MockUser = Cliente & { senha: string }
 
 type MockDb = {
+  apiKey: {
+    prefixo: string
+    sufixo: string
+    criado_em: string
+    revogado_em: string | null
+  } | null
   users: MockUser[]
   pedidos: Pedido[]
   auditoria: AuditoriaItem[]
@@ -26,8 +34,8 @@ type MockDb = {
   saldo: SaldoResumo
 }
 
-const DB_KEY = 'validaenota-mock-db'
-const SESSION_KEY = 'validaenota-mock-session'
+const DB_KEY = 'validaenota-mock-db-v2'
+const SESSION_KEY = 'validaenota-mock-session-v2'
 
 const DEMO_USER: MockUser = {
   id: 'usr_demo_001',
@@ -43,31 +51,39 @@ const DEMO_USER: MockUser = {
   senha: 'Demo@123',
 }
 
+function ago(days = 0, hours = 0, minutes = 0) {
+  return new Date(Date.now() - (((days * 24) + hours) * 60 + minutes) * 60 * 1000).toISOString()
+}
+
+function ahead(days = 0, hours = 0, minutes = 0) {
+  return new Date(Date.now() + (((days * 24) + hours) * 60 + minutes) * 60 * 1000).toISOString()
+}
+
 const DEFAULT_SALDO: SaldoResumo = {
-  saldo_disponivel: '842.38',
-  expira_em: '2026-04-29T23:59:59.000Z',
+  saldo_disponivel: '1247.92',
+  expira_em: ahead(21),
   status: 'ATIVO',
-  consultas_no_periodo: 1384,
+  consultas_no_periodo: 4328,
 }
 
 const DEFAULT_AUDITORIA: AuditoriaItem[] = [
   {
     id: 'aud_001',
-    chave_nf: '35260312345678000123550010000012341000012345',
+    chave_nf: '35260412345678000123550010000012341000012345',
     modelo: '55',
     cnpj_emitente: '12345678000123',
     status: 'AUTORIZADA',
     status_sefaz: '100',
     cache_hit: false,
     custo_consulta: '0.1800',
-    saldo_antes: '842.56',
-    saldo_depois: '842.38',
-    criado_em: '2026-03-30T17:12:00.000Z',
-    processado_em: '2026-03-30T17:12:08.000Z',
+    saldo_antes: '1248.10',
+    saldo_depois: '1247.92',
+    criado_em: ago(0, 1, 12),
+    processado_em: ago(0, 1, 11),
   },
   {
     id: 'aud_002',
-    chave_nf: '35260398765432000199550010000043211000098765',
+    chave_nf: '35260498765432000199550010000043211000098765',
     modelo: '65',
     cnpj_emitente: '98765432000199',
     status: 'CACHE_HIT',
@@ -76,12 +92,12 @@ const DEFAULT_AUDITORIA: AuditoriaItem[] = [
     custo_consulta: null,
     saldo_antes: null,
     saldo_depois: null,
-    criado_em: '2026-03-30T14:40:00.000Z',
-    processado_em: '2026-03-30T14:40:01.000Z',
+    criado_em: ago(0, 2, 5),
+    processado_em: ago(0, 2, 4),
   },
   {
     id: 'aud_003',
-    chave_nf: '31260345678901000188550010000022221000045678',
+    chave_nf: '31260445678901000188550010000022221000045678',
     modelo: '55',
     cnpj_emitente: '45678901000188',
     status: 'PROCESSANDO',
@@ -90,12 +106,12 @@ const DEFAULT_AUDITORIA: AuditoriaItem[] = [
     custo_consulta: null,
     saldo_antes: null,
     saldo_depois: null,
-    criado_em: '2026-03-30T12:22:00.000Z',
+    criado_em: ago(0, 0, 24),
     processado_em: null,
   },
   {
     id: 'aud_004',
-    chave_nf: '41260311122233000144550010000055551000011122',
+    chave_nf: '41260411122233000144550010000055551000011122',
     modelo: '55',
     cnpj_emitente: '11122233000144',
     status: 'ERRO',
@@ -104,8 +120,64 @@ const DEFAULT_AUDITORIA: AuditoriaItem[] = [
     custo_consulta: null,
     saldo_antes: null,
     saldo_depois: null,
-    criado_em: '2026-03-29T19:03:00.000Z',
-    processado_em: '2026-03-29T19:03:11.000Z',
+    criado_em: ago(1, 4, 18),
+    processado_em: ago(1, 4, 17),
+  },
+  {
+    id: 'aud_005',
+    chave_nf: '35260422446688000110550010000076541000022211',
+    modelo: '55',
+    cnpj_emitente: '22446688000110',
+    status: 'DENEGADA',
+    status_sefaz: '301',
+    cache_hit: false,
+    custo_consulta: '0.1800',
+    saldo_antes: '1248.28',
+    saldo_depois: '1248.10',
+    criado_em: ago(1, 7, 2),
+    processado_em: ago(1, 7, 1),
+  },
+  {
+    id: 'aud_006',
+    chave_nf: '35260466554433000188550010000011221000033344',
+    modelo: '65',
+    cnpj_emitente: '66554433000188',
+    status: 'CANCELADA',
+    status_sefaz: '101',
+    cache_hit: false,
+    custo_consulta: '0.1800',
+    saldo_antes: '1248.46',
+    saldo_depois: '1248.28',
+    criado_em: ago(2, 3, 40),
+    processado_em: ago(2, 3, 39),
+  },
+  {
+    id: 'aud_007',
+    chave_nf: '35260499887766000177550010000022221000055566',
+    modelo: '55',
+    cnpj_emitente: '99887766000177',
+    status: 'PENDENTE',
+    status_sefaz: null,
+    cache_hit: false,
+    custo_consulta: null,
+    saldo_antes: null,
+    saldo_depois: null,
+    criado_em: ago(3, 1, 20),
+    processado_em: null,
+  },
+  {
+    id: 'aud_008',
+    chave_nf: '35260444556677000122550010000099991000077788',
+    modelo: '65',
+    cnpj_emitente: '44556677000122',
+    status: 'AUTORIZADA',
+    status_sefaz: '100',
+    cache_hit: false,
+    custo_consulta: '0.1800',
+    saldo_antes: '1248.64',
+    saldo_depois: '1248.46',
+    criado_em: ago(4, 5, 12),
+    processado_em: ago(4, 5, 10),
   },
 ]
 
@@ -113,35 +185,68 @@ const DEFAULT_EXTRATO: ExtratoItem[] = [
   {
     id: 'fin_001',
     tipo: 'CREDITO',
-    valor: '500.0000',
-    saldo_resultante: '842.56',
-    descricao: 'Credito gerado pela confirmacao do pedido',
-    expira_em: '2026-04-29T23:59:59.000Z',
+    valor: '1000.0000',
+    saldo_resultante: '1248.64',
+    descricao: 'Crédito confirmado por pagamento via PIX',
+    expira_em: ahead(21),
     pedido_id: 'ped_001',
     log_auditoria_id: null,
-    criado_em: '2026-03-25T13:20:00.000Z',
+    criado_em: ago(5, 2, 0),
   },
   {
     id: 'fin_002',
     tipo: 'DEBITO',
     valor: '0.1800',
-    saldo_resultante: '842.38',
-    descricao: 'Debito por consulta fiscal',
+    saldo_resultante: '1247.92',
+    descricao: 'Débito por consulta fiscal autorizada',
     expira_em: null,
     pedido_id: null,
     log_auditoria_id: 'aud_001',
-    criado_em: '2026-03-30T17:12:08.000Z',
+    criado_em: ago(0, 1, 11),
   },
   {
     id: 'fin_003',
     tipo: 'DEBITO',
     valor: '0.1800',
-    saldo_resultante: '842.20',
-    descricao: 'Debito por consulta fiscal',
+    saldo_resultante: '1248.10',
+    descricao: 'Débito por consulta fiscal denegada',
     expira_em: null,
     pedido_id: null,
-    log_auditoria_id: 'aud_003',
-    criado_em: '2026-03-30T18:02:08.000Z',
+    log_auditoria_id: 'aud_005',
+    criado_em: ago(1, 7, 1),
+  },
+  {
+    id: 'fin_004',
+    tipo: 'DEBITO',
+    valor: '0.1800',
+    saldo_resultante: '1248.28',
+    descricao: 'Débito por consulta fiscal cancelada',
+    expira_em: null,
+    pedido_id: null,
+    log_auditoria_id: 'aud_006',
+    criado_em: ago(2, 3, 39),
+  },
+  {
+    id: 'fin_005',
+    tipo: 'ESTORNO',
+    valor: '15.0000',
+    saldo_resultante: '1248.46',
+    descricao: 'Estorno operacional liberado pelo suporte',
+    expira_em: null,
+    pedido_id: null,
+    log_auditoria_id: null,
+    criado_em: ago(3, 2, 15),
+  },
+  {
+    id: 'fin_006',
+    tipo: 'EXPIRACAO',
+    valor: '32.5000',
+    saldo_resultante: '1233.46',
+    descricao: 'Expiração parcial de saldo antigo do período anterior',
+    expira_em: ago(1),
+    pedido_id: null,
+    log_auditoria_id: null,
+    criado_em: ago(6, 0, 30),
   },
 ]
 
@@ -149,22 +254,52 @@ const DEFAULT_PEDIDOS: Pedido[] = [
   {
     id: 'ped_001',
     metodo_pagamento: 'PIX',
-    valor: '500.00',
+    valor: '1000.00',
     status: 'PAGO',
-    confirmado_em: '2026-03-25T13:20:00.000Z',
-    expira_em: '2026-03-25T13:45:00.000Z',
-    credito_expira_em: '2026-04-29T23:59:59.000Z',
-    criado_em: '2026-03-25T13:15:00.000Z',
+    confirmado_em: ago(5, 1, 40),
+    expira_em: ago(5, 1, 10),
+    credito_expira_em: ahead(21),
+    criado_em: ago(5, 2, 0),
   },
   {
     id: 'ped_002',
     metodo_pagamento: 'BOLETO',
-    valor: '250.00',
+    valor: '500.00',
     status: 'AGUARDANDO_PAGAMENTO',
     confirmado_em: null,
-    expira_em: '2026-03-30T09:00:00.000Z',
+    expira_em: ahead(1, 6),
     credito_expira_em: null,
-    criado_em: '2026-03-27T09:00:00.000Z',
+    criado_em: ago(0, 4, 30),
+  },
+  {
+    id: 'ped_003',
+    metodo_pagamento: 'PIX',
+    valor: '250.00',
+    status: 'PENDENTE',
+    confirmado_em: null,
+    expira_em: ahead(0, 0, 25),
+    credito_expira_em: null,
+    criado_em: ago(0, 0, 5),
+  },
+  {
+    id: 'ped_004',
+    metodo_pagamento: 'CARTAO',
+    valor: '750.00',
+    status: 'CANCELADO',
+    confirmado_em: null,
+    expira_em: ago(2, 1),
+    credito_expira_em: null,
+    criado_em: ago(2, 4, 5),
+  },
+  {
+    id: 'ped_005',
+    metodo_pagamento: 'BOLETO',
+    valor: '300.00',
+    status: 'EXPIRADO',
+    confirmado_em: null,
+    expira_em: ago(7, 3),
+    credito_expira_em: null,
+    criado_em: ago(8, 1, 20),
   },
 ]
 
@@ -183,6 +318,7 @@ function fail(message: string, status = 400): never {
 
 function createDefaultDb(): MockDb {
   return {
+    apiKey: null,
     users: [DEMO_USER],
     pedidos: DEFAULT_PEDIDOS,
     auditoria: DEFAULT_AUDITORIA,
@@ -196,6 +332,7 @@ function ensureMockDb(db: Partial<MockDb>): MockDb {
   const hasDemoUser = users.some((user) => user.email.toLowerCase() === DEMO_USER.email.toLowerCase())
 
   return {
+    apiKey: db.apiKey ?? null,
     users: hasDemoUser ? users : [DEMO_USER, ...users],
     pedidos: Array.isArray(db.pedidos) ? db.pedidos : DEFAULT_PEDIDOS,
     auditoria: Array.isArray(db.auditoria) ? db.auditoria : DEFAULT_AUDITORIA,
@@ -350,6 +487,19 @@ function badgeToStatus(value: string): StatusAuditoria {
   return value as StatusAuditoria
 }
 
+function randomKeyChunk(length: number) {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
+  let out = ''
+  for (let i = 0; i < length; i += 1) {
+    out += chars[Math.floor(Math.random() * chars.length)]
+  }
+  return out
+}
+
+function buildApiKeyValue() {
+  return `vn_${randomKeyChunk(40)}`
+}
+
 export const mockAuthApi = {
   async login(payload: LoginPayload) {
     const db = readDb()
@@ -491,7 +641,7 @@ export const mockFiscalApi = {
       tipo: 'DEBITO' as TipoMovimentacao,
       valor: custoConsulta.toFixed(4),
       saldo_resultante: saldoDepois.toFixed(2),
-      descricao: 'Debito por consulta fiscal',
+      descricao: 'Débito por consulta fiscal',
       expira_em: null,
       pedido_id: null,
       log_auditoria_id: auditoriaId,
@@ -519,5 +669,59 @@ export const mockFiscalApi = {
     const item = readDb().auditoria.find((auditoria) => auditoria.id === id)
     if (!item) fail('Auditoria não encontrada', 404)
     return delay(item)
+  },
+}
+
+export const mockApiKeyApi = {
+  async obter() {
+    const { apiKey } = readDb()
+    if (!apiKey || apiKey.revogado_em) return delay(null)
+
+    const response: ApiKeyInfo = {
+      prefixo: apiKey.prefixo,
+      sufixo: apiKey.sufixo,
+      criado_em: apiKey.criado_em,
+      ativa: true,
+    }
+
+    return delay(response)
+  },
+
+  async gerar() {
+    const db = readDb()
+    const chave = buildApiKeyValue()
+    const criadoEm = new Date().toISOString()
+
+    db.apiKey = {
+      prefixo: chave.slice(0, 10),
+      sufixo: chave.slice(-4),
+      criado_em: criadoEm,
+      revogado_em: null,
+    }
+
+    writeDb(db)
+
+    const response: ApiKeyCreateResponse = {
+      chave,
+      prefixo: db.apiKey.prefixo,
+      sufixo: db.apiKey.sufixo,
+      criado_em: db.apiKey.criado_em,
+      ativa: true,
+    }
+
+    return delay(response)
+  },
+
+  async revogar() {
+    const db = readDb()
+    if (db.apiKey) {
+      db.apiKey = {
+        ...db.apiKey,
+        revogado_em: new Date().toISOString(),
+      }
+      writeDb(db)
+    }
+
+    return delay(undefined)
   },
 }

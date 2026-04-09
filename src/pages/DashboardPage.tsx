@@ -1,22 +1,24 @@
 import { useEffect, useState } from 'react'
-import { dashboardApi, saldoApi } from '@/services/api'
-import type { AuditoriaItem, DashboardResumo, SaldoResumo } from '@/types'
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  Badge,
-  ChaveNF,
-  Skeleton,
-  Table,
-  Th,
-  Td,
-  TrHover,
-  Empty,
-} from '@/components/ui'
 import { formatDistanceToNow, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { useNavigate } from 'react-router-dom'
+import { ArrowRight } from 'lucide-react'
+import { dashboardApi, saldoApi } from '@/services/api'
+import type { AuditoriaItem, DashboardResumo, SaldoResumo } from '@/types'
+import {
+  Badge,
+  Button,
+  Card,
+  CardHeader,
+  CardTitle,
+  ChaveNF,
+  Empty,
+  Skeleton,
+  Table,
+  Td,
+  Th,
+  TrHover,
+} from '@/components/ui'
 
 const FAIXAS = [
   { label: '1-500', preco: 0.22, pct: 100 },
@@ -30,6 +32,42 @@ const FAIXAS = [
 
 function fmt(val: string | number) {
   return Number(val).toLocaleString('pt-BR', { minimumFractionDigits: 2 })
+}
+
+function SummaryValueCard({
+  label,
+  value,
+  note,
+  tone,
+  featured = false,
+}: {
+  label: string
+  value: React.ReactNode
+  note: React.ReactNode
+  tone: string
+  featured?: boolean
+}) {
+  return (
+    <Card className={`app-kpi-card ${featured ? 'app-kpi-card-featured' : ''}`}>
+      <div className={featured ? 'p-7' : 'p-6'}>
+        <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--text-dim)] mb-4">
+          {label}
+        </div>
+        <div
+          className={featured ? 'font-mono text-[36px] font-semibold leading-none mb-4' : 'font-mono text-[30px] font-semibold leading-none mb-4'}
+          style={{ color: tone }}
+        >
+          {value}
+        </div>
+        <div
+          className="rounded-[18px] border px-4 py-3 text-sm leading-relaxed text-[var(--text-muted)]"
+          style={{ borderColor: 'var(--border)', background: 'color-mix(in srgb, var(--surface-2) 86%, transparent)' }}
+        >
+          {note}
+        </div>
+      </div>
+    </Card>
+  )
 }
 
 export function DashboardPage() {
@@ -62,209 +100,276 @@ export function DashboardPage() {
     : null
 
   return (
-    <div className="space-y-6">
-      <div
-        className="rounded-xl p-7 relative overflow-hidden border border-[rgba(0,212,170,0.2)]"
-        style={{ background: 'linear-gradient(135deg, #0e1a14, #0a1410)' }}
+    <div className="space-y-10">
+      <section
+        className="dashboard-summary-hero rounded-[24px] border relative overflow-hidden"
+        style={{ boxShadow: 'var(--shadow)' }}
       >
         <div
-          className="absolute top-0 right-0 w-64 h-64 pointer-events-none"
-          style={{ background: 'radial-gradient(circle at top right, rgba(0,212,170,0.12) 0%, transparent 70%)' }}
+          className="absolute -top-12 -right-12 w-56 h-56 rounded-full"
+          style={{ background: 'var(--dashboard-hero-orb)' }}
+        />
+        <div
+          className="absolute bottom-0 left-0 right-0 h-px"
+          style={{ background: 'var(--dashboard-hero-line)' }}
         />
 
-        <div
-          className="flex items-start justify-between mb-6 relative z-10 dashboard-hero-top"
-          style={{ gap: '16px' }}
-        >
-          <div>
-            <div className="text-xs font-bold uppercase tracking-widest text-[var(--accent)] mb-2">
-              Saldo disponível
-            </div>
-            {loading ? (
-              <Skeleton className="w-48 h-10 mb-2" />
-            ) : (
-              <div className="font-mono text-4xl font-semibold leading-none">
-                <span className="text-xl text-[var(--text-muted)] mr-1">R$</span>
-                {fmt(saldo?.saldo_disponivel ?? '0')}
+        <div className="p-9 space-y-9 relative z-10">
+          <div className="flex items-start justify-between gap-6 dashboard-hero-top">
+            <div className="space-y-5">
+              <div className="text-[11px] font-bold uppercase tracking-[0.22em] dashboard-summary-kicker">
+                Resumo financeiro
               </div>
-            )}
-            {diasRestantes !== null && (
-              <div className="text-xs text-[var(--text-muted)] mt-2">
-                Expira em{' '}
-                <span className={`font-semibold ${diasRestantes <= 7 ? 'text-[var(--warn)]' : 'text-[var(--text)]'}`}>
-                  {diasRestantes} dia{diasRestantes !== 1 ? 's' : ''}
-                </span>
-                {saldo?.expira_em && (
-                  <span className="ml-1">
-                    ({new Date(saldo.expira_em).toLocaleDateString('pt-BR')})
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
+              {loading ? (
+                <Skeleton className="w-52 h-11" />
+              ) : (
+                <div className="font-mono text-[44px] font-semibold leading-none dashboard-summary-value">
+                  <span className="text-xl dashboard-summary-currency mr-2">R$</span>
+                  {fmt(saldo?.saldo_disponivel ?? '0')}
+                </div>
+              )}
+              <p className="text-[15px] dashboard-summary-copy max-w-[46ch] leading-8">
+                Acompanhe o saldo disponível, o consumo do período e a proximidade de expiração dos créditos.
+              </p>
+            </div>
 
-          <div className="text-right relative z-10">
-            <div className="text-xs font-bold uppercase tracking-widest text-[var(--accent)] mb-2">
-              Status do saldo
-            </div>
-            <div className="text-lg font-mono font-semibold text-[var(--text)]">
-              {resumo?.saldo_status ?? '-'}
-            </div>
-            <div className="text-2xl font-mono font-semibold text-[var(--accent)] mt-1">
-              {resumo?.saldo_expira_em
-                ? new Date(resumo.saldo_expira_em).toLocaleDateString('pt-BR')
-                : 'Sem expiração ativa'}
-            </div>
-          </div>
-        </div>
-
-        <div className="relative z-10">
-          <div className="h-1.5 rounded-full bg-[var(--surface-2)] overflow-hidden">
             <div
-              className="h-full rounded-full transition-all duration-1000"
-              style={{
-                width: `${pct}%`,
-                background: 'linear-gradient(90deg, var(--accent), #00ffcc)',
-              }}
-            />
+              className="dashboard-summary-panel rounded-[22px] border p-6 min-w-[320px]"
+            >
+              <div className="text-[10px] font-bold uppercase tracking-[0.18em] dashboard-summary-panel-label mb-4">
+                Situação atual
+              </div>
+              <div className="text-base font-semibold dashboard-summary-panel-value mb-3">
+                {resumo?.saldo_status ?? 'Sem saldo'}
+              </div>
+              <div className="text-sm dashboard-summary-panel-copy leading-7">
+                {resumo?.saldo_expira_em
+                  ? `Créditos válidos até ${new Date(resumo.saldo_expira_em).toLocaleDateString('pt-BR')}`
+                  : 'Sem expiração ativa no momento.'}
+              </div>
+              <div className="grid grid-cols-2 gap-5 mt-6">
+                <div className="dashboard-summary-stat rounded-2xl border p-5">
+                  <div className="text-[10px] uppercase tracking-[0.14em] dashboard-summary-stat-label mb-2">Consultas</div>
+                  <div className="font-mono text-base font-semibold dashboard-summary-stat-value">{(saldo?.consultas_no_periodo ?? 0).toLocaleString('pt-BR')}</div>
+                </div>
+                <div className="dashboard-summary-stat rounded-2xl border p-5">
+                  <div className="text-[10px] uppercase tracking-[0.14em] dashboard-summary-stat-label mb-2">Expiração</div>
+                  <div className="font-mono text-base font-semibold dashboard-summary-stat-value">
+                    {diasRestantes !== null ? `${diasRestantes} dias` : '-'}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div
-            className="flex justify-between mt-2 text-xs text-[var(--text-muted)] dashboard-hero-meta"
-            style={{ gap: '8px' }}
-          >
-            <span>{pct}% do saldo atual comprometido</span>
-            <span>{(saldo?.consultas_no_periodo ?? 0).toLocaleString('pt-BR')} consultas no período</span>
+
+          <div>
+            <div className="h-2 rounded-full dashboard-summary-track overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-1000"
+                style={{
+                  width: `${pct}%`,
+                  background: 'var(--dashboard-hero-progress)',
+                }}
+              />
+            </div>
+            <div className="flex justify-between mt-4 text-sm dashboard-summary-meta dashboard-hero-meta" style={{ gap: '18px' }}>
+              <span>{pct}% do saldo atual comprometido</span>
+              <span>{(saldo?.consultas_no_periodo ?? 0).toLocaleString('pt-BR')} consultas no período</span>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
 
       <div
         className="grid grid-cols-4 gap-4 dashboard-kpis"
-        style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}
+        style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px' }}
       >
         {[
           {
             label: 'Consultas hoje',
             value: resumo?.consultas_hoje ?? '-',
-            sub: `R$ ${fmt(resumo?.gasto_hoje ?? '0')} gasto hoje`,
+            sub: `R$ ${fmt(resumo?.gasto_hoje ?? '0')} consumidos hoje`,
             color: 'var(--accent)',
+            featured: true,
           },
           {
             label: 'Consultas no período',
             value: (resumo?.consultas_periodo ?? 0).toLocaleString('pt-BR'),
-            sub: `R$ ${fmt(resumo?.gasto_periodo ?? '0')} total debitado`,
+            sub: `R$ ${fmt(resumo?.gasto_periodo ?? '0')} debitados no período`,
             color: 'var(--info)',
+            featured: true,
           },
           {
             label: 'Saldo utilizado',
             value: `R$ ${fmt(usado)}`,
             sub: `de R$ ${fmt(valorInicial)} monitorados`,
             color: 'var(--warn)',
+            featured: false,
           },
           {
             label: 'Status do saldo',
             value: saldo?.status ?? '-',
-            sub: diasRestantes !== null ? `${diasRestantes} dias restantes` : 'sem saldo ativo',
+            sub: diasRestantes !== null ? `${diasRestantes} dias restantes` : 'Sem saldo ativo',
             color: saldo?.status === 'ATIVO' ? 'var(--accent)' : 'var(--danger)',
+            featured: false,
           },
-        ].map((k) => (
-          <Card key={k.label} className="relative overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: k.color }} />
-            <div className="p-5">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2.5">
-                {k.label}
-              </div>
-              {loading ? (
-                <Skeleton className="w-24 h-7 mb-2" />
-              ) : (
-                <div className="font-mono text-xl font-semibold leading-none mb-1.5" style={{ color: k.color }}>
-                  {k.value}
+        ].map((k) =>
+          loading ? (
+            <Card key={k.label} className="app-kpi-card">
+              <div className="p-6">
+                <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--text-dim)] mb-4">
+                  {k.label}
                 </div>
-              )}
-              <div className="text-xs text-[var(--text-muted)]">{k.sub}</div>
-            </div>
-          </Card>
-        ))}
+                <Skeleton className="w-24 h-7 mb-4" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            </Card>
+          ) : (
+            <SummaryValueCard
+              key={k.label}
+              label={k.label}
+              value={k.value}
+              note={k.sub}
+              tone={k.color}
+              featured={k.featured}
+            />
+          )
+        )}
       </div>
 
       <div
         className="grid grid-cols-2 gap-4 dashboard-bottom-grid"
-        style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}
+        style={{ display: 'grid', gridTemplateColumns: '1.08fr 1.4fr', gap: '28px' }}
       >
-        <Card>
+        <Card className="app-dashboard-panel">
           <CardHeader>
             <CardTitle>Tabela de preços por faixa</CardTitle>
-            <span className="text-xs text-[var(--text-muted)]">Faixas oficiais do simulador financeiro</span>
+            <span className="text-xs text-[var(--text-muted)]">Base de cálculo do simulador</span>
           </CardHeader>
-          <div className="p-5 space-y-3">
+          <div className="p-7 space-y-6">
             {FAIXAS.map((f) => (
-              <div key={f.label} className="flex items-center gap-3">
-                <span className="font-mono text-[11px] text-[var(--text-dim)] w-28 shrink-0">{f.label}</span>
-                <div className="flex-1 h-1 rounded-full bg-[var(--surface-2)] overflow-hidden">
+              <div key={f.label} className="space-y-2.5">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-mono text-[11px] text-[var(--text-dim)]">{f.label}</span>
+                  <span className="font-mono text-xs font-semibold text-[var(--text)]">R$ {f.preco.toFixed(2)}</span>
+                </div>
+                <div className="h-2 rounded-full bg-[var(--surface-2)] overflow-hidden">
                   <div
                     className="h-full rounded-full bg-[var(--accent)]"
-                    style={{ width: `${f.pct}%`, opacity: 0.6 + f.pct / 200 }}
+                    style={{ width: `${f.pct}%`, opacity: 0.55 + f.pct / 220 }}
                   />
                 </div>
-                <span className="font-mono text-xs font-semibold text-[var(--text)] w-14 text-right">
-                  R$ {f.preco.toFixed(2)}
-                </span>
               </div>
             ))}
           </div>
         </Card>
 
-        <Card>
+        <Card className="app-dashboard-panel">
           <CardHeader>
-            <CardTitle>Últimas auditorias</CardTitle>
-            <button
+            <div className="space-y-2">
+              <CardTitle>Últimas auditorias</CardTitle>
+              <div className="text-xs text-[var(--text-muted)] leading-6">Acompanhe as consultas fiscais mais recentes</div>
+            </div>
+            <Button
+              type="button"
+              variant="soft"
+              size="sm"
+              icon={<ArrowRight size={13} />}
               onClick={() => navigate('/app/auditoria')}
-              className="text-xs text-[var(--accent)] hover:underline"
             >
               Ver todas
-            </button>
+            </Button>
           </CardHeader>
-          <Table>
-            <thead>
-              <tr>
-                <Th>Chave NF</Th>
-                <Th>Modelo</Th>
-                <Th>Status</Th>
-                <Th>Quando</Th>
-              </tr>
-            </thead>
-            <tbody>
+
+          <div className="app-data-desktop app-table-shell">
+            <Table>
+              <thead>
+                <tr>
+                  <Th>Chave NF</Th>
+                  <Th>Modelo</Th>
+                  <Th>Status</Th>
+                  <Th>Quando</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  Array.from({ length: 4 }).map((_, i) => (
+                    <TrHover key={i}>
+                      <Td><Skeleton className="h-4 w-28" /></Td>
+                      <Td><Skeleton className="h-4 w-10" /></Td>
+                      <Td><Skeleton className="h-4 w-20" /></Td>
+                      <Td><Skeleton className="h-4 w-16" /></Td>
+                    </TrHover>
+                  ))
+                ) : ultimas.length === 0 ? (
+                  <tr><td colSpan={4}><Empty message="Nenhuma auditoria ainda" /></td></tr>
+                ) : (
+                  ultimas.map((v) => (
+                    <TrHover key={v.id}>
+                      <Td><ChaveNF chave={v.chave_nf} /></Td>
+                      <Td>
+                        <span className={`text-xs font-mono font-semibold ${v.modelo === '55' ? 'text-[var(--info)]' : 'text-[var(--accent)]'}`}>
+                          NF-{v.modelo === '55' ? 'e' : 'Ce'}
+                        </span>
+                      </Td>
+                      <Td><Badge status={v.status} /></Td>
+                      <Td>
+                        <span className="text-xs">
+                          {formatDistanceToNow(parseISO(v.criado_em), { addSuffix: true, locale: ptBR })}
+                        </span>
+                      </Td>
+                    </TrHover>
+                  ))
+                )}
+              </tbody>
+            </Table>
+          </div>
+
+          <div className="app-data-mobile p-4">
+            <div className="app-mobile-card-list">
               {loading ? (
-                Array.from({ length: 4 }).map((_, i) => (
-                  <TrHover key={i}>
-                    <Td><Skeleton className="h-4 w-28" /></Td>
-                    <Td><Skeleton className="h-4 w-10" /></Td>
-                    <Td><Skeleton className="h-4 w-20" /></Td>
-                    <Td><Skeleton className="h-4 w-16" /></Td>
-                  </TrHover>
+                Array.from({ length: 3 }).map((_, i) => (
+                  <Card key={i}>
+                    <div className="p-4 space-y-3">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-3/5" />
+                    </div>
+                  </Card>
                 ))
               ) : ultimas.length === 0 ? (
-                <tr><td colSpan={4}><Empty message="Nenhuma auditoria ainda" /></td></tr>
+                <Empty message="Nenhuma auditoria ainda" />
               ) : (
                 ultimas.map((v) => (
-                  <TrHover key={v.id}>
-                    <Td><ChaveNF chave={v.chave_nf} /></Td>
-                    <Td>
-                      <span className={`text-xs font-mono font-semibold ${v.modelo === '55' ? 'text-[var(--info)]' : 'text-[var(--accent)]'}`}>
-                        NF-{v.modelo === '55' ? 'e' : 'Ce'}
-                      </span>
-                    </Td>
-                    <Td><Badge status={v.status} /></Td>
-                    <Td>
-                      <span className="text-xs">
-                        {formatDistanceToNow(parseISO(v.criado_em), { addSuffix: true, locale: ptBR })}
-                      </span>
-                    </Td>
-                  </TrHover>
+                  <Card key={v.id}>
+                    <div className="p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-dim)] mb-1">
+                            Chave NF
+                          </div>
+                          <ChaveNF chave={v.chave_nf} />
+                        </div>
+                        <Badge status={v.status} />
+                      </div>
+                      <div className="flex items-center justify-between gap-3 py-2 border-t border-[var(--border)]">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-dim)]">Modelo</span>
+                        <span className={`text-xs font-mono font-semibold ${v.modelo === '55' ? 'text-[var(--info)]' : 'text-[var(--accent)]'}`}>
+                          NF-{v.modelo === '55' ? 'e' : 'Ce'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-dim)]">Quando</span>
+                        <span className="text-xs text-[var(--text-muted)]">
+                          {formatDistanceToNow(parseISO(v.criado_em), { addSuffix: true, locale: ptBR })}
+                        </span>
+                      </div>
+                    </div>
+                  </Card>
                 ))
               )}
-            </tbody>
-          </Table>
+            </div>
+          </div>
         </Card>
       </div>
     </div>

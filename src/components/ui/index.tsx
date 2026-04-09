@@ -2,8 +2,8 @@ import React from 'react'
 
 // ─── Button ──────────────────────────────────────────────────
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'ghost' | 'danger'
-  size?: 'sm' | 'md'
+  variant?: 'primary' | 'ghost' | 'danger' | 'soft'
+  size?: 'sm' | 'md' | 'lg'
   loading?: boolean
   icon?: React.ReactNode
 }
@@ -18,17 +18,19 @@ export function Button({
   disabled,
   ...props
 }: ButtonProps) {
-  const base = 'inline-flex items-center gap-1.5 font-medium rounded-lg border transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed select-none'
+  const base = 'inline-flex items-center justify-center gap-2 whitespace-nowrap font-semibold rounded-[18px] border transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed select-none shadow-[0_14px_34px_rgba(15,23,42,0.10)] hover:-translate-y-[1px] active:translate-y-0 focus-visible:outline-none focus-visible:ring-4'
 
   const variants = {
-    primary: 'bg-[var(--accent)] text-black border-transparent hover:brightness-110 active:brightness-90',
-    ghost: 'bg-[var(--surface-2)] text-[var(--text)] border-[var(--border)] hover:border-[var(--border-bright)] hover:bg-[var(--border)]',
-    danger: 'bg-[var(--danger-dim)] text-[var(--danger)] border-[var(--danger-dim)] hover:bg-[var(--danger)] hover:text-white',
+    primary: 'bg-[linear-gradient(135deg,var(--accent),color-mix(in_srgb,var(--accent)_72%,white))] text-[#041311] border-[rgba(255,255,255,0.18)] hover:brightness-105 active:brightness-95 focus-visible:ring-[var(--accent-dim)]',
+    ghost: 'bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface)_92%,transparent),color-mix(in_srgb,var(--surface-2)_96%,transparent))] text-[var(--text)] border-[color-mix(in_srgb,var(--border)_88%,white_4%)] hover:border-[var(--border-bright)] hover:bg-[var(--surface-3)] focus-visible:ring-[var(--accent-dim)]',
+    danger: 'bg-[linear-gradient(135deg,var(--danger-dim),rgba(239,68,68,0.16))] text-[var(--danger)] border-[rgba(239,68,68,0.2)] hover:bg-[var(--danger)] hover:text-white hover:border-[var(--danger)] focus-visible:ring-[rgba(239,68,68,0.18)]',
+    soft: 'bg-[linear-gradient(135deg,color-mix(in_srgb,var(--accent-dim)_84%,transparent),color-mix(in_srgb,var(--info-dim)_72%,transparent))] text-[var(--accent)] border-[var(--accent-glow)] hover:border-[var(--accent)] hover:text-[var(--text)] focus-visible:ring-[var(--accent-dim)]',
   }
 
   const sizes = {
-    sm: 'px-3 py-1.5 text-xs',
-    md: 'px-4 py-2 text-sm',
+    sm: 'px-3.5 py-2 text-xs',
+    md: 'px-4.5 py-2.5 text-sm',
+    lg: 'px-5 py-3 text-sm',
   }
 
   return (
@@ -83,7 +85,7 @@ const BADGE_CLASSES: Record<BadgeVariant, string> = {
   yellow: 'bg-[var(--warn-dim)] text-[var(--warn)]',
   red:    'bg-[var(--danger-dim)] text-[var(--danger)]',
   blue:   'bg-[var(--info-dim)] text-[var(--info)]',
-  gray:   'bg-[rgba(107,125,143,0.1)] text-[var(--text-muted)]',
+  gray:   'bg-[color-mix(in_srgb,var(--surface-2)_88%,transparent)] text-[var(--text)]',
 }
 
 export function Badge({ status, label }: { status: string; label?: string }) {
@@ -99,7 +101,7 @@ export function Badge({ status, label }: { status: string; label?: string }) {
 // ─── Card ────────────────────────────────────────────────────
 export function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`bg-[var(--surface)] border border-[var(--border)] rounded-lg overflow-hidden ${className}`}>
+    <div className={`bg-[var(--surface)] border border-[var(--border)] rounded-lg overflow-hidden shadow-[0_16px_40px_rgba(0,0,0,0.12)] ${className}`}>
       {children}
     </div>
   )
@@ -107,14 +109,14 @@ export function Card({ children, className = '' }: { children: React.ReactNode; 
 
 export function CardHeader({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`flex items-center justify-between px-5 py-4 border-b border-[var(--border)] ${className}`}>
+    <div className={`flex items-center justify-between gap-4 px-5 py-5 border-b border-[var(--border)] ${className}`}>
       {children}
     </div>
   )
 }
 
 export function CardTitle({ children }: { children: React.ReactNode }) {
-  return <span className="text-sm font-semibold text-[var(--text)]">{children}</span>
+  return <span className="text-base font-semibold text-[var(--text)] tracking-[-0.02em]">{children}</span>
 }
 
 // ─── Input ───────────────────────────────────────────────────
@@ -128,7 +130,7 @@ export function Input({ label, error, icon, className = '', ...props }: InputPro
   return (
     <div className="flex flex-col gap-1.5">
       {label && (
-        <label className="text-xs font-semibold text-[var(--text-muted)] tracking-wide uppercase">
+        <label className="text-[11px] font-bold text-[var(--text-dim)] tracking-[0.14em] uppercase">
           {label}
         </label>
       )}
@@ -140,10 +142,10 @@ export function Input({ label, error, icon, className = '', ...props }: InputPro
         )}
         <input
           className={`
-            w-full bg-[var(--surface-2)] border rounded-lg px-3 py-2 text-sm
+            w-full bg-[color-mix(in_srgb,var(--surface-2)_94%,transparent)] border rounded-xl px-3.5 py-2.5 text-sm
             text-[var(--text)] placeholder:text-[var(--text-dim)]
-            outline-none transition-colors
-            border-[var(--border)] focus:border-[var(--accent)]
+            outline-none transition-all
+            border-[var(--border)] focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent-dim)]
             ${icon ? 'pl-9' : ''}
             ${error ? 'border-[var(--danger)]' : ''}
             ${className}
@@ -165,12 +167,12 @@ export function Select({ label, children, className = '', ...props }: SelectProp
   return (
     <div className="flex flex-col gap-1.5">
       {label && (
-        <label className="text-xs font-semibold text-[var(--text-muted)] tracking-wide uppercase">
+        <label className="text-[11px] font-bold text-[var(--text-dim)] tracking-[0.14em] uppercase">
           {label}
         </label>
       )}
       <select
-        className={`w-full bg-[var(--surface-2)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)] outline-none focus:border-[var(--accent)] cursor-pointer ${className}`}
+        className={`w-full bg-[color-mix(in_srgb,var(--surface-2)_94%,transparent)] border border-[var(--border)] rounded-xl px-3.5 py-2.5 text-sm text-[var(--text)] outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent-dim)] cursor-pointer transition-all ${className}`}
         {...props}
       >
         {children}
@@ -192,7 +194,7 @@ export function Skeleton({ className = '' }: { className?: string }) {
 // ─── Table ───────────────────────────────────────────────────
 export function Table({ children }: { children: React.ReactNode }) {
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto rounded-lg border border-[var(--border)] bg-[var(--surface)]">
       <table className="w-full text-sm border-collapse">{children}</table>
     </div>
   )
@@ -208,7 +210,7 @@ export function Th({ children }: { children: React.ReactNode }) {
 
 export function Td({ children, mono }: { children: React.ReactNode; mono?: boolean }) {
   return (
-    <td className={`px-5 py-3 border-b border-[var(--border)] text-[var(--text-muted)] last:border-b-0 ${mono ? 'font-mono text-xs' : ''}`}>
+    <td className={`px-5 py-3 border-b border-[var(--border)] text-[var(--text)] last:border-b-0 ${mono ? 'font-mono text-xs' : ''}`}>
       {children}
     </td>
   )
