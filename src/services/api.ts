@@ -1,10 +1,21 @@
 import axios from 'axios'
 import type {
-  TokenResponse, Usuario, LoginPayload, RegisterPayload,
-  SaldoResumo, DashboardResumo, ValidacaoItem, ConsumoItem,
-  SimuladorResponse, Pagamento, IniciarPagamentoResponse,
+  AuditoriaItem,
+  Cliente,
+  DashboardResumo,
+  ExtratoItem,
+  IniciarPedidoResponse,
+  LoginPayload,
+  Pedido,
+  RegisterPayload,
+  SaldoResumo,
+  SimuladorResponse,
+  TokenResponse,
+  ValidarNotaPayload,
+  ValidarNotaResponse,
 } from '@/types'
 import { API_BASE_URL, USE_MOCK_API } from '@/config/runtime'
+import { clearAuthTokens, getAccessToken, getRefreshToken, setAuthTokens } from '@/utils/authStorage'
 
 const apiBaseUrl = API_BASE_URL
 
@@ -18,14 +29,12 @@ const http = axios.create({
   timeout: 15_000,
 })
 
-// ── Injeta access token em cada requisição ───────────────────
 http.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token')
+  const token = getAccessToken()
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
 
-// ── Renova token automaticamente em 401 ─────────────────────
 let refreshing = false
 let queue: Array<() => void> = []
 
@@ -33,7 +42,7 @@ http.interceptors.response.use(
   (r) => r,
   async (error) => {
     const original = error.config
-    if (error.response?.status === 401 && !original._retry) {
+    if (error.response?.status === 401 && original && !original._retry) {
       if (refreshing) {
         return new Promise((resolve) => {
           queue.push(() => resolve(http(original)))
@@ -43,20 +52,22 @@ http.interceptors.response.use(
       refreshing = true
 
       try {
-        const refresh = localStorage.getItem('refresh_token')
+        const refresh = getRefreshToken()
         if (!refresh) throw new Error('no refresh')
 
         const { data } = await axios.post<TokenResponse>(`${apiBaseUrl}/auth/refresh`, {
           refresh_token: refresh,
         })
-        localStorage.setItem('access_token', data.access_token)
-        localStorage.setItem('refresh_token', data.refresh_token)
+        setAuthTokens(data.access_token, data.refresh_token)
         queue.forEach((fn) => fn())
         queue = []
         return http(original)
       } catch {
-        localStorage.clear()
-        window.location.href = '/login'
+        clearAuthTokens()
+        if (typeof window !== 'undefined') {
+          window.sessionStorage.removeItem('validaenota-auth')
+          window.location.href = '/login'
+        }
       } finally {
         refreshing = false
       }
@@ -65,7 +76,6 @@ http.interceptors.response.use(
   }
 )
 
-// ── Auth ─────────────────────────────────────────────────────
 export const authApi = {
   login: async (payload: LoginPayload) => {
     if (USE_MOCK_API) {
@@ -87,7 +97,7 @@ export const authApi = {
       const { mockAuthApi } = await loadMockApi()
       return mockAuthApi.register(payload)
     }
-    const { data } = await http.post<Usuario>('/auth/registro', payload)
+    const { data } = await http.post<Cliente>('/clientes', payload)
     return data
   },
 
@@ -96,12 +106,11 @@ export const authApi = {
       const { mockAuthApi } = await loadMockApi()
       return mockAuthApi.me()
     }
-    const { data } = await http.get<Usuario>('/auth/me')
+    const { data } = await http.get<Cliente>('/auth/me')
     return data
   },
 }
 
-// ── Saldo ────────────────────────────────────────────────────
 export const saldoApi = {
   resumo: async () => {
     if (USE_MOCK_API) {
@@ -113,7 +122,6 @@ export const saldoApi = {
   },
 }
 
-// ── Dashboard ────────────────────────────────────────────────
 export const dashboardApi = {
   resumo: async () => {
     if (USE_MOCK_API) {
@@ -124,21 +132,21 @@ export const dashboardApi = {
     return data
   },
 
-  validacoes: async (params?: { status?: string; limit?: number; offset?: number }) => {
+  auditoria: async (params?: { status?: string; limit?: number; offset?: number }) => {
     if (USE_MOCK_API) {
       const { mockDashboardApi } = await loadMockApi()
-      return mockDashboardApi.validacoes(params)
+      return mockDashboardApi.auditoria(params)
     }
-    const { data } = await http.get<ValidacaoItem[]>('/dashboard/validacoes', { params })
+    const { data } = await http.get<AuditoriaItem[]>('/dashboard/auditoria', { params })
     return data
   },
 
-  consumo: async (params?: { limit?: number; offset?: number }) => {
+  extrato: async (params?: { tipo?: string; limit?: number; offset?: number }) => {
     if (USE_MOCK_API) {
       const { mockDashboardApi } = await loadMockApi()
-      return mockDashboardApi.consumo(params)
+      return mockDashboardApi.extrato(params)
     }
-    const { data } = await http.get<ConsumoItem[]>('/dashboard/consumo', { params })
+    const { data } = await http.get<ExtratoItem[]>('/dashboard/extrato', { params })
     return data
   },
 
@@ -154,15 +162,14 @@ export const dashboardApi = {
   },
 }
 
-// ── Pagamentos ───────────────────────────────────────────────
-export const pagamentosApi = {
-  iniciar: async (metodo: 'PIX' | 'BOLETO', valor: number) => {
+export const pedidosApi = {
+  iniciar: async (metodo_pagamento: 'PIX' | 'BOLETO' | 'CARTAO', valor: number) => {
     if (USE_MOCK_API) {
-      const { mockPagamentosApi } = await loadMockApi()
-      return mockPagamentosApi.iniciar(metodo, valor)
+      const { mockPedidosApi } = await loadMockApi()
+      return mockPedidosApi.iniciar(metodo_pagamento, valor)
     }
-    const { data } = await http.post<IniciarPagamentoResponse>('/pagamentos/iniciar', {
-      metodo,
+    const { data } = await http.post<IniciarPedidoResponse>('/pedidos/iniciar', {
+      metodo_pagamento,
       valor,
     })
     return data
@@ -170,27 +177,21 @@ export const pagamentosApi = {
 
   listar: async () => {
     if (USE_MOCK_API) {
-      const { mockPagamentosApi } = await loadMockApi()
-      return mockPagamentosApi.listar()
+      const { mockPedidosApi } = await loadMockApi()
+      return mockPedidosApi.listar()
     }
-    const { data } = await http.get<Pagamento[]>('/pagamentos')
+    const { data } = await http.get<Pedido[]>('/pedidos')
     return data
   },
 }
 
-// ── Validação Fiscal ─────────────────────────────────────────
 export const fiscalApi = {
-  validar: async (payload: {
-    url_qr_code: string
-    cnpj_emitente: string
-    cpf_destinatario?: string
-    valor_total?: number
-  }) => {
+  validar: async (payload: ValidarNotaPayload) => {
     if (USE_MOCK_API) {
       const { mockFiscalApi } = await loadMockApi()
       return mockFiscalApi.validar(payload)
     }
-    const { data } = await http.post('/validar-nota', payload)
+    const { data } = await http.post<ValidarNotaResponse>('/validar-nota', payload)
     return data
   },
 

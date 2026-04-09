@@ -165,7 +165,7 @@ export function PublicNav({ current }: { current: 'home' | 'pricing' }) {
                 textAlign: 'left',
               }}
             >
-              Painel do Usuário
+              Área do Cliente
             </button>
             <div style={{ display: 'grid', gap: '6px' }}>
               <PublicMenuButton label="Home" active={current === 'home'} onClick={() => go('/')} />

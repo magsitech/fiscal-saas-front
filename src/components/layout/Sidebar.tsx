@@ -1,23 +1,36 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
-  LayoutDashboard, FileText, TrendingUp, CreditCard,
-  Receipt, Calculator, User, LogOut, X,
+  LayoutDashboard,
+  FileText,
+  TrendingUp,
+  CreditCard,
+  Receipt,
+  Calculator,
+  User,
+  LogOut,
+  X,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/auth'
 import toast from 'react-hot-toast'
 
 const NAV = [
-  { section: 'Principal', items: [
-    { to: '/app', label: 'Dashboard', icon: LayoutDashboard, end: true },
-    { to: '/app/validacoes', label: 'Validacoes', icon: FileText },
-    { to: '/app/consumo', label: 'Consumo', icon: TrendingUp },
-  ] },
-  { section: 'Financeiro', items: [
-    { to: '/app/creditos', label: 'Comprar Creditos', icon: CreditCard },
-    { to: '/app/pagamentos', label: 'Pagamentos', icon: Receipt },
-    { to: '/app/simulador', label: 'Simulador', icon: Calculator },
-    { to: '/app/perfil', label: 'Meu Perfil', icon: User },
-  ] },
+  {
+    section: 'Principal',
+    items: [
+      { to: '/app', label: 'Dashboard', icon: LayoutDashboard, end: true },
+      { to: '/app/auditoria', label: 'Auditoria', icon: FileText },
+      { to: '/app/extrato', label: 'Extrato', icon: TrendingUp },
+    ],
+  },
+  {
+    section: 'Financeiro',
+    items: [
+      { to: '/app/creditos', label: 'Comprar créditos', icon: CreditCard },
+      { to: '/app/pedidos', label: 'Pedidos', icon: Receipt },
+      { to: '/app/simulador', label: 'Simulador', icon: Calculator },
+      { to: '/app/perfil', label: 'Meu perfil', icon: User },
+    ],
+  },
 ]
 
 export function Sidebar({
@@ -32,7 +45,7 @@ export function Sidebar({
 
   function handleLogout() {
     logout()
-    toast.success('Sessao encerrada')
+    toast.success('Sessão encerrada')
     onClose?.()
     navigate('/')
   }
@@ -42,9 +55,28 @@ export function Sidebar({
   return (
     <>
       {mobileOpen && (
-        <button type="button" className="app-sidebar-backdrop app-mobile-only" onClick={onClose} aria-label="Fechar menu" style={{ border: 'none' }} />
+        <button
+          type="button"
+          className="app-sidebar-backdrop app-mobile-only"
+          onClick={onClose}
+          aria-label="Fechar menu"
+          style={{ border: 'none' }}
+        />
       )}
-      <aside className={`app-sidebar ${mobileOpen ? 'is-open' : ''}`} style={{ width: '196px', background: 'var(--surface)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', height: '100vh', position: 'sticky', top: 0, flexShrink: 0 }}>
+      <aside
+        className={`app-sidebar ${mobileOpen ? 'is-open' : ''}`}
+        style={{
+          width: '196px',
+          background: 'var(--surface)',
+          borderRight: '1px solid var(--border)',
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100vh',
+          position: 'sticky',
+          top: 0,
+          flexShrink: 0,
+        }}
+      >
         <div style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '16px 12px', borderBottom: '1px solid var(--border)' }}>
           <button
             type="button"
@@ -55,10 +87,14 @@ export function Sidebar({
           >
             <X size={14} />
           </button>
-          <div style={{ width: '28px', height: '28px', background: 'var(--accent)', borderRadius: '7px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--mono)', fontSize: '10px', fontWeight: 700, color: '#000', letterSpacing: '-.3px', flexShrink: 0 }}>VN</div>
+          <div style={{ width: '28px', height: '28px', background: 'var(--accent)', borderRadius: '7px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--mono)', fontSize: '10px', fontWeight: 700, color: '#000', letterSpacing: '-.3px', flexShrink: 0 }}>
+            VN
+          </div>
           <div>
             <div style={{ fontSize: '12px', fontWeight: 700, lineHeight: 1.2 }}>validaeNota</div>
-            <div style={{ fontSize: '9px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.4px', marginTop: '2px' }}>Painel do Gestor</div>
+            <div style={{ fontSize: '9px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.4px', marginTop: '2px' }}>
+              Painel do Cliente
+            </div>
           </div>
         </div>
 
@@ -75,10 +111,17 @@ export function Sidebar({
                   end={end}
                   onClick={onClose}
                   style={({ isActive }) => ({
-                    display: 'flex', alignItems: 'center', gap: '8px',
-                    padding: '7px 8px', borderRadius: '7px', marginBottom: '2px',
-                    fontSize: '12px', fontWeight: 500, textDecoration: 'none',
-                    transition: 'all .14s', border: '1px solid transparent',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '7px 8px',
+                    borderRadius: '7px',
+                    marginBottom: '2px',
+                    fontSize: '12px',
+                    fontWeight: 500,
+                    textDecoration: 'none',
+                    transition: 'all .14s',
+                    border: '1px solid transparent',
                     background: isActive ? 'var(--accent-dim)' : 'transparent',
                     color: isActive ? 'var(--accent)' : 'var(--text-muted)',
                     borderColor: isActive ? 'var(--accent-glow)' : 'transparent',
@@ -98,16 +141,30 @@ export function Sidebar({
               {initials}
             </div>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: '11px', fontWeight: 700, lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{usuario?.nome ?? '-'}</div>
-              <div style={{ fontSize: '10px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{usuario?.email ?? ''}</div>
+              <div style={{ fontSize: '11px', fontWeight: 700, lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {usuario?.nome ?? '-'}
+              </div>
+              <div style={{ fontSize: '10px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {usuario?.email ?? ''}
+              </div>
             </div>
           </div>
 
           <button
             onClick={handleLogout}
             style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '7px 8px', borderRadius: '7px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', background: 'none', border: '1px solid transparent', fontFamily: 'var(--sans)', width: '100%', transition: 'all .14s' }}
-            onMouseEnter={(e) => { const el = e.currentTarget as HTMLElement; el.style.color = 'var(--danger)'; el.style.background = 'rgba(239,68,68,.08)'; el.style.borderColor = 'rgba(239,68,68,.15)' }}
-            onMouseLeave={(e) => { const el = e.currentTarget as HTMLElement; el.style.color = 'var(--text-muted)'; el.style.background = 'none'; el.style.borderColor = 'transparent' }}
+            onMouseEnter={(e) => {
+              const el = e.currentTarget as HTMLElement
+              el.style.color = 'var(--danger)'
+              el.style.background = 'rgba(239,68,68,.08)'
+              el.style.borderColor = 'rgba(239,68,68,.15)'
+            }}
+            onMouseLeave={(e) => {
+              const el = e.currentTarget as HTMLElement
+              el.style.color = 'var(--text-muted)'
+              el.style.background = 'none'
+              el.style.borderColor = 'transparent'
+            }}
           >
             <LogOut size={13} style={{ flexShrink: 0 }} />
             Sair da conta

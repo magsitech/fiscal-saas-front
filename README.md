@@ -1,17 +1,33 @@
 # fiscal-saas-front
 
-Frontend do `validaeNota`, publicado no Vercel, com producao conectada ao backend no Railway e um ambiente `staging` separado para operar com dados mockados.
+Frontend do `validaeNota`, publicado no Vercel, com separação explícita entre ambiente `staging` para testes e ambiente `main` para produção.
 
-## Visao geral
+## Ambientes oficiais
+
+### Frontend
+
+- `staging` / testes:
+  `https://staging.validaenota.com.br`
+- `main` / produção:
+  `https://app.validaenota.com.br`
+
+### Backend
+
+- `staging` / testes:
+  `https://staging.api.validaenota.com.br`
+- `main` / produção:
+  `https://api.validaenota.com.br`
+
+## Visão geral
 
 Hoje o projeto entrega:
 
-- landing page publica em `https://validaenota.com.br`
-- pagina de precos em `https://validaenota.com.br/pricing`
-- area do cliente em `https://app.validaenota.com.br`
-- autenticacao e consumo da API real em producao
-- ambiente `staging` com dados de demonstracao via mock local
-- tema com alternancia entre modo `escuro` e `claro`
+- landing page pública em `https://validaenota.com.br`
+- página de preços em `https://validaenota.com.br/pricing`
+- área do cliente com ambientes separados de `staging` e `main`
+- autenticação e consumo da API real
+- validação explícita de ambiente no build
+- bloqueio de mock em `main`
 - responsividade para desktop e mobile
 
 ## Stack
@@ -26,133 +42,127 @@ Hoje o projeto entrega:
 - `lucide-react`
 - `date-fns`
 
-## Estrutura principal
+## Execução local
 
-```text
-src/
-  components/
-    auth/
-    layout/
-    ui/
-  config/
-  hooks/
-  mocks/
-  pages/
-  services/
-  store/
-  types/
-  utils/
-public/
-```
-
-## Execucao local
-
-Instale as dependencias:
+Instale as dependências:
 
 ```bash
 npm install
 ```
 
-Inicie o ambiente local:
+Crie um `.env.local` a partir de `.env.example` e inicie o ambiente local:
 
 ```bash
 npm run dev
 ```
 
-## Build de producao
+## Build e checagens
 
 ```bash
+npm run lint
 npm run build
 npm run preview
 ```
 
-## Variaveis de ambiente
+## Variáveis de ambiente
 
-Use o arquivo `.env.example` como base para o ambiente local.
+Use o arquivo `.env.example` como base.
 
 ```env
+VITE_APP_ENV=staging
 VITE_USE_MOCK_API=false
-VITE_API_BASE_URL=https://api.validaenota.com.br
+VITE_API_BASE_URL=https://staging.api.validaenota.com.br
 ```
 
-### Significado
+### Regras
 
-- `VITE_USE_MOCK_API=true`
-  Mantem a aplicacao funcionando com dados mockados. Deve ser usado apenas no ambiente `staging`.
+- `VITE_APP_ENV` é obrigatório e deve ser `staging` ou `main`
+- `VITE_API_BASE_URL` é obrigatório
+- o build falha se a URL do backend não corresponder ao ambiente configurado
+- não existe fallback implícito para `staging`
+- `VITE_USE_MOCK_API=true` é proibido em `main`
 
-- `VITE_USE_MOCK_API=false`
-  Faz o frontend consumir a API real usando `VITE_API_BASE_URL`. Este deve ser o valor da `main`.
+### Modo mock
 
-- `VITE_API_BASE_URL`
-  Define a URL base da API real quando o mock estiver desligado.
-
-## Modo mock
-
-O mock continua disponivel para homologacao em `staging`, cobrindo:
-
-- autenticacao
-- dashboard
-- historico de validacoes
-- consumo
-- pagamentos
-- creditos
-- simulador
-
-### Credenciais de teste
-
-```text
-demo@validaenota.com.br
-Demo@123
-```
+Use `VITE_USE_MOCK_API=true` apenas para testes isolados de interface.
+Mesmo em modo mock, mantenha `VITE_APP_ENV` e `VITE_API_BASE_URL` coerentes com o ambiente do deploy.
 
 ## Deploy no Vercel
 
-Configuracao atual do projeto:
+Configuração atual do projeto:
 
 - Framework Preset: `Vite`
 - Build Command: `npm run build`
 - Output Directory: `dist`
-- Install Command: `npm install`
+- Install Command: `npm ci`
 
-### Variaveis no Vercel
+### Variáveis no Vercel
 
-#### Producao (`main`)
+#### Produção (`main`)
 
 ```env
+VITE_APP_ENV=main
 VITE_USE_MOCK_API=false
 VITE_API_BASE_URL=https://api.validaenota.com.br
 ```
 
+Deploy esperado:
+- frontend em `https://app.validaenota.com.br`
+- backend em `https://api.validaenota.com.br`
+
 #### Staging (`staging`)
 
 ```env
-VITE_USE_MOCK_API=true
-VITE_API_BASE_URL=https://api.validaenota.com.br
+VITE_APP_ENV=staging
+VITE_USE_MOCK_API=false
+VITE_API_BASE_URL=https://staging.api.validaenota.com.br
 ```
 
-No Vercel, configure a branch `staging` para gerar um ambiente separado e associe o dominio `staging.validaenota.com.br` a esse deploy.
+Deploy esperado:
+- frontend em `https://staging.validaenota.com.br`
+- backend em `https://staging.api.validaenota.com.br`
 
-## Dominios
+#### Mock isolado, se necessário
+
+```env
+VITE_APP_ENV=staging
+VITE_USE_MOCK_API=true
+VITE_API_BASE_URL=https://staging.api.validaenota.com.br
+```
+
+## Endurecimento atual
+
+O frontend foi ajustado para reduzir risco operacional:
+
+- build bloqueado quando ambiente e API não batem
+- build bloqueado quando `main` tenta usar mock
+- badge explícito de ambiente no topo da aplicação
+- aviso reforçado quando mock está ativo
+- remoção de fallback implícito para `staging`
+- tokens movidos para `sessionStorage`
+- limpeza seletiva das chaves da aplicação
+- bootstrap inicial de autenticação antes de liberar rotas privadas
+- CI validando `staging` e `main`
+
+## Domínios
 
 - `validaenota.com.br`: landing page principal
 - `www.validaenota.com.br`: redirecionamento para `validaenota.com.br`
-- `app.validaenota.com.br`: area do cliente
-- `api.validaenota.com.br`: backend publicado no Railway
-- `staging.validaenota.com.br`: frontend de homologacao no Vercel usando mock
+- `app.validaenota.com.br`: frontend `main`
+- `staging.validaenota.com.br`: frontend `staging`
+- `api.validaenota.com.br`: backend `main`
+- `staging.api.validaenota.com.br`: backend `staging`
 
-## Fluxo recomendado
+## CI
 
-Para manter os ambientes separados:
+O repositório possui workflow para validar:
 
-1. manter `main` publicada no Vercel com `VITE_USE_MOCK_API=false`
-2. criar e publicar a branch `staging` a partir da `main`
-3. definir `VITE_USE_MOCK_API=true` apenas na branch `staging`
-4. manter `VITE_API_BASE_URL=https://api.validaenota.com.br` para producao e futuras validacoes reais
-5. apontar `staging.validaenota.com.br` para o projeto no Vercel
+- `npm run lint`
+- `npm run build` com configuração de `staging`
+- `npm run build` com configuração de `main`
 
 ## Infra atual
 
-O frontend nao utiliza Docker no deploy.
-
-O backend roda em container com PostgreSQL no ambiente de aplicacao e esta publicado no Railway.
-Como o frontend e publicado no Vercel como aplicacao estatica do Vite, a separacao entre producao e staging deve ser feita por branch, variaveis de ambiente e dominio.
+O frontend é publicado no Vercel como aplicação estática do Vite.
+O backend roda em container no Railway.
+A separação entre `staging` e `main` depende de branch, variáveis de ambiente e domínio.

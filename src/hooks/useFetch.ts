@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 
-// ── Generic fetch hook ────────────────────────────────────────
+// Hook genérico para carregamento de dados.
 export function useFetch<T>(
   fetcher: () => Promise<T>,
   deps: unknown[] = [],
@@ -27,7 +27,7 @@ export function useFetch<T>(
   return { data, loading, error, reload: load }
 }
 
-// ── Polling hook (para acompanhar status de validação) ────────
+// Hook de polling para acompanhar mudanças de status.
 export function usePolling<T>(
   fetcher: () => Promise<T>,
   shouldStop: (data: T) => boolean,

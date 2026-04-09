@@ -310,7 +310,13 @@ export function AuthPage() {
     if (!validarPF()) return
     setLoading(true)
     try {
-      await authApi.register({ nome: pfForm.nome, email: pfForm.email, cpf: pfForm.cpf.replace(/\D/g, ''), senha: pfForm.senha })
+      await authApi.register({
+        tipo: 'PF',
+        nome: pfForm.nome,
+        email: pfForm.email,
+        nr_documento: pfForm.cpf.replace(/\D/g, ''),
+        senha: pfForm.senha,
+      })
       toast.success('Conta criada! Faça o login.')
       setMode('login')
       setLoginForm({ email: pfForm.email, senha: '' })
@@ -326,7 +332,14 @@ export function AuthPage() {
     if (!validarPJ()) return
     setLoading(true)
     try {
-      await authApi.register({ nome: pjForm.responsavel, email: pjForm.email, cpf: '', senha: pjForm.senha })
+      await authApi.register({
+        tipo: 'PJ',
+        nome: pjForm.responsavel,
+        nome_fantasia: pjForm.razao_social,
+        email: pjForm.email,
+        nr_documento: pjForm.cnpj.replace(/\D/g, ''),
+        senha: pjForm.senha,
+      })
       toast.success('Conta criada! Faça o login.')
       setMode('login')
       setLoginForm({ email: pjForm.email, senha: '' })
@@ -359,10 +372,10 @@ export function AuthPage() {
             </div>
 
             {[
-              ['Validação oficial SEFAZ', 'NF-e 55 e NFC-e 65 via Web Services'],
-              ['Anti-bloqueio garantido', 'Fila + rate limit + SSL reutilizado'],
-              ['Cache inteligente 7 dias', 'Sem débito duplicado na mesma NF'],
-              ['Cobrança progressiva', 'Quanto mais usar, menor o custo'],
+              ['Validação oficial SEFAZ', 'NF-e e NFC-e com consulta pelos serviços oficiais'],
+              ['Operação estável', 'Fila, controle de ritmo e processamento seguro'],
+              ['Cache inteligente de 7 dias', 'Sem débito duplicado para a mesma nota no período'],
+              ['Cobrança progressiva', 'Quanto maior o volume, menor o custo unitário'],
             ].map(([title, description]) => (
               <div key={title} style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
                 <div style={{ width: '26px', height: '26px', flexShrink: 0, borderRadius: '6px', background: 'var(--accent-dim)', border: '1px solid var(--accent-glow)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '1px' }}>

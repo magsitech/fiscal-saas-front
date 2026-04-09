@@ -1,16 +1,21 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
-import type { Usuario } from '@/types'
+import { createJSONStorage, persist } from 'zustand/middleware'
+import type { Cliente } from '@/types'
 import { USE_MOCK_API } from '@/config/runtime'
+import { clearAuthTokens, getAccessToken, getRefreshToken, setAuthTokens } from '@/utils/authStorage'
 
 interface AuthState {
-  usuario: Usuario | null
+  usuario: Cliente | null
   accessToken: string | null
   refreshToken: string | null
   isAuthenticated: boolean
+  isBootstrapping: boolean
 
   setTokens: (access: string, refresh: string) => void
-  setUsuario: (u: Usuario) => void
+  setUsuario: (u: Cliente) => void
+  startBootstrap: () => void
+  finishBootstrap: () => void
+  syncTokensFromStorage: () => void
   logout: () => void
 }
 
@@ -21,24 +26,50 @@ export const useAuthStore = create<AuthState>()(
       accessToken: null,
       refreshToken: null,
       isAuthenticated: false,
+      isBootstrapping: true,
 
       setTokens: (access, refresh) => {
-        localStorage.setItem('access_token', access)
-        localStorage.setItem('refresh_token', refresh)
-        set({ accessToken: access, refreshToken: refresh, isAuthenticated: true })
+        setAuthTokens(access, refresh)
+        set({
+          accessToken: access,
+          refreshToken: refresh,
+          isAuthenticated: true,
+        })
       },
 
-      setUsuario: (u) => set({ usuario: u }),
+      setUsuario: (u) => set({ usuario: u, isAuthenticated: true }),
+
+      startBootstrap: () => set({ isBootstrapping: true }),
+
+      finishBootstrap: () => set({ isBootstrapping: false }),
+
+      syncTokensFromStorage: () => {
+        const accessToken = getAccessToken()
+        const refreshToken = getRefreshToken()
+        set({
+          accessToken,
+          refreshToken,
+          isAuthenticated: Boolean(accessToken || refreshToken),
+        })
+      },
 
       logout: () => {
-        localStorage.removeItem('access_token')
-        localStorage.removeItem('refresh_token')
-        if (USE_MOCK_API) localStorage.removeItem('validaenota-mock-session')
-        set({ usuario: null, accessToken: null, refreshToken: null, isAuthenticated: false })
+        clearAuthTokens()
+        if (USE_MOCK_API && typeof window !== 'undefined') {
+          window.localStorage.removeItem('validaenota-mock-session')
+        }
+        set({
+          usuario: null,
+          accessToken: null,
+          refreshToken: null,
+          isAuthenticated: false,
+          isBootstrapping: false,
+        })
       },
     }),
     {
       name: 'validaenota-auth',
+      storage: createJSONStorage(() => sessionStorage),
       partialize: (s) => ({
         usuario: s.usuario,
         accessToken: s.accessToken,

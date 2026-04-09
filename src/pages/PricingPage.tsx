@@ -9,7 +9,7 @@ const FAIXAS = [
   { range: '5.001 - 10.000', base: 'R$ 0,12', fixed: 'R$ 0,03', final: 'R$ 0,15', pct: 68 },
   { range: '10.001 - 30.000', base: 'R$ 0,10', fixed: 'R$ 0,03', final: 'R$ 0,13', pct: 59 },
   { range: '30.001 - 50.000', base: 'R$ 0,09', fixed: 'R$ 0,03', final: 'R$ 0,12', pct: 55 },
-  { range: '50.001 - 80.000', base: 'R$ 0,08', fixed: 'R$ 0,03', final: 'R$ 0,11', pct: 50 },
+  { range: '50.001+', base: 'R$ 0,08', fixed: 'R$ 0,03', final: 'R$ 0,11', pct: 50 },
 ]
 
 export function PricingPage() {
@@ -20,10 +20,15 @@ export function PricingPage() {
       <PublicNav current="pricing" />
 
       <div className="pricing-section pricing-hero" style={{ padding: '56px 40px 40px', textAlign: 'center', maxWidth: '680px', margin: '0 auto' }}>
-        <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: '10px' }}>Preços transparentes</div>
-        <h1 style={{ fontSize: '40px', fontWeight: 700, letterSpacing: '-0.4px', marginBottom: '14px' }}>Pague apenas pelo que usar</h1>
+        <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: '10px' }}>
+          Preços transparentes
+        </div>
+        <h1 style={{ fontSize: '40px', fontWeight: 700, letterSpacing: '-0.4px', marginBottom: '14px' }}>
+          Pague apenas pelo que usar
+        </h1>
         <p style={{ fontSize: '15px', color: 'var(--text-muted)', lineHeight: 1.7 }}>
-          Modelo pré-pago com cobrança progressiva cumulativa. Saldo válido por <strong style={{ color: 'var(--text)' }}>30 dias</strong> após a confirmação do pagamento. Valor mínimo de recarga: <strong style={{ color: 'var(--accent)' }}>R$ 50,00</strong>.
+          Modelo pré-pago com cobrança progressiva cumulativa. O saldo fica disponível por <strong style={{ color: 'var(--text)' }}>30 dias</strong> após a confirmação do pagamento.
+          Valor mínimo de recarga: <strong style={{ color: 'var(--accent)' }}>R$ 50,00</strong>.
         </p>
       </div>
 
@@ -31,8 +36,8 @@ export function PricingPage() {
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden' }}>
           <div className="pricing-card-header" style={{ background: 'linear-gradient(135deg, color-mix(in srgb, var(--surface) 82%, var(--accent-dim) 18%), var(--surface))', borderBottom: '1px solid var(--border)', padding: '24px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
             <div>
-              <h2 style={{ fontSize: '17px', fontWeight: 700, marginBottom: '4px' }}>Tabela de faixas com cobrança progressiva cumulativa</h2>
-              <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Quanto mais consultas no período, menor o custo por consulta.</p>
+              <h2 style={{ fontSize: '17px', fontWeight: 700, marginBottom: '4px' }}>Tabela de faixas com cobrança progressiva</h2>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Quanto mais consultas no período, menor o custo por validação.</p>
             </div>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 12px', borderRadius: '20px', background: 'var(--accent-dim)', border: '1px solid var(--accent-glow)', color: 'var(--accent)', fontSize: '12px', fontWeight: 700, whiteSpace: 'nowrap' }}>
               + R$ 0,03 fixo por consulta
@@ -71,24 +76,24 @@ export function PricingPage() {
       </div>
 
       <div className="pricing-grid-2 pricing-section" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', maxWidth: '900px', margin: '0 auto', padding: '0 40px 56px' }}>
-        <InfoBox title="Como funciona a cobrança cumulativa">
+        <InfoBox title="Como funciona a cobrança progressiva">
           <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.7, marginBottom: '12px' }}>
-            O modelo é idêntico ao usado por AWS, GCP e Azure. Cada faixa é cobrada integralmente antes de avançar para a próxima.
+            O custo acompanha o volume acumulado no período. Conforme o uso cresce, o valor unitário diminui.
           </p>
         </InfoBox>
         <InfoBox title="Adicional fixo de R$ 0,03">
           <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.7, marginBottom: '12px' }}>
-            Aplicado em todas as faixas e já incluso nos preços finais da tabela acima.
+            Aplicado em todas as faixas e já incluído nos preços finais da tabela acima.
           </p>
         </InfoBox>
-        <InfoBox title="Saldo pré-pago">
+        <InfoBox title="Créditos pré-pagos">
           <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.7, marginBottom: '12px' }}>
-            Compra via PIX ou boleto, com saldo válido por 30 dias após a confirmação.
+            Compra via PIX ou boleto, com saldo válido por 30 dias após a confirmação do pedido.
           </p>
         </InfoBox>
         <InfoBox title="Cache e deduplicação inteligente">
           <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.7, marginBottom: '12px' }}>
-            Consultas repetidas da mesma NF não debitam novamente o saldo dentro da janela de cache.
+            Consultas repetidas da mesma nota não geram novo débito dentro da janela de cache.
           </p>
         </InfoBox>
       </div>

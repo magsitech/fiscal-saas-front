@@ -60,63 +60,63 @@ const VANTAGENS = [
   {
     icon: <ShieldIcon />,
     title: '100% oficial SEFAZ',
-    desc: 'Integração exclusiva via Web Services NFeConsultaProtocolo. Nenhum portal de terceiros, nenhum scraping, só resultado com validade legal.',
+    desc: 'Integração exclusiva via Web Services oficiais. Sem scraping, sem portais de terceiros e com resultado fiscal confiável.',
   },
   {
     icon: <ActivityIcon />,
-    title: 'Anti-bloqueio garantido',
-    desc: 'Arquitetura com fila RabbitMQ, rate limiting de 1 req/1,5s e SSLContext reutilizado. Certificado A1 ICP-Brasil em produção.',
+    title: 'Arquitetura anti-bloqueio',
+    desc: 'Fila de processamento, rate limit controlado e operação preparada para estabilidade em produção.',
   },
   {
     icon: <ClockIcon />,
     title: 'Cache inteligente de 7 dias',
-    desc: 'Resultados armazenados no Redis por 7 dias. Consultas repetidas não debitam saldo e sua equipe nunca paga duas vezes pela mesma NF.',
+    desc: 'Consultas repetidas da mesma nota não geram débito duplicado dentro da janela de cache.',
   },
   {
     icon: <DollarIcon />,
     title: 'Cobrança progressiva',
-    desc: 'Modelo de escada cumulativa: quanto mais consultas no período, menor o custo unitário. Similar ao modelo de AWS, GCP e Azure.',
+    desc: 'Quanto maior o volume no período, menor o custo unitário por consulta.',
   },
   {
     icon: <MonitorIcon />,
-    title: 'Painel de gestão completo',
-    desc: 'Dashboard com histórico fiscal, auditoria de consumo, simulador de custos e compra de créditos via PIX ou boleto.',
+    title: 'Painel completo',
+    desc: 'Dashboard com auditoria fiscal, extrato financeiro, simulador de custos e compra de créditos.',
   },
   {
     icon: <UsersIcon />,
-    title: 'Multi-tenant seguro',
-    desc: 'Cada gestor tem saldo isolado, histórico próprio e empresas vinculadas. Ideal para programas de nota fiscal de prefeituras.',
+    title: 'Gestão segura por cliente',
+    desc: 'Cada cliente opera com saldo, auditoria e histórico próprios, com separação clara entre ambientes.',
   },
 ]
 
 const STEPS = [
   {
     num: '01',
-    title: 'Leitura do QR Code',
-    desc: 'Seu app lê o QR Code ou código de barras da NF-e ou NFC-e e envia para a nossa API.',
+    title: 'Leitura dos dados da nota',
+    desc: 'Seu sistema captura a chave da NF-e ou NFC-e e os dados necessários para validação.',
   },
   {
     num: '02',
-    title: 'Envio à API',
-    desc: 'Sua aplicação envia a URL do QR Code, CNPJ do emitente, CPF do destinatário e valor total da nota.',
+    title: 'Envio para a API',
+    desc: 'A aplicação envia os dados da consulta para a nossa API, respeitando o ambiente configurado.',
   },
   {
     num: '03',
-    title: 'Consulta oficial',
-    desc: 'Consultamos exclusivamente os Web Services da SEFAZ via SOAP com certificado digital A1.',
+    title: 'Consulta oficial na SEFAZ',
+    desc: 'Processamos a validação pelos serviços oficiais, sem atalhos e sem fontes paralelas.',
   },
   {
     num: '04',
-    title: 'Resultado validado',
-    desc: 'Retornamos status, protocolo, valores e dados completos da nota. O cache evita cobranças duplicadas.',
+    title: 'Retorno com auditoria',
+    desc: 'Você recebe o resultado da validação e mantém o histórico disponível para auditoria e conferência.',
   },
 ]
 
 const STATS = [
   { value: '27', label: 'UFs suportadas' },
-  { value: '99,9%', label: 'Uptime garantido' },
-  { value: '7 dias', label: 'Cache de resultados' },
-  { value: '1,5s', label: 'Rate limit seguro' },
+  { value: '99,9%', label: 'Disponibilidade alvo' },
+  { value: '7 dias', label: 'Janela de cache' },
+  { value: '1,5s', label: 'Ritmo seguro por consulta' },
 ]
 
 export function LandingPage() {
@@ -168,7 +168,7 @@ export function LandingPage() {
               display: 'inline-block',
             }}
           />
-          Plataforma Fiscal B2B
+          Plataforma fiscal B2B
         </div>
 
         <h1
@@ -188,12 +188,12 @@ export function LandingPage() {
             fontSize: '17px',
             color: 'var(--text-muted)',
             lineHeight: 1.7,
-            maxWidth: '580px',
+            maxWidth: '620px',
             margin: '0 auto 36px',
           }}
         >
-          Consulte notas fiscais em tempo real via Web Services oficiais da Receita Federal. Sem scraping, sem
-          portais, sem riscos, só resultado confiável para sua prefeitura ou empresa.
+          Consulte notas fiscais com rastreabilidade, auditoria e extrato financeiro em uma plataforma preparada
+          para operação real, testes em `staging` e produção em `main`.
         </p>
 
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -234,7 +234,7 @@ export function LandingPage() {
 
       <div style={{ height: '1px', background: 'var(--border)', margin: '0 40px' }} />
       <section className="landing-section" style={{ padding: '56px 40px', maxWidth: '1040px', margin: '0 auto' }}>
-        <SectionHeader label="Como funciona" title="Do QR Code ao resultado em segundos" />
+        <SectionHeader label="Como funciona" title="Da consulta ao resultado auditável" />
         <div
           className="landing-grid-4"
           style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginTop: '36px' }}
