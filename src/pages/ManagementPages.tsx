@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { format, parseISO, startOfDay, subDays } from 'date-fns'
+import { endOfDay, format, parseISO, startOfDay, subDays } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Banknote, Copy, Download, ExternalLink, Landmark, Sparkles } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -35,7 +35,7 @@ function fmtAgo(iso: string) {
 }
 
 function toInputDate(value: Date) {
-  return value.toISOString().slice(0, 10)
+  return format(value, 'yyyy-MM-dd')
 }
 
 function buildDateRange(periodo: PeriodoFiltro, inicio: string, fim: string) {
@@ -55,8 +55,8 @@ function buildDateRange(periodo: PeriodoFiltro, inicio: string, fim: string) {
 
   if (periodo === 'custom') {
     return {
-      start: inicio ? new Date(`${inicio}T00:00:00`) : null,
-      end: fim ? new Date(`${fim}T23:59:59`) : null,
+      start: inicio ? startOfDay(parseISO(`${inicio}T00:00:00`)) : null,
+      end: fim ? endOfDay(parseISO(`${fim}T00:00:00`)) : null,
     }
   }
 
@@ -64,7 +64,7 @@ function buildDateRange(periodo: PeriodoFiltro, inicio: string, fim: string) {
 }
 
 function inDateRange(iso: string, periodo: PeriodoFiltro, inicio: string, fim: string) {
-  const value = new Date(iso)
+  const value = parseISO(iso)
   const { start, end } = buildDateRange(periodo, inicio, fim)
   if (start && value < start) return false
   if (end && value > end) return false
@@ -404,7 +404,7 @@ export function ValidacoesPage() {
             <Select label="Status" value={status} onChange={(e) => setStatus(e.target.value)}>
               <option value="">Todos os status</option>
               {['AUTORIZADA', 'CANCELADA', 'DENEGADA', 'PENDENTE', 'PROCESSANDO', 'ERRO', 'CACHE_HIT'].map((s) => (
-                <option key={s} value={s}>{s}</option>
+                <option key={s} value={s}>{s === 'CACHE_HIT' ? 'Cache' : s}</option>
               ))}
             </Select>
             <DateFilters periodo={periodo} onPeriodoChange={setPeriodo} inicio={inicio} onInicioChange={setInicio} fim={fim} onFimChange={setFim} />
@@ -1124,8 +1124,9 @@ export function CreditosPage() {
           }}>
             <span style={{ color: 'var(--accent)', fontWeight: 700 }}>Modelo pré-pago.</span>{' '}
             <span style={{ color: 'var(--text-muted)' }}>
-              O backend registra compras em <strong style={{ color: 'var(--text)', fontWeight: 600 }}>pedidos</strong> e
-              o saldo em <strong style={{ color: 'var(--text)', fontWeight: 600 }}>financeiro</strong>. O débito ocorre por consulta.
+              Suas recargas ficam registradas em <strong style={{ color: 'var(--text)', fontWeight: 600 }}>pedidos</strong> e o
+              saldo acompanha cada consumo no <strong style={{ color: 'var(--text)', fontWeight: 600 }}>financeiro</strong>, com
+              desconto aplicado conforme as consultas realizadas.
             </span>
           </div>
 

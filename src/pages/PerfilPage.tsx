@@ -278,6 +278,8 @@ export function PerfilPage() {
   const [senhaErros, setSenhaErros] = useState<Record<string, string>>({})
   const [savingSenha, setSavingSenha] = useState(false)
   const [showSenha, setShowSenha] = useState(false)
+  const [showApiKey, setShowApiKey] = useState(false)
+  const [showDadosCliente, setShowDadosCliente] = useState(false)
 
   const [apiKey, setApiKey] = useState<ApiKeyInfo | null>(null)
   const [novaApiKey, setNovaApiKey] = useState<ApiKeyCreateResponse | null>(null)
@@ -288,7 +290,6 @@ export function PerfilPage() {
     ? format(parseISO(usuario.criado_em), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
     : '-'
 
-  const initials = usuario?.nome?.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase() ?? '?'
   const documentoLabel = usuario?.tipo === 'PJ' ? 'CNPJ' : 'CPF'
   const nomeFantasiaDisponivel = usuario?.tipo === 'PJ'
 
@@ -417,26 +418,6 @@ export function PerfilPage() {
         background: 'linear-gradient(135deg, color-mix(in srgb, var(--surface) 88%, transparent), color-mix(in srgb, var(--surface-2) 82%, var(--accent-dim) 18%))',
         boxShadow: '0 16px 40px rgba(0,0,0,0.10)',
       }}>
-        {/* Avatar */}
-        <div style={{
-          width: '72px',
-          height: '72px',
-          borderRadius: '50%',
-          background: 'linear-gradient(135deg, var(--accent), var(--info))',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '22px',
-          fontWeight: 800,
-          color: '#041311',
-          flexShrink: 0,
-          userSelect: 'none',
-          letterSpacing: '-0.03em',
-          boxShadow: '0 4px 16px rgba(0,212,170,0.25)',
-        }}>
-          {initials}
-        </div>
-
         {/* Info principal */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: '20px', fontWeight: 800, letterSpacing: '-0.03em', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -453,23 +434,23 @@ export function PerfilPage() {
         {/* Status e ID */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '10px', flexShrink: 0 }}>
           <span style={{
-            display: 'inline-flex', alignItems: 'center', gap: '6px',
+            display: 'inline-flex', alignItems: 'center',
             padding: '6px 12px', borderRadius: '999px',
             background: 'var(--accent-dim)', border: '1px solid var(--accent-glow)',
             color: 'var(--accent)', fontSize: '11px', fontWeight: 700,
           }}>
-            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent)' }} />
             {usuario?.ativo ? 'Ativo' : 'Pendente'}
-          </span>
-          <span style={{ fontFamily: 'var(--mono)', fontSize: '10px', color: 'var(--text-dim)' }}>
-            {usuario?.id?.slice(0, 8)}…
           </span>
         </div>
       </div>
 
       {/* ── API Key ──────────────────────────────────────── */}
       <div style={card}>
-        <div style={cardHeader}>
+        <div style={{
+          ...cardHeader,
+          background: 'color-mix(in srgb, var(--surface-2) 92%, transparent)',
+          opacity: 0.72,
+        }}>
           <div style={cardTitle}>
             <span style={{
               width: '34px', height: '34px', borderRadius: '12px', flexShrink: 0,
@@ -489,10 +470,18 @@ export function PerfilPage() {
             color: 'var(--info)', fontSize: '11px', fontWeight: 700,
           }}>
             <KeyRound size={11} />
-            Fluxo pronto no front
+            Integração disponível
           </span>
+          <Btn
+            variant="soft"
+            onClick={() => setShowApiKey(!showApiKey)}
+            icon={showApiKey ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+          >
+            {showApiKey ? 'Fechar' : 'Expandir'}
+          </Btn>
         </div>
 
+        {showApiKey && (
         <div style={cardBody}>
           {/* Info box */}
           <div style={{
@@ -501,9 +490,8 @@ export function PerfilPage() {
             border: '1px solid var(--border)',
             fontSize: '13px', lineHeight: 1.7, color: 'var(--text-muted)',
           }}>
-            <span style={{ fontWeight: 700, color: 'var(--text)' }}>Integração por API Key.</span>{' '}
-            A chave completa só aparece uma vez após a geração. Depois disso, esta tela exibe apenas o
-            prefixo, o sufixo e a data de criação, seguindo o contrato esperado do backend.
+            A autenticação das integrações é feita por API Key. Por segurança, a chave completa aparece
+            apenas no momento da geração; depois disso, exibimos somente prefixo, sufixo e data de criação.
           </div>
 
           {loadingApiKey ? (
@@ -633,6 +621,7 @@ export function PerfilPage() {
             </>
           )}
         </div>
+        )}
       </div>
 
       {/* ── Dados do cliente ─────────────────────────────── */}
@@ -649,8 +638,16 @@ export function PerfilPage() {
             </span>
             Dados do cliente
           </div>
+          <Btn
+            variant="soft"
+            onClick={() => setShowDadosCliente(!showDadosCliente)}
+            icon={showDadosCliente ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+          >
+            {showDadosCliente ? 'Fechar' : 'Expandir'}
+          </Btn>
         </div>
 
+        {showDadosCliente && (
         <form onSubmit={salvarPerfil} style={cardBody}>
           {/* Linha 1 */}
           <div style={grid2}>
@@ -724,6 +721,7 @@ export function PerfilPage() {
             </Btn>
           </div>
         </form>
+        )}
       </div>
 
       {/* ── Alterar senha ────────────────────────────────── */}
@@ -794,71 +792,32 @@ export function PerfilPage() {
       {/* ── Zona de perigo ───────────────────────────────── */}
       <div style={card}>
         <div style={cardHeader}>
-          <div style={{ ...cardTitle, color: 'var(--danger)' }}>
+          <div style={{ ...cardTitle, color: 'var(--text-muted)' }}>
             <span style={{
               width: '34px', height: '34px', borderRadius: '12px', flexShrink: 0,
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              background: 'var(--danger-dim)', border: '1px solid rgba(239,68,68,0.18)',
-              color: 'var(--danger)',
+              background: 'color-mix(in srgb, var(--surface-2) 96%, transparent)', border: '1px solid var(--border)',
+              color: 'var(--text-dim)',
             }}>
               <Shield size={15} />
             </span>
             Zona de perigo
           </div>
-        </div>
-
-        <div style={{ ...cardBody, gap: '16px' }}>
-          {/* Encerrar sessão */}
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            gap: '16px', flexWrap: 'wrap',
-            padding: '20px', borderRadius: '16px',
-            background: 'color-mix(in srgb, var(--surface-2) 80%, transparent)',
+          <span style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            padding: '6px 12px',
+            borderRadius: '999px',
             border: '1px solid var(--border)',
+            background: 'color-mix(in srgb, var(--surface-2) 96%, transparent)',
+            color: 'var(--text-dim)',
+            fontSize: '11px',
+            fontWeight: 700,
           }}>
-            <div>
-              <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <LogOut size={15} style={{ color: 'var(--text-muted)' }} />
-                Encerrar sessão
-              </div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                Remove access token e refresh token deste navegador
-              </div>
-            </div>
-            <Btn
-              variant="ghost"
-              onClick={() => { logout(); window.location.href = '/login' }}
-            >
-              Sair agora
-            </Btn>
-          </div>
-
-          {/* Excluir conta */}
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            gap: '16px', flexWrap: 'wrap',
-            padding: '20px', borderRadius: '16px',
-            background: 'var(--danger-dim)',
-            border: '1px solid rgba(239,68,68,0.18)',
-          }}>
-            <div>
-              <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--danger)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Trash2 size={15} />
-                Excluir conta
-              </div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                Ação irreversível. Todo histórico de pedidos, financeiro e auditoria pode ser removido.
-              </div>
-            </div>
-            <Btn
-              variant="danger"
-              onClick={() => toast.error('Entre em contato com o suporte para excluir a conta.')}
-              icon={<Trash2 size={14} />}
-            >
-              Excluir conta
-            </Btn>
-          </div>
+            Indisponível
+          </span>
         </div>
+
       </div>
 
     </div>
