@@ -20,8 +20,6 @@ Frontend do `validaeNota`, publicado no Vercel, com separação explícita entre
 
 ## Visão geral
 
-Hoje o projeto entrega:
-
 - landing page pública em `https://validaenota.com.br`
 - página de preços em `https://validaenota.com.br/pricing`
 - área do cliente com ambientes separados de `staging` e `main`
