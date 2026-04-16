@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { format, parseISO } from 'date-fns'
+import { differenceInCalendarDays, format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
@@ -103,14 +103,20 @@ export function DashboardPage() {
     })
   }, [])
 
-  const valorInicial = Math.max(parseFloat(saldo?.saldo_disponivel ?? '0'), 1)
   const disponivel = parseFloat(saldo?.saldo_disponivel ?? '0')
-  const usado = Math.max(valorInicial - disponivel, 0)
-  const pct = Math.min(Math.round((usado / valorInicial) * 100), 100)
+  const gastoPeriodo = parseFloat(resumo?.gasto_periodo ?? '0')
+  const totalPeriodo = disponivel + gastoPeriodo
+  const usado = Math.max(gastoPeriodo, 0)
+  const pctRaw = totalPeriodo > 0 ? Math.min((usado / totalPeriodo) * 100, 100) : 0
+  const pct = usado > 0 && pctRaw < 1 ? 1 : Math.round(pctRaw)
 
   const diasRestantes = saldo?.expira_em
-    ? Math.ceil((new Date(saldo.expira_em).getTime() - Date.now()) / 86_400_000)
+    ? Math.max(differenceInCalendarDays(parseISO(saldo.expira_em), new Date()), 0)
     : null
+
+  const saldoComprometidoLabel = usado > 0
+    ? (pctRaw < 1 ? '<1% do saldo comprometido' : `${pct}% do saldo comprometido`)
+    : 'Nenhum saldo comprometido até o momento'
 
   const kpis = [
     {
@@ -130,7 +136,7 @@ export function DashboardPage() {
     {
       label: 'Saldo utilizado',
       value: loading ? null : `R$ ${fmt(usado)}`,
-      note: `de R$ ${fmt(valorInicial)} disponíveis`,
+      note: `de R$ ${fmt(totalPeriodo)} no período`,
       tone: 'var(--warn)',
       featured: false,
     },
@@ -255,7 +261,7 @@ export function DashboardPage() {
               display: 'flex', justifyContent: 'space-between',
               marginTop: '12px', fontSize: '12px', gap: '16px',
             }} className="dashboard-summary-meta dashboard-hero-meta">
-              <span>{pct}% do saldo comprometido</span>
+              <span>{saldoComprometidoLabel}</span>
               <span>{(saldo?.consultas_no_periodo ?? 0).toLocaleString('pt-BR')} consultas no período</span>
             </div>
           </div>

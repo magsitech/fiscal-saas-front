@@ -17,15 +17,6 @@ function ActivityIcon() {
   )
 }
 
-function ClockIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="12" cy="12" r="10" />
-      <polyline points="12 6 12 12 16 14" />
-    </svg>
-  )
-}
-
 function DollarIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -59,18 +50,13 @@ function UsersIcon() {
 const VANTAGENS = [
   {
     icon: <ShieldIcon />,
-    title: '100% oficial SEFAZ',
-    desc: 'Integração exclusiva via Web Services oficiais. Sem scraping, sem portais de terceiros e com resultado fiscal confiável.',
+    title: 'Consulta automatizada via RPA',
+    desc: 'Consultas realizadas por RPA, com automação do fluxo, rastreabilidade operacional e estabilidade para uso em escala.',
   },
   {
     icon: <ActivityIcon />,
     title: 'Arquitetura anti-bloqueio',
     desc: 'Fila de processamento, rate limit controlado e operação preparada para estabilidade em produção.',
-  },
-  {
-    icon: <ClockIcon />,
-    title: 'Cache inteligente de 7 dias',
-    desc: 'Consultas repetidas da mesma nota não geram débito duplicado dentro da janela de cache.',
   },
   {
     icon: <DollarIcon />,
@@ -115,7 +101,6 @@ const STEPS = [
 const STATS = [
   { value: '27', label: 'UFs suportadas' },
   { value: '99,9%', label: 'Disponibilidade alvo' },
-  { value: '7 dias', label: 'Janela de cache' },
   { value: '1,5s', label: 'Ritmo seguro por consulta' },
 ]
 
@@ -427,3 +412,5 @@ function SectionHeader({ label, title }: { label: string; title: string }) {
     </>
   )
 }
+
+

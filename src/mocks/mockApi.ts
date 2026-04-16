@@ -391,9 +391,17 @@ function getCurrentUserOrFail(): MockUser {
   return user
 }
 
+function localDateKey(value: string | Date) {
+  const date = typeof value === 'string' ? new Date(value) : value
+  const year = date.getFullYear()
+  const month = `${date.getMonth() + 1}`.padStart(2, '0')
+  const day = `${date.getDate()}`.padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 function countToday(items: AuditoriaItem[]) {
-  const today = new Date().toISOString().slice(0, 10)
-  return items.filter((item) => item.criado_em.slice(0, 10) === today).length
+  const today = localDateKey(new Date())
+  return items.filter((item) => localDateKey(item.criado_em) === today).length
 }
 
 function totalDebitos(items: ExtratoItem[]) {
@@ -404,7 +412,7 @@ function totalDebitos(items: ExtratoItem[]) {
 
 function buildResumo(db: MockDb): DashboardResumo {
   const debitosHoje = db.extrato.filter((item) => {
-    return item.tipo === 'DEBITO' && item.criado_em.slice(0, 10) === new Date().toISOString().slice(0, 10)
+    return item.tipo === 'DEBITO' && localDateKey(item.criado_em) === localDateKey(new Date())
   })
 
   return {
@@ -594,6 +602,16 @@ export const mockPedidosApi = {
       valor: novoPedido.valor,
       status: novoPedido.status,
       expira_em: novoPedido.expira_em,
+      checkout_url: metodo_pagamento === 'CARTAO'
+        ? `https://www.mercadopago.com.br/subscriptions/checkout?preapproval_id=mock-${novoPedido.id}`
+        : undefined,
+      gateway_payload: metodo_pagamento === 'CARTAO'
+        ? JSON.stringify({
+            provider: 'mercado_pago',
+            flow: 'subscription',
+            checkout_url: `https://www.mercadopago.com.br/subscriptions/checkout?preapproval_id=mock-${novoPedido.id}`,
+          })
+        : undefined,
       pix_copia_cola: metodo_pagamento === 'PIX'
         ? `000201mock${novoPedido.id}${valor.toFixed(2).replace('.', '')}`
         : undefined,

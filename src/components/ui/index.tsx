@@ -76,7 +76,7 @@ const STATUS_MAP: Record<string, [BadgeVariant, string]> = {
   ZERADO:       ['red',    'Zerado'],
   PENDENTE:     ['yellow', 'Pendente'],
   PROCESSANDO:  ['blue',   'Processando'],
-  CACHE_HIT:    ['blue',   'Cache Hit'],
+  CACHE_HIT:    ['blue',   'Cache'],
   SEM_SALDO:    ['gray',   'Sem Saldo'],
 }
 

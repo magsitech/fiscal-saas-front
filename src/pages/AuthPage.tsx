@@ -374,7 +374,6 @@ export function AuthPage() {
             {[
               ['Validação oficial SEFAZ', 'NF-e e NFC-e com consulta pelos serviços oficiais'],
               ['Operação estável', 'Fila, controle de ritmo e processamento seguro'],
-              ['Cache inteligente de 7 dias', 'Sem débito duplicado para a mesma nota no período'],
               ['Cobrança progressiva', 'Quanto maior o volume, menor o custo unitário'],
             ].map(([title, description]) => (
               <div key={title} style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
@@ -615,3 +614,4 @@ export function AuthPage() {
     </div>
   )
 }
+

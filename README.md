@@ -20,8 +20,6 @@ Frontend do `validaeNota`, publicado no Vercel, com separação explícita entre
 
 ## Visão geral
 
-Hoje o projeto entrega:
-
 - landing page pública em `https://validaenota.com.br`
 - página de preços em `https://validaenota.com.br/pricing`
 - área do cliente com ambientes separados de `staging` e `main`
@@ -78,15 +76,19 @@ Use o arquivo `.env.example` como base.
 VITE_APP_ENV=staging
 VITE_USE_MOCK_API=false
 VITE_API_BASE_URL=https://staging.api.validaenota.com.br
+VITE_MERCADO_PAGO_PUBLIC_KEY=APP_USR-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 ```
 
 ### Regras
 
 - `VITE_APP_ENV` é obrigatório e deve ser `staging` ou `main`
 - `VITE_API_BASE_URL` é obrigatório
+- `VITE_MERCADO_PAGO_PUBLIC_KEY` é opcional, mas recomendada para fluxos client-side do Mercado Pago
 - o build falha se a URL do backend não corresponder ao ambiente configurado
 - não existe fallback implícito para `staging`
 - `VITE_USE_MOCK_API=true` é proibido em `main`
+- `Access Token` e demais segredos do Mercado Pago não devem ser expostos no frontend
+- `Client ID` e `Client Secret` só são necessários quando o backend usa OAuth com Mercado Pago
 
 ### Modo mock
 
@@ -110,6 +112,7 @@ Configuração atual do projeto:
 VITE_APP_ENV=main
 VITE_USE_MOCK_API=false
 VITE_API_BASE_URL=https://api.validaenota.com.br
+VITE_MERCADO_PAGO_PUBLIC_KEY=APP_USR-41c18da9-bf04-4d94-b2f3-f605f20f617a
 ```
 
 Deploy esperado:
@@ -122,6 +125,7 @@ Deploy esperado:
 VITE_APP_ENV=staging
 VITE_USE_MOCK_API=false
 VITE_API_BASE_URL=https://staging.api.validaenota.com.br
+VITE_MERCADO_PAGO_PUBLIC_KEY=TEST-576e7d43-b119-4935-b307-6f78789a3455
 ```
 
 Deploy esperado:
@@ -134,7 +138,17 @@ Deploy esperado:
 VITE_APP_ENV=staging
 VITE_USE_MOCK_API=true
 VITE_API_BASE_URL=https://staging.api.validaenota.com.br
+VITE_MERCADO_PAGO_PUBLIC_KEY=TEST-576e7d43-b119-4935-b307-6f78789a3455
 ```
+
+### Mercado Pago no deploy
+
+- No Vercel, configure apenas `VITE_MERCADO_PAGO_PUBLIC_KEY` no frontend quando precisar de fluxo client-side.
+- `staging` deve usar `TEST-576e7d43-b119-4935-b307-6f78789a3455` e `main` deve usar `APP_USR-41c18da9-bf04-4d94-b2f3-f605f20f617a`.
+- `Access Token` deve ficar somente no backend/servidor que cria pagamentos, assinaturas e tokens privados.
+- O `Access Token` de `staging` deve ser configurado apenas no backend de testes, nunca no Vercel deste frontend.
+- `Client ID` e `Client Secret` não precisam ser adicionados no Vercel deste frontend para o checkout comum; use-os apenas se o backend realmente implementar OAuth.
+- Para cartão recorrente, o frontend espera que o backend devolva uma URL de continuação do fluxo em `checkout_url`, `redirect_url`, `init_point` ou dentro de `gateway_payload`.
 
 ## Endurecimento atual
 

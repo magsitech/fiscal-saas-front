@@ -31,6 +31,27 @@ const http = axios.create({
   timeout: 15_000,
 })
 
+function unwrapPayload<T>(payload: unknown): T {
+  if (payload && typeof payload === 'object') {
+    const record = payload as Record<string, unknown>
+    const nested = record.data
+    if (nested !== undefined) return unwrapPayload<T>(nested)
+  }
+  return payload as T
+}
+
+function unwrapList<T>(payload: unknown): T[] {
+  const value = unwrapPayload<unknown>(payload)
+  if (Array.isArray(value)) return value as T[]
+  if (value && typeof value === 'object') {
+    const record = value as Record<string, unknown>
+    const candidates = [record.items, record.results, record.rows, record.records, record.content]
+    const list = candidates.find(Array.isArray)
+    if (Array.isArray(list)) return list as T[]
+  }
+  return []
+}
+
 http.interceptors.request.use((config) => {
   const token = getAccessToken()
   if (token) config.headers.Authorization = `Bearer ${token}`
@@ -120,7 +141,7 @@ export const saldoApi = {
       return mockSaldoApi.resumo()
     }
     const { data } = await http.get<SaldoResumo>('/saldo')
-    return data
+    return unwrapPayload<SaldoResumo>(data)
   },
 }
 
@@ -131,7 +152,7 @@ export const dashboardApi = {
       return mockDashboardApi.resumo()
     }
     const { data } = await http.get<DashboardResumo>('/dashboard/resumo')
-    return data
+    return unwrapPayload<DashboardResumo>(data)
   },
 
   auditoria: async (params?: { status?: string; limit?: number; offset?: number }) => {
@@ -140,7 +161,7 @@ export const dashboardApi = {
       return mockDashboardApi.auditoria(params)
     }
     const { data } = await http.get<AuditoriaItem[]>('/dashboard/auditoria', { params })
-    return data
+    return unwrapList<AuditoriaItem>(data)
   },
 
   extrato: async (params?: { tipo?: string; limit?: number; offset?: number }) => {
@@ -149,7 +170,7 @@ export const dashboardApi = {
       return mockDashboardApi.extrato(params)
     }
     const { data } = await http.get<ExtratoItem[]>('/dashboard/extrato', { params })
-    return data
+    return unwrapList<ExtratoItem>(data)
   },
 
   simulador: async (quantidade: number) => {
@@ -160,7 +181,7 @@ export const dashboardApi = {
     const { data } = await http.get<SimuladorResponse>('/dashboard/simulador', {
       params: { quantidade },
     })
-    return data
+    return unwrapPayload<SimuladorResponse>(data)
   },
 }
 
@@ -216,7 +237,7 @@ export const apiKeyApi = {
 
     try {
       const { data } = await http.get<ApiKeyInfo>('/clientes/api-key')
-      return data
+      return unwrapPayload<ApiKeyInfo>(data)
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 404) {
         return null
@@ -232,7 +253,7 @@ export const apiKeyApi = {
     }
 
     const { data } = await http.post<ApiKeyCreateResponse>('/clientes/api-key')
-    return data
+    return unwrapPayload<ApiKeyCreateResponse>(data)
   },
 
   revogar: async () => {
