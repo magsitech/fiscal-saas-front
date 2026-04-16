@@ -219,6 +219,14 @@ function paginateItems<T>(items: T[], page: number, pageSize = ITEMS_PER_PAGE) {
   }
 }
 
+function matchesPedidoStatusFilter(itemStatus: Pedido['status'], selectedStatus: string) {
+  if (!selectedStatus) return true
+  if (selectedStatus === 'PENDENTE') {
+    return itemStatus === 'PENDENTE' || itemStatus === 'AGUARDANDO_PAGAMENTO'
+  }
+  return itemStatus === selectedStatus
+}
+
 function Pagination({
   page,
   totalPages,
@@ -237,19 +245,72 @@ function Pagination({
   return (
     <div
       className="flex items-center justify-between gap-3 flex-wrap"
-      style={{ padding: '0 8px 8px' }}
+      style={{
+        padding: '14px 8px 10px',
+        marginTop: '12px',
+        borderTop: '1px solid var(--border)',
+      }}
     >
-      <div className="text-xs text-[var(--text-muted)]">
-        {label}: página {page} de {totalPages}
+      <div
+        className="text-xs text-[var(--text-muted)]"
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '8px',
+          padding: '8px 12px',
+          borderRadius: '999px',
+          background: 'color-mix(in srgb, var(--surface-2) 92%, transparent)',
+          border: '1px solid var(--border)',
+        }}
+      >
+        <span style={{ color: 'var(--text)', fontWeight: 700 }}>{label}</span>
+        <span>página {page} de {totalPages}</span>
       </div>
-      <div className="flex items-center gap-2">
-        <Button type="button" variant="ghost" size="sm" disabled={page === 1} onClick={() => onPageChange(page - 1)}>
+      <div
+        className="flex items-center gap-2 flex-wrap"
+        style={{
+          padding: '6px',
+          borderRadius: '999px',
+          background: 'color-mix(in srgb, var(--surface-2) 90%, transparent)',
+          border: '1px solid var(--border)',
+        }}
+      >
+        <Button
+          type="button"
+          variant="soft"
+          size="sm"
+          disabled={page === 1}
+          onClick={() => onPageChange(page - 1)}
+          style={{
+            minWidth: '110px',
+            borderRadius: '999px',
+            boxShadow: '0 10px 24px rgba(15,23,42,0.10)',
+          }}
+        >
           Anterior
         </Button>
-        <span className="text-xs font-semibold text-[var(--text-dim)] min-w-[52px] text-center">
+        <span
+          className="text-xs font-semibold text-[var(--text-dim)] text-center"
+          style={{
+            minWidth: '72px',
+            padding: '0 10px',
+            letterSpacing: '0.04em',
+          }}
+        >
           {page}/{totalPages}
         </span>
-        <Button type="button" variant="ghost" size="sm" disabled={page === totalPages} onClick={() => onPageChange(page + 1)}>
+        <Button
+          type="button"
+          variant="soft"
+          size="sm"
+          disabled={page === totalPages}
+          onClick={() => onPageChange(page + 1)}
+          style={{
+            minWidth: '110px',
+            borderRadius: '999px',
+            boxShadow: '0 10px 24px rgba(15,23,42,0.10)',
+          }}
+        >
           Próxima
         </Button>
       </div>
@@ -415,18 +476,28 @@ export function ValidacoesPage() {
         {/* Tabela desktop */}
         <div className="app-data-desktop app-table-shell">
           <Table>
-            <thead>
-              <tr>
-                <Th>Chave NF-e</Th>
-                <Th>Modelo</Th>
-                <Th>CNPJ emitente</Th>
-                <Th>Status</Th>
-                <Th>Custo</Th>
-                <Th>Cache</Th>
-                <Th>Data</Th>
-                <Th>Processado</Th>
-              </tr>
-            </thead>
+            <colgroup>
+              <col style={{ width: '20%' }} />
+              <col style={{ width: '10%' }} />
+              <col style={{ width: '16%' }} />
+              <col style={{ width: '12%' }} />
+              <col style={{ width: '11%' }} />
+              <col style={{ width: '9%' }} />
+              <col style={{ width: '11%' }} />
+              <col style={{ width: '11%' }} />
+            </colgroup>
+                  <thead>
+                    <tr>
+                      <Th>Chave NF-e</Th>
+                      <Th><div style={{ textAlign: 'right' }}>Modelo</div></Th>
+                      <Th><div style={{ textAlign: 'right' }}>CNPJ emitente</div></Th>
+                      <Th>Status</Th>
+                      <Th><div style={{ textAlign: 'right' }}>Custo</div></Th>
+                      <Th><div style={{ textAlign: 'right' }}>Cache</div></Th>
+                      <Th><div style={{ textAlign: 'right' }}>Data</div></Th>
+                      <Th><div style={{ textAlign: 'right' }}>Processado</div></Th>
+                    </tr>
+                  </thead>
             <tbody>
               {loading ? (
                 Array.from({ length: 6 }).map((_, i) => (
@@ -443,19 +514,21 @@ export function ValidacoesPage() {
                   <TrHover key={v.id}>
                     <Td><ChaveNF chave={v.chave_nf} /></Td>
                     <Td>
-                      <span style={{
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{
                         fontFamily: 'var(--mono)', fontSize: '12px', fontWeight: 700,
                         color: v.modelo === '55' ? 'var(--info)' : 'var(--accent)',
                       }}>
                         NF-{v.modelo === '55' ? 'e' : 'Ce'}
-                      </span>
+                        </span>
+                      </div>
                     </Td>
-                    <Td mono>{v.cnpj_emitente}</Td>
+                    <Td mono><div style={{ textAlign: 'right' }}>{v.cnpj_emitente}</div></Td>
                     <Td><Badge status={v.status} /></Td>
-                    <Td><span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>{v.custo_consulta ? `R$ ${Number(v.custo_consulta).toFixed(4)}` : '-'}</span></Td>
-                    <Td>{v.cache_hit ? <Badge status="CACHE_HIT" label="Sim" /> : <span style={{ color: 'var(--text-dim)', fontSize: '12px' }}>-</span>}</Td>
-                    <Td><span style={{ fontSize: '12px' }}>{fmtAgo(v.criado_em)}</span></Td>
-                    <Td><span style={{ fontSize: '12px' }}>{fmtDate(v.processado_em)}</span></Td>
+                    <Td><div style={{ textAlign: 'right' }}><span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>{v.custo_consulta ? `R$ ${Number(v.custo_consulta).toFixed(4)}` : '-'}</span></div></Td>
+                    <Td><div style={{ display: 'flex', justifyContent: 'flex-end' }}>{v.cache_hit ? <Badge status="CACHE_HIT" label="Sim" /> : <span style={{ color: 'var(--text-dim)', fontSize: '12px' }}>-</span>}</div></Td>
+                    <Td><div style={{ textAlign: 'right' }}><span style={{ fontSize: '12px' }}>{fmtAgo(v.criado_em)}</span></div></Td>
+                    <Td><div style={{ textAlign: 'right' }}><span style={{ fontSize: '12px' }}>{fmtDate(v.processado_em)}</span></div></Td>
                   </TrHover>
                 ))
               )}
@@ -669,18 +742,28 @@ export function ConsumoPage() {
         {/* Tabela desktop */}
         <div className="app-data-desktop app-table-shell">
           <Table>
-            <thead>
-              <tr>
-                <Th>Tipo</Th>
-                <Th>Valor</Th>
-                <Th>Saldo resultante</Th>
-                <Th>Descrição</Th>
-                <Th>Pedido</Th>
-                <Th>Auditoria</Th>
-                <Th>Expira em</Th>
-                <Th>Data</Th>
-              </tr>
-            </thead>
+            <colgroup>
+              <col style={{ width: '12%' }} />
+              <col style={{ width: '12%' }} />
+              <col style={{ width: '13%' }} />
+              <col style={{ width: '25%' }} />
+              <col style={{ width: '10%' }} />
+              <col style={{ width: '10%' }} />
+              <col style={{ width: '9%' }} />
+              <col style={{ width: '9%' }} />
+            </colgroup>
+                  <thead>
+                    <tr>
+                      <Th>Tipo</Th>
+                      <Th><div style={{ textAlign: 'right' }}>Valor</div></Th>
+                      <Th><div style={{ textAlign: 'right' }}>Saldo resultante</div></Th>
+                      <Th>Descrição</Th>
+                      <Th><div style={{ textAlign: 'right' }}>Pedido</div></Th>
+                      <Th><div style={{ textAlign: 'right' }}>Auditoria</div></Th>
+                      <Th><div style={{ textAlign: 'right' }}>Expira em</div></Th>
+                      <Th><div style={{ textAlign: 'right' }}>Data</div></Th>
+                    </tr>
+                  </thead>
             <tbody>
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
@@ -695,19 +778,21 @@ export function ConsumoPage() {
                   <TrHover key={c.id}>
                     <Td><Badge status="PROCESSANDO" label={c.tipo} /></Td>
                     <Td>
-                      <span style={{
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{
                         fontFamily: 'var(--mono)', fontSize: '12px', fontWeight: 700,
                         color: c.tipo === 'DEBITO' ? 'var(--danger)' : 'var(--accent)',
                       }}>
                         {c.tipo === 'DEBITO' ? '-' : '+'} R$ {Number(c.valor).toFixed(4)}
-                      </span>
+                        </span>
+                      </div>
                     </Td>
-                    <Td mono>R$ {Number(c.saldo_resultante).toFixed(2)}</Td>
+                    <Td mono><div style={{ textAlign: 'right' }}>R$ {Number(c.saldo_resultante).toFixed(2)}</div></Td>
                     <Td>{c.descricao ?? '-'}</Td>
-                    <Td mono>{c.pedido_id ? `${c.pedido_id.slice(0, 8)}…` : '-'}</Td>
-                    <Td mono>{c.log_auditoria_id ? `${c.log_auditoria_id.slice(0, 8)}…` : '-'}</Td>
-                    <Td><span style={{ fontSize: '12px' }}>{fmtDate(c.expira_em)}</span></Td>
-                    <Td><span style={{ fontSize: '12px' }}>{fmtAgo(c.criado_em)}</span></Td>
+                    <Td mono><div style={{ textAlign: 'right' }}>{c.pedido_id ? `${c.pedido_id.slice(0, 8)}…` : '-'}</div></Td>
+                    <Td mono><div style={{ textAlign: 'right' }}>{c.log_auditoria_id ? `${c.log_auditoria_id.slice(0, 8)}…` : '-'}</div></Td>
+                    <Td><div style={{ textAlign: 'right' }}><span style={{ fontSize: '12px' }}>{fmtDate(c.expira_em)}</span></div></Td>
+                    <Td><div style={{ textAlign: 'right' }}><span style={{ fontSize: '12px' }}>{fmtAgo(c.criado_em)}</span></div></Td>
                   </TrHover>
                 ))
               )}
@@ -783,7 +868,7 @@ export function PagamentosPage() {
   const filteredItems = useMemo(
     () =>
       items.filter((item) => {
-        if (status && item.status !== status) return false
+        if (!matchesPedidoStatusFilter(item.status, status)) return false
         if (metodo && item.metodo_pagamento !== metodo) return false
         return inDateRange(item.criado_em, periodo, inicio, fim)
       }),
@@ -917,7 +1002,7 @@ export function PagamentosPage() {
           <div className="app-filter-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
             <Select label="Status" value={status} onChange={(e) => setStatus(e.target.value)}>
               <option value="">Todos os status</option>
-              {['PENDENTE', 'AGUARDANDO_PAGAMENTO', 'PAGO', 'CANCELADO', 'EXPIRADO'].map((item) => (
+              {['PENDENTE', 'PAGO', 'CANCELADO', 'EXPIRADO'].map((item) => (
                 <option key={item} value={item}>{item}</option>
               ))}
             </Select>
@@ -933,14 +1018,22 @@ export function PagamentosPage() {
 
         <div className="app-data-desktop app-table-shell">
           <Table>
+            <colgroup>
+              <col style={{ width: '18%' }} />
+              <col style={{ width: '20%' }} />
+              <col style={{ width: '14%' }} />
+              <col style={{ width: '16%' }} />
+              <col style={{ width: '16%' }} />
+              <col style={{ width: '16%' }} />
+            </colgroup>
             <thead>
               <tr>
+                <Th>Pedido</Th>
                 <Th>Método</Th>
-                <Th>Valor</Th>
-                <Th>Status</Th>
-                <Th>Confirmado em</Th>
-                <Th>Crédito expira</Th>
-                <Th>Data</Th>
+                <Th><div style={{ textAlign: 'right', paddingRight: '10px' }}>Valor</div></Th>
+                <Th><div style={{ paddingLeft: '10px' }}>Status</div></Th>
+                <Th><div style={{ textAlign: 'right' }}>Confirmado em</div></Th>
+                <Th><div style={{ textAlign: 'right' }}>Crédito expira</div></Th>
               </tr>
             </thead>
             <tbody>
@@ -955,6 +1048,7 @@ export function PagamentosPage() {
               ) : (
                 pageItems.map((p) => (
                   <TrHover key={p.id}>
+                    <Td mono><div style={{ textAlign: 'left' }}>{`${p.id.slice(0, 8)}…`}</div></Td>
                     <Td>
                       {(() => {
                         const tone = paymentTone(p.metodo_pagamento)
@@ -978,17 +1072,18 @@ export function PagamentosPage() {
                       })()}
                     </Td>
                     <Td>
-                      <span style={{
+                      <div style={{ textAlign: 'right', paddingRight: '10px' }}>
+                        <span style={{
                         fontFamily: 'var(--mono)', fontSize: '12px', fontWeight: 700,
                         color: p.status === 'PAGO' ? 'var(--accent)' : 'var(--warn)',
                       }}>
                         R$ {Number(p.valor).toFixed(2)}
-                      </span>
+                        </span>
+                      </div>
                     </Td>
-                    <Td><Badge status={p.status} /></Td>
-                    <Td><span style={{ fontSize: '12px' }}>{fmtDate(p.confirmado_em)}</span></Td>
-                    <Td><span style={{ fontSize: '12px' }}>{fmtDate(p.credito_expira_em)}</span></Td>
-                    <Td><span style={{ fontSize: '12px' }}>{fmtAgo(p.criado_em)}</span></Td>
+                    <Td><div style={{ paddingLeft: '10px' }}><Badge status={p.status} /></div></Td>
+                    <Td><div style={{ textAlign: 'right' }}><span style={{ fontSize: '12px' }}>{fmtDate(p.confirmado_em)}</span></div></Td>
+                    <Td><div style={{ textAlign: 'right' }}><span style={{ fontSize: '12px' }}>{fmtDate(p.credito_expira_em)}</span></div></Td>
                   </TrHover>
                 ))
               )}
@@ -1064,6 +1159,17 @@ export function SimuladorPage() {
   const [loading, setLoading] = useState(false)
   const presets = ['500', '1000', '2500', '5000', '10000']
 
+  function metricSurface(tone: string): React.CSSProperties {
+    return {
+      background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, transparent), color-mix(in srgb, var(--surface-2) 99%, transparent))',
+      border: '1px solid var(--border)',
+      borderTop: `3px solid ${tone}`,
+      borderRadius: '22px',
+      boxShadow: '0 18px 40px rgba(15,23,42,0.08)',
+      overflow: 'hidden',
+    }
+  }
+
   async function simular() {
     const n = parseInt(qtd)
     if (!n || n < 1 || n > 100_000) return toast.error('Entre 1 e 100.000 consultas')
@@ -1082,38 +1188,38 @@ export function SimuladorPage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
       <Card>
         <div style={{
-          padding: '28px',
+          padding: '34px 34px 28px',
           borderBottom: '1px solid var(--border)',
-          background: 'linear-gradient(135deg, color-mix(in srgb, var(--surface) 74%, var(--accent-dim) 26%), color-mix(in srgb, var(--surface) 82%, var(--info-dim) 18%))',
+          background: 'radial-gradient(circle at top left, color-mix(in srgb, var(--accent-dim) 55%, transparent) 0%, transparent 34%), radial-gradient(circle at top right, color-mix(in srgb, var(--info-dim) 50%, transparent) 0%, transparent 28%), linear-gradient(135deg, color-mix(in srgb, var(--surface) 78%, var(--accent-dim) 22%), color-mix(in srgb, var(--surface) 88%, var(--info-dim) 12%))',
           display: 'flex',
           flexDirection: 'column',
-          gap: '10px',
+          gap: '14px',
         }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', width: 'fit-content', padding: '8px 12px', borderRadius: '999px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--accent-glow)', fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--accent)' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', width: 'fit-content', padding: '9px 14px', borderRadius: '999px', background: 'rgba(255,255,255,0.08)', border: '1px solid var(--accent-glow)', fontSize: '11px', fontWeight: 700, letterSpacing: '0.12em', color: 'var(--accent)' }}>
             SIMULADOR
           </div>
-          <div style={{ fontSize: '24px', fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--text)' }}>
+          <div style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-0.04em', color: 'var(--text)', maxWidth: '820px', lineHeight: 1.05 }}>
             Planeje o custo do próximo lote com mais clareza
           </div>
-          <div style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.7, maxWidth: '760px' }}>
+          <div style={{ fontSize: '15px', color: 'var(--text-muted)', lineHeight: 1.8, maxWidth: '820px' }}>
             Simule o custo de <strong style={{ color: 'var(--text)' }}>N consultas</strong> considerando o volume já acumulado no período atual. A faixa de cobrança é aplicada de forma cumulativa para mostrar o impacto real da próxima compra.
           </div>
         </div>
-        <div className="p-6" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div className="p-6" style={{ display: 'flex', flexDirection: 'column', gap: '26px', padding: '28px 34px 34px' }}>
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-            gap: '12px',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: '14px',
           }}>
-            <div style={{ padding: '16px', borderRadius: '18px', border: '1px solid var(--border)', background: 'color-mix(in srgb, var(--surface-2) 94%, transparent)' }}>
+            <div style={{ padding: '18px', borderRadius: '20px', border: '1px solid var(--border)', background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, transparent), color-mix(in srgb, var(--surface-2) 98%, transparent))', boxShadow: '0 16px 34px rgba(15,23,42,0.06)' }}>
               <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-dim)', marginBottom: '6px' }}>Faixas progressivas</div>
               <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6 }}>O cálculo respeita o preço unitário por volume acumulado.</div>
             </div>
-            <div style={{ padding: '16px', borderRadius: '18px', border: '1px solid var(--border)', background: 'color-mix(in srgb, var(--surface-2) 94%, transparent)' }}>
+            <div style={{ padding: '18px', borderRadius: '20px', border: '1px solid var(--border)', background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, transparent), color-mix(in srgb, var(--surface-2) 98%, transparent))', boxShadow: '0 16px 34px rgba(15,23,42,0.06)' }}>
               <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-dim)', marginBottom: '6px' }}>Visão financeira</div>
               <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6 }}>Veja custo total, média por consulta e composição por faixa.</div>
             </div>
-            <div style={{ padding: '16px', borderRadius: '18px', border: '1px solid var(--border)', background: 'color-mix(in srgb, var(--surface-2) 94%, transparent)' }}>
+            <div style={{ padding: '18px', borderRadius: '20px', border: '1px solid var(--border)', background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, transparent), color-mix(in srgb, var(--surface-2) 98%, transparent))', boxShadow: '0 16px 34px rgba(15,23,42,0.06)' }}>
               <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-dim)', marginBottom: '6px' }}>Limite operacional</div>
               <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6 }}>Aceita simulações de 1 a 100.000 consultas por cálculo.</div>
             </div>
@@ -1131,15 +1237,18 @@ export function SimuladorPage() {
                     type="button"
                     onClick={() => setQtd(preset)}
                     style={{
-                      padding: '10px 18px',
+                      padding: '11px 20px',
                       borderRadius: '999px',
                       border: `1px solid ${ativo ? 'var(--accent-glow)' : 'var(--border)'}`,
-                      background: ativo ? 'var(--accent-dim)' : 'color-mix(in srgb, var(--surface-2) 90%, transparent)',
+                      background: ativo
+                        ? 'linear-gradient(135deg, color-mix(in srgb, var(--accent-dim) 86%, transparent), color-mix(in srgb, var(--info-dim) 40%, transparent))'
+                        : 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 92%, transparent), color-mix(in srgb, var(--surface-2) 96%, transparent))',
                       color: ativo ? 'var(--accent)' : 'var(--text-muted)',
                       fontFamily: 'var(--mono)',
                       fontSize: '12px',
                       fontWeight: 700,
                       cursor: 'pointer',
+                      boxShadow: ativo ? '0 12px 24px rgba(0,212,170,0.10)' : 'none',
                     }}
                   >
                     {Number(preset).toLocaleString('pt-BR')}
@@ -1148,8 +1257,15 @@ export function SimuladorPage() {
               })}
             </div>
           </div>
-          <div className="simulator-controls" style={{ display: 'flex', gap: '16px', alignItems: 'end' }}>
-            <div style={{ flex: 1 }}>
+          <div className="simulator-controls" style={{ display: 'flex', gap: '16px', alignItems: 'stretch' }}>
+            <div style={{
+              flex: 1,
+              padding: '18px',
+              borderRadius: '22px',
+              border: '1px solid var(--border)',
+              background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, transparent), color-mix(in srgb, var(--surface-2) 99%, transparent))',
+              boxShadow: '0 18px 38px rgba(15,23,42,0.08)',
+            }}>
               <Input
                 label="Quantidade de consultas a simular"
                 type="number"
@@ -1158,20 +1274,24 @@ export function SimuladorPage() {
                 min={1}
                 max={100000}
                 className="simulator-input"
+                style={{ minHeight: '56px', fontSize: '18px', fontWeight: 700, fontFamily: 'var(--mono)' }}
               />
+              <div style={{ fontSize: '12px', color: 'var(--text-dim)', marginTop: '10px' }}>
+                Informe o volume desejado para calcular o custo incremental nas faixas atuais.
+              </div>
             </div>
             <button
               type="button"
               onClick={simular}
               disabled={loading}
               style={{
-                minWidth: '180px',
+                minWidth: '220px',
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '10px',
-                padding: '16px 22px',
-                borderRadius: '18px',
+                padding: '18px 26px',
+                borderRadius: '22px',
                 border: '1px solid rgba(255,255,255,0.14)',
                 background: loading
                   ? 'color-mix(in srgb, var(--accent) 60%, transparent)'
@@ -1182,7 +1302,7 @@ export function SimuladorPage() {
                 letterSpacing: '-0.01em',
                 cursor: loading ? 'not-allowed' : 'pointer',
                 opacity: loading ? 0.7 : 1,
-                boxShadow: '0 14px 34px rgba(0,212,170,0.24)',
+                boxShadow: '0 18px 40px rgba(0,212,170,0.24)',
                 transition: 'transform 0.12s ease, box-shadow 0.18s ease, opacity 0.15s ease',
               }}
               onMouseEnter={e => {
@@ -1207,20 +1327,20 @@ export function SimuladorPage() {
       {!resultado && (
         <Card>
           <div style={{
-            padding: '24px 28px',
+            padding: '28px 30px',
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
             gap: '16px',
           }}>
-            <div style={{ padding: '18px', borderRadius: '18px', border: '1px solid var(--border)', background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, transparent), color-mix(in srgb, var(--surface-2) 98%, transparent))' }}>
+            <div style={{ padding: '22px', borderRadius: '20px', border: '1px solid var(--border)', background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, transparent), color-mix(in srgb, var(--surface-2) 98%, transparent))', boxShadow: '0 16px 30px rgba(15,23,42,0.06)' }}>
               <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-dim)', marginBottom: '8px' }}>O que você verá</div>
               <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.7 }}>Custo total, custo médio por consulta e o breakdown por faixa progressiva.</div>
             </div>
-            <div style={{ padding: '18px', borderRadius: '18px', border: '1px solid var(--border)', background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, transparent), color-mix(in srgb, var(--surface-2) 98%, transparent))' }}>
+            <div style={{ padding: '22px', borderRadius: '20px', border: '1px solid var(--border)', background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, transparent), color-mix(in srgb, var(--surface-2) 98%, transparent))', boxShadow: '0 16px 30px rgba(15,23,42,0.06)' }}>
               <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-dim)', marginBottom: '8px' }}>Quando usar</div>
               <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.7 }}>Antes de comprar créditos ou estimar impacto financeiro para o próximo lote.</div>
             </div>
-            <div style={{ padding: '18px', borderRadius: '18px', border: '1px solid var(--border)', background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, transparent), color-mix(in srgb, var(--surface-2) 98%, transparent))' }}>
+            <div style={{ padding: '22px', borderRadius: '20px', border: '1px solid var(--border)', background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, transparent), color-mix(in srgb, var(--surface-2) 98%, transparent))', boxShadow: '0 16px 30px rgba(15,23,42,0.06)' }}>
               <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-dim)', marginBottom: '8px' }}>Leitura rápida</div>
               <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.7 }}>Use os atalhos acima para testar cenários frequentes em segundos.</div>
             </div>
@@ -1232,26 +1352,35 @@ export function SimuladorPage() {
         <>
           <div
             className="grid grid-cols-3 gap-4 simulator-results-grid"
-            style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}
           >
-            <MetricCard
-              label="Custo total"
-              value={`R$ ${Number(resultado.custo_total).toFixed(2)}`}
-              note="Valor previsto para o lote informado."
-              tone="var(--accent)"
-            />
-            <MetricCard
-              label="Custo médio por consulta"
-              value={`R$ ${resultado.custo_medio_por_consulta}`}
-              note="Média unitária estimada após aplicar as faixas."
-              tone="var(--info)"
-            />
-            <MetricCard
-              label="Total acumulado após"
-              value={(resultado.acumulado_atual + resultado.quantidade).toLocaleString('pt-BR')}
-              note="Volume projetado ao final desta simulação."
-              tone="var(--warn)"
-            />
+            <div style={metricSurface('var(--accent)')}>
+              <div style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-dim)' }}>Custo total</div>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: '32px', fontWeight: 800, color: 'var(--accent)', letterSpacing: '-0.03em' }}>
+                  R$ {Number(resultado.custo_total).toFixed(2)}
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.7 }}>Valor previsto para o lote informado.</div>
+              </div>
+            </div>
+            <div style={metricSurface('var(--info)')}>
+              <div style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-dim)' }}>Custo médio por consulta</div>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: '32px', fontWeight: 800, color: 'var(--info)', letterSpacing: '-0.03em' }}>
+                  R$ {resultado.custo_medio_por_consulta}
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.7 }}>Média unitária estimada após aplicar as faixas.</div>
+              </div>
+            </div>
+            <div style={metricSurface('var(--warn)')}>
+              <div style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-dim)' }}>Total acumulado após</div>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: '32px', fontWeight: 800, color: 'var(--warn)', letterSpacing: '-0.03em' }}>
+                  {(resultado.acumulado_atual + resultado.quantidade).toLocaleString('pt-BR')}
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.7 }}>Volume projetado ao final desta simulação.</div>
+              </div>
+            </div>
           </div>
 
           {resultado.detalhes_por_faixa.length > 0 && (
@@ -1264,13 +1393,20 @@ export function SimuladorPage() {
               </CardHeader>
               <div className="app-data-desktop app-table-shell">
                 <Table>
+                  <colgroup>
+                    <col style={{ width: '24%' }} />
+                    <col style={{ width: '16%' }} />
+                    <col style={{ width: '18%' }} />
+                    <col style={{ width: '18%' }} />
+                    <col style={{ width: '24%' }} />
+                  </colgroup>
                   <thead>
                     <tr>
                       <Th>Faixa</Th>
-                      <Th>Consultas</Th>
-                      <Th>Preço unitário</Th>
-                      <Th>Subtotal</Th>
-                      <Th>% do total</Th>
+                      <Th><div style={{ textAlign: 'right' }}>Consultas</div></Th>
+                      <Th><div style={{ textAlign: 'right' }}>Preço unitário</div></Th>
+                      <Th><div style={{ textAlign: 'right' }}>Subtotal</div></Th>
+                      <Th><div style={{ textAlign: 'right' }}>% do total</div></Th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1279,15 +1415,15 @@ export function SimuladorPage() {
                       return (
                         <TrHover key={d.faixa}>
                           <Td><Badge status="PROCESSANDO" label={d.faixa} /></Td>
-                          <Td mono>{d.consultas.toLocaleString('pt-BR')}</Td>
-                          <Td mono>R$ {d.preco_unitario}</Td>
-                          <Td><span className="font-mono text-xs font-semibold text-[var(--accent)]">R$ {d.custo_faixa}</span></Td>
+                          <Td mono><div style={{ textAlign: 'right' }}>{d.consultas.toLocaleString('pt-BR')}</div></Td>
+                          <Td mono><div style={{ textAlign: 'right' }}>R$ {d.preco_unitario}</div></Td>
+                          <Td><div style={{ textAlign: 'right' }}><span className="font-mono text-xs font-semibold text-[var(--accent)]">R$ {d.custo_faixa}</span></div></Td>
                           <Td>
-                            <div className="flex items-center gap-2">
-                              <div className="flex-1 h-1.5 bg-[var(--surface-2)] rounded-full overflow-hidden">
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+                              <span className="font-mono text-xs text-[var(--text-muted)]">{pct}%</span>
+                              <div style={{ width: '120px', height: '6px', background: 'var(--surface-2)', borderRadius: '999px', overflow: 'hidden' }}>
                                 <div className="h-full bg-[var(--accent)] rounded-full" style={{ width: `${pct}%` }} />
                               </div>
-                              <span className="font-mono text-xs text-[var(--text-muted)] w-10">{pct}%</span>
                             </div>
                           </Td>
                         </TrHover>
