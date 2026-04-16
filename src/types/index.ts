@@ -127,6 +127,11 @@ export interface IniciarPedidoResponse {
   status: StatusPedido
   gateway_id?: string | null
   gateway_payload?: string | null
+  checkout_url?: string | null
+  redirect_url?: string | null
+  init_point?: string | null
+  public_key?: string | null
+  subscription_id?: string | null
   pix_copia_cola?: string
   pix_qr_code_url?: string
   boleto_linha_digitavel?: string

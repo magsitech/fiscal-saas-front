@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { endOfDay, format, parseISO, startOfDay, subDays } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { Banknote, Copy, Download, ExternalLink, Landmark, Sparkles } from 'lucide-react'
+import { CreditCard, Download, Landmark, Sparkles } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { dashboardApi, pedidosApi } from '@/services/api'
 import type { AuditoriaItem, ExtratoItem, Pedido, SimuladorResponse } from '@/types'
+import { CreditosCheckout } from '@/components/credits/CreditosCheckout'
 import {
   Badge,
   Button,
@@ -793,6 +794,12 @@ export function PagamentosPage() {
   const pendentes = filteredItems.filter((item) => item.status === 'PENDENTE' || item.status === 'AGUARDANDO_PAGAMENTO').length
   const { pageItems, totalPages, safePage } = paginateItems(filteredItems, page)
 
+  function paymentTone(method: Pedido['metodo_pagamento']) {
+    if (method === 'PIX') return { color: 'var(--accent)', bg: 'var(--accent-dim)', icon: <Sparkles size={14} /> }
+    if (method === 'BOLETO') return { color: 'var(--warn)', bg: 'var(--warn-dim)', icon: <Landmark size={14} /> }
+    return { color: 'var(--info)', bg: 'var(--info-dim)', icon: <CreditCard size={14} /> }
+  }
+
   useEffect(() => {
     setPage(1)
   }, [status, metodo, periodo, inicio, fim])
@@ -819,8 +826,10 @@ export function PagamentosPage() {
     toast.success('CSV de pedidos exportado.')
   }
 
+  const exportDisabled = filteredItems.length === 0 || loading
+
   return (
-    <div className="space-y-4">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
       <div
         className="grid grid-cols-3 gap-4 management-grid-3"
         style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}
@@ -845,117 +854,206 @@ export function PagamentosPage() {
         />
       </div>
 
-      <Card>
-      <CardHeader className="card-header-responsive">
-        <div>
-          <CardTitle>Histórico de pedidos</CardTitle>
-          <div className="text-xs text-[var(--text-muted)] mt-1">Filtre por status, método e período.</div>
-        </div>
-        <Button
-          variant="ghost"
-          icon={<Download size={14} />}
-          onClick={handleExport}
-          disabled={filteredItems.length === 0 || loading}
-          className="min-w-[152px]"
-        >
-          Exportar CSV
-        </Button>
-      </CardHeader>
+      <div style={{
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
+        borderRadius: '24px',
+        overflow: 'hidden',
+        boxShadow: '0 16px 40px rgba(0,0,0,0.10)',
+      }}>
+        <div style={{
+          display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between',
+          gap: '16px', padding: '24px 28px',
+          borderBottom: '1px solid var(--border)',
+          flexWrap: 'wrap',
+        }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
+            <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+              Histórico de pedidos
+            </div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.55 }}>
+              Filtre por status, método e período.
+            </div>
+          </div>
 
-      <div className="app-filter-panel space-y-3">
-        <div className="grid gap-3 app-filter-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
-          <Select label="Status" value={status} onChange={(e) => setStatus(e.target.value)}>
-            <option value="">Todos os status</option>
-            {['PENDENTE', 'AGUARDANDO_PAGAMENTO', 'PAGO', 'CANCELADO', 'EXPIRADO'].map((item) => (
-              <option key={item} value={item}>{item}</option>
-            ))}
-          </Select>
-          <Select label="Método" value={metodo} onChange={(e) => setMetodo(e.target.value)}>
-            <option value="">Todos os métodos</option>
-            {['PIX', 'BOLETO', 'CARTAO'].map((item) => (
-              <option key={item} value={item}>{item}</option>
-            ))}
-          </Select>
-          <DateFilters periodo={periodo} onPeriodoChange={setPeriodo} inicio={inicio} onInicioChange={setInicio} fim={fim} onFimChange={setFim} />
+          <button
+            type="button"
+            onClick={handleExport}
+            disabled={exportDisabled}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '8px',
+              padding: '11px 20px', borderRadius: '14px',
+              border: '1px solid var(--border)',
+              background: exportDisabled
+                ? 'color-mix(in srgb, var(--surface-2) 70%, transparent)'
+                : 'color-mix(in srgb, var(--surface-2) 92%, transparent)',
+              color: exportDisabled ? 'var(--text-dim)' : 'var(--text)',
+              fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 700,
+              cursor: exportDisabled ? 'not-allowed' : 'pointer',
+              opacity: exportDisabled ? 0.55 : 1,
+              transition: 'border-color 0.15s, box-shadow 0.15s, transform 0.1s',
+              whiteSpace: 'nowrap', flexShrink: 0,
+            }}
+            onMouseEnter={e => {
+              if (!exportDisabled) {
+                e.currentTarget.style.borderColor = 'var(--border-bright)'
+                e.currentTarget.style.transform = 'translateY(-1px)'
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.10)'
+              }
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.borderColor = 'var(--border)'
+              e.currentTarget.style.transform = 'translateY(0)'
+              e.currentTarget.style.boxShadow = 'none'
+            }}
+            onMouseDown={e => { e.currentTarget.style.transform = 'translateY(0)' }}
+          >
+            <Download size={14} />
+            Exportar CSV
+          </button>
         </div>
-      </div>
 
-      <div className="app-data-desktop app-table-shell">
-        <Table>
-          <thead>
-            <tr>
-              <Th>ID</Th>
-              <Th>Método</Th>
-              <Th>Valor</Th>
-              <Th>Status</Th>
-              <Th>Confirmado em</Th>
-              <Th>Crédito expira</Th>
-              <Th>Criado em</Th>
-            </tr>
-          </thead>
-          <tbody>
+        <div className="app-filter-panel">
+          <div className="app-filter-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+            <Select label="Status" value={status} onChange={(e) => setStatus(e.target.value)}>
+              <option value="">Todos os status</option>
+              {['PENDENTE', 'AGUARDANDO_PAGAMENTO', 'PAGO', 'CANCELADO', 'EXPIRADO'].map((item) => (
+                <option key={item} value={item}>{item}</option>
+              ))}
+            </Select>
+            <Select label="Método" value={metodo} onChange={(e) => setMetodo(e.target.value)}>
+              <option value="">Todos os métodos</option>
+              {['PIX', 'BOLETO', 'CARTAO'].map((item) => (
+                <option key={item} value={item}>{item}</option>
+              ))}
+            </Select>
+            <DateFilters periodo={periodo} onPeriodoChange={setPeriodo} inicio={inicio} onInicioChange={setInicio} fim={fim} onFimChange={setFim} />
+          </div>
+        </div>
+
+        <div className="app-data-desktop app-table-shell">
+          <Table>
+            <thead>
+              <tr>
+                <Th>Método</Th>
+                <Th>Valor</Th>
+                <Th>Status</Th>
+                <Th>Confirmado em</Th>
+                <Th>Crédito expira</Th>
+                <Th>Data</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TrHover key={i}>
+                    {Array.from({ length: 6 }).map((__, j) => <Td key={j}><Skeleton className="h-4 w-full" /></Td>)}
+                  </TrHover>
+                ))
+              ) : filteredItems.length === 0 ? (
+                <tr><td colSpan={6}><Empty message="Nenhum pedido encontrado para os filtros selecionados" /></td></tr>
+              ) : (
+                pageItems.map((p) => (
+                  <TrHover key={p.id}>
+                    <Td>
+                      {(() => {
+                        const tone = paymentTone(p.metodo_pagamento)
+                        return (
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '8px 12px',
+                            borderRadius: '999px',
+                            background: tone.bg,
+                            color: tone.color,
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            letterSpacing: '0.08em',
+                          }}>
+                            {tone.icon}
+                            {p.metodo_pagamento}
+                          </span>
+                        )
+                      })()}
+                    </Td>
+                    <Td>
+                      <span style={{
+                        fontFamily: 'var(--mono)', fontSize: '12px', fontWeight: 700,
+                        color: p.status === 'PAGO' ? 'var(--accent)' : 'var(--warn)',
+                      }}>
+                        R$ {Number(p.valor).toFixed(2)}
+                      </span>
+                    </Td>
+                    <Td><Badge status={p.status} /></Td>
+                    <Td><span style={{ fontSize: '12px' }}>{fmtDate(p.confirmado_em)}</span></Td>
+                    <Td><span style={{ fontSize: '12px' }}>{fmtDate(p.credito_expira_em)}</span></Td>
+                    <Td><span style={{ fontSize: '12px' }}>{fmtAgo(p.criado_em)}</span></Td>
+                  </TrHover>
+                ))
+              )}
+            </tbody>
+          </Table>
+          <Pagination
+            page={safePage}
+            totalPages={totalPages}
+            totalItems={filteredItems.length}
+            label="Pedidos"
+            onPageChange={setPage}
+          />
+        </div>
+
+        <div className="app-data-mobile" style={{ padding: '16px' }}>
+          <div className="app-mobile-card-list">
             {loading ? (
-              Array.from({ length: 4 }).map((_, i) => (
-                <TrHover key={i}>
-                  {Array.from({ length: 7 }).map((__, j) => <Td key={j}><Skeleton className="h-4 w-full" /></Td>)}
-                </TrHover>
-              ))
+              <MobileSkeletonCards />
             ) : filteredItems.length === 0 ? (
-              <tr><td colSpan={7}><Empty message="Nenhum pedido encontrado para os filtros selecionados" /></td></tr>
+              <Empty message="Nenhum pedido encontrado para os filtros selecionados" />
             ) : (
               pageItems.map((p) => (
-                <TrHover key={p.id}>
-                  <Td><span className="font-mono text-[11px]">{p.id.slice(0, 8)}...</span></Td>
-                  <Td><span className={`font-mono text-xs font-semibold ${p.metodo_pagamento === 'PIX' ? 'text-[var(--accent)]' : 'text-[var(--info)]'}`}>{p.metodo_pagamento}</span></Td>
-                  <Td><span className="font-mono text-xs font-semibold text-[var(--accent)]">R$ {Number(p.valor).toFixed(2)}</span></Td>
-                  <Td><Badge status={p.status} /></Td>
-                  <Td><span className="text-xs">{fmtDate(p.confirmado_em)}</span></Td>
-                  <Td><span className="text-xs">{fmtDate(p.credito_expira_em)}</span></Td>
-                  <Td><span className="text-xs">{fmtDate(p.criado_em)}</span></Td>
-                </TrHover>
-              ))
-            )}
-          </tbody>
-        </Table>
-        <Pagination
-          page={safePage}
-          totalPages={totalPages}
-          totalItems={filteredItems.length}
-          label="Pedidos"
-          onPageChange={setPage}
-        />
-      </div>
-
-      <div className="app-data-mobile p-4">
-        <div className="app-mobile-card-list">
-          {loading ? (
-            <MobileSkeletonCards />
-          ) : filteredItems.length === 0 ? (
-            <Empty message="Nenhum pedido encontrado para os filtros selecionados" />
-          ) : (
-            pageItems.map((p) => (
-              <Card key={p.id}>
-                <div className="p-4">
-                  <div className="flex items-start justify-between gap-3 mb-2">
-                    <div>
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-dim)] mb-1">Pedido</div>
-                      <span className="font-mono text-[11px] text-[var(--text-muted)]">{p.id.slice(0, 8)}...</span>
-                    </div>
+                <div key={p.id} style={{
+                  background: 'var(--surface)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '16px',
+                  padding: '18px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                    {(() => {
+                      const tone = paymentTone(p.metodo_pagamento)
+                      return (
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '8px 12px',
+                          borderRadius: '999px',
+                          background: tone.bg,
+                          color: tone.color,
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          letterSpacing: '0.08em',
+                        }}>
+                          {tone.icon}
+                          {p.metodo_pagamento}
+                        </span>
+                      )
+                    })()}
                     <Badge status={p.status} />
                   </div>
-                  <MobileField label="Método" value={<span className={`font-mono text-xs font-semibold ${p.metodo_pagamento === 'PIX' ? 'text-[var(--accent)]' : 'text-[var(--info)]'}`}>{p.metodo_pagamento}</span>} />
-                  <MobileField label="Valor" value={<span className="font-mono text-xs font-semibold text-[var(--accent)]">R$ {Number(p.valor).toFixed(2)}</span>} />
-                  <MobileField label="Confirmado em" value={<span className="text-xs">{fmtDate(p.confirmado_em)}</span>} />
-                  <MobileField label="Crédito expira" value={<span className="text-xs">{fmtDate(p.credito_expira_em)}</span>} />
-                  <MobileField label="Criado em" value={<span className="text-xs">{fmtDate(p.criado_em)}</span>} />
+                  <MobileField label="Valor" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px', fontWeight: 700, color: p.status === 'PAGO' ? 'var(--accent)' : 'var(--warn)' }}>R$ {Number(p.valor).toFixed(2)}</span>} />
+                  <MobileField label="Confirmado em" value={<span style={{ fontSize: '12px' }}>{fmtDate(p.confirmado_em)}</span>} />
+                  <MobileField label="Crédito expira" value={<span style={{ fontSize: '12px' }}>{fmtDate(p.credito_expira_em)}</span>} />
+                  <MobileField label="Data" value={<span style={{ fontSize: '12px' }}>{fmtAgo(p.criado_em)}</span>} />
                 </div>
-              </Card>
-            ))
-          )}
+              ))
+            )}
+          </div>
+          <Pagination page={safePage} totalPages={totalPages} totalItems={filteredItems.length} label="Pedidos" onPageChange={setPage} />
         </div>
-        <Pagination page={safePage} totalPages={totalPages} totalItems={filteredItems.length} label="Pedidos" onPageChange={setPage} />
       </div>
-    </Card>
     </div>
   )
 }
@@ -964,6 +1062,7 @@ export function SimuladorPage() {
   const [qtd, setQtd] = useState('1000')
   const [resultado, setResultado] = useState<SimuladorResponse | null>(null)
   const [loading, setLoading] = useState(false)
+  const presets = ['500', '1000', '2500', '5000', '10000']
 
   async function simular() {
     const n = parseInt(qtd)
@@ -980,31 +1079,154 @@ export function SimuladorPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
       <Card>
-        <CardHeader>
-          <CardTitle>Simulador de custos</CardTitle>
-          <span className="text-xs text-[var(--text-muted)]">Planeje o impacto financeiro do próximo lote</span>
-        </CardHeader>
-        <div className="p-6">
-          <p className="text-sm text-[var(--text-muted)] mb-5 leading-relaxed">
-            Simula o custo de <strong className="text-[var(--text)]">N consultas</strong> considerando o volume já
-            acumulado no seu período atual. A faixa de cobrança é aplicada de forma cumulativa.
-          </p>
-          <div className="flex gap-4 items-end simulator-controls" style={{ gap: '16px' }}>
-            <Input
-              label="Quantidade de consultas a simular"
-              type="number"
-              value={qtd}
-              onChange={(e) => setQtd(e.target.value)}
-              min={1}
-              max={100000}
-              className="simulator-input"
-            />
-            <Button onClick={simular} loading={loading} size="lg" className="min-w-[148px]">Calcular</Button>
+        <div style={{
+          padding: '28px',
+          borderBottom: '1px solid var(--border)',
+          background: 'linear-gradient(135deg, color-mix(in srgb, var(--surface) 74%, var(--accent-dim) 26%), color-mix(in srgb, var(--surface) 82%, var(--info-dim) 18%))',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '10px',
+        }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', width: 'fit-content', padding: '8px 12px', borderRadius: '999px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--accent-glow)', fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--accent)' }}>
+            SIMULADOR
+          </div>
+          <div style={{ fontSize: '24px', fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--text)' }}>
+            Planeje o custo do próximo lote com mais clareza
+          </div>
+          <div style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.7, maxWidth: '760px' }}>
+            Simule o custo de <strong style={{ color: 'var(--text)' }}>N consultas</strong> considerando o volume já acumulado no período atual. A faixa de cobrança é aplicada de forma cumulativa para mostrar o impacto real da próxima compra.
+          </div>
+        </div>
+        <div className="p-6" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            gap: '12px',
+          }}>
+            <div style={{ padding: '16px', borderRadius: '18px', border: '1px solid var(--border)', background: 'color-mix(in srgb, var(--surface-2) 94%, transparent)' }}>
+              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-dim)', marginBottom: '6px' }}>Faixas progressivas</div>
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6 }}>O cálculo respeita o preço unitário por volume acumulado.</div>
+            </div>
+            <div style={{ padding: '16px', borderRadius: '18px', border: '1px solid var(--border)', background: 'color-mix(in srgb, var(--surface-2) 94%, transparent)' }}>
+              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-dim)', marginBottom: '6px' }}>Visão financeira</div>
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6 }}>Veja custo total, média por consulta e composição por faixa.</div>
+            </div>
+            <div style={{ padding: '16px', borderRadius: '18px', border: '1px solid var(--border)', background: 'color-mix(in srgb, var(--surface-2) 94%, transparent)' }}>
+              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-dim)', marginBottom: '6px' }}>Limite operacional</div>
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6 }}>Aceita simulações de 1 a 100.000 consultas por cálculo.</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-dim)' }}>
+              Atalhos de volume
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+              {presets.map((preset) => {
+                const ativo = qtd === preset
+                return (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setQtd(preset)}
+                    style={{
+                      padding: '10px 18px',
+                      borderRadius: '999px',
+                      border: `1px solid ${ativo ? 'var(--accent-glow)' : 'var(--border)'}`,
+                      background: ativo ? 'var(--accent-dim)' : 'color-mix(in srgb, var(--surface-2) 90%, transparent)',
+                      color: ativo ? 'var(--accent)' : 'var(--text-muted)',
+                      fontFamily: 'var(--mono)',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {Number(preset).toLocaleString('pt-BR')}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+          <div className="simulator-controls" style={{ display: 'flex', gap: '16px', alignItems: 'end' }}>
+            <div style={{ flex: 1 }}>
+              <Input
+                label="Quantidade de consultas a simular"
+                type="number"
+                value={qtd}
+                onChange={(e) => setQtd(e.target.value)}
+                min={1}
+                max={100000}
+                className="simulator-input"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={simular}
+              disabled={loading}
+              style={{
+                minWidth: '180px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '10px',
+                padding: '16px 22px',
+                borderRadius: '18px',
+                border: '1px solid rgba(255,255,255,0.14)',
+                background: loading
+                  ? 'color-mix(in srgb, var(--accent) 60%, transparent)'
+                  : 'linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 72%, white))',
+                color: '#041311',
+                fontSize: '14px',
+                fontWeight: 800,
+                letterSpacing: '-0.01em',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.7 : 1,
+                boxShadow: '0 14px 34px rgba(0,212,170,0.24)',
+                transition: 'transform 0.12s ease, box-shadow 0.18s ease, opacity 0.15s ease',
+              }}
+              onMouseEnter={e => {
+                if (!loading) {
+                  e.currentTarget.style.transform = 'translateY(-1px)'
+                  e.currentTarget.style.boxShadow = '0 18px 40px rgba(0,212,170,0.30)'
+                }
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.boxShadow = '0 14px 34px rgba(0,212,170,0.24)'
+              }}
+              onMouseDown={e => { e.currentTarget.style.transform = 'translateY(0)' }}
+            >
+              {loading ? <Spinner size={16} /> : null}
+              {loading ? 'Calculando...' : 'Calcular projeção'}
+            </button>
           </div>
         </div>
       </Card>
+
+      {!resultado && (
+        <Card>
+          <div style={{
+            padding: '24px 28px',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            gap: '16px',
+          }}>
+            <div style={{ padding: '18px', borderRadius: '18px', border: '1px solid var(--border)', background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, transparent), color-mix(in srgb, var(--surface-2) 98%, transparent))' }}>
+              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-dim)', marginBottom: '8px' }}>O que você verá</div>
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.7 }}>Custo total, custo médio por consulta e o breakdown por faixa progressiva.</div>
+            </div>
+            <div style={{ padding: '18px', borderRadius: '18px', border: '1px solid var(--border)', background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, transparent), color-mix(in srgb, var(--surface-2) 98%, transparent))' }}>
+              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-dim)', marginBottom: '8px' }}>Quando usar</div>
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.7 }}>Antes de comprar créditos ou estimar impacto financeiro para o próximo lote.</div>
+            </div>
+            <div style={{ padding: '18px', borderRadius: '18px', border: '1px solid var(--border)', background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, transparent), color-mix(in srgb, var(--surface-2) 98%, transparent))' }}>
+              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-dim)', marginBottom: '8px' }}>Leitura rápida</div>
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.7 }}>Use os atalhos acima para testar cenários frequentes em segundos.</div>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {resultado && (
         <>
@@ -1034,39 +1256,72 @@ export function SimuladorPage() {
 
           {resultado.detalhes_por_faixa.length > 0 && (
             <Card>
-              <CardHeader className="card-header-responsive"><CardTitle>Breakdown por faixa</CardTitle></CardHeader>
-              <Table>
-                <thead>
-                  <tr>
-                    <Th>Faixa</Th>
-                    <Th>Consultas</Th>
-                    <Th>Preço unitário</Th>
-                    <Th>Subtotal</Th>
-                    <Th>% do total</Th>
-                  </tr>
-                </thead>
-                <tbody>
+              <CardHeader className="card-header-responsive">
+                <div>
+                  <CardTitle>Breakdown por faixa</CardTitle>
+                  <div className="text-xs text-[var(--text-muted)] mt-1">Entenda como o volume é distribuído entre as faixas progressivas.</div>
+                </div>
+              </CardHeader>
+              <div className="app-data-desktop app-table-shell">
+                <Table>
+                  <thead>
+                    <tr>
+                      <Th>Faixa</Th>
+                      <Th>Consultas</Th>
+                      <Th>Preço unitário</Th>
+                      <Th>Subtotal</Th>
+                      <Th>% do total</Th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {resultado.detalhes_por_faixa.map((d) => {
+                      const pct = ((Number(d.custo_faixa) / Number(resultado.custo_total)) * 100).toFixed(1)
+                      return (
+                        <TrHover key={d.faixa}>
+                          <Td><Badge status="PROCESSANDO" label={d.faixa} /></Td>
+                          <Td mono>{d.consultas.toLocaleString('pt-BR')}</Td>
+                          <Td mono>R$ {d.preco_unitario}</Td>
+                          <Td><span className="font-mono text-xs font-semibold text-[var(--accent)]">R$ {d.custo_faixa}</span></Td>
+                          <Td>
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 h-1.5 bg-[var(--surface-2)] rounded-full overflow-hidden">
+                                <div className="h-full bg-[var(--accent)] rounded-full" style={{ width: `${pct}%` }} />
+                              </div>
+                              <span className="font-mono text-xs text-[var(--text-muted)] w-10">{pct}%</span>
+                            </div>
+                          </Td>
+                        </TrHover>
+                      )
+                    })}
+                  </tbody>
+                </Table>
+              </div>
+              <div className="app-data-mobile" style={{ padding: '16px' }}>
+                <div className="app-mobile-card-list">
                   {resultado.detalhes_por_faixa.map((d) => {
                     const pct = ((Number(d.custo_faixa) / Number(resultado.custo_total)) * 100).toFixed(1)
                     return (
-                      <TrHover key={d.faixa}>
-                        <Td><Badge status="PROCESSANDO" label={d.faixa} /></Td>
-                        <Td mono>{d.consultas.toLocaleString('pt-BR')}</Td>
-                        <Td mono>R$ {d.preco_unitario}</Td>
-                        <Td><span className="font-mono text-xs font-semibold text-[var(--accent)]">R$ {d.custo_faixa}</span></Td>
-                        <Td>
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 h-1.5 bg-[var(--surface-2)] rounded-full overflow-hidden">
-                              <div className="h-full bg-[var(--accent)] rounded-full" style={{ width: `${pct}%` }} />
-                            </div>
-                            <span className="font-mono text-xs text-[var(--text-muted)] w-10">{pct}%</span>
-                          </div>
-                        </Td>
-                      </TrHover>
+                      <div key={d.faixa} style={{
+                        background: 'var(--surface)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '16px',
+                        padding: '18px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '12px',
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                          <Badge status="PROCESSANDO" label={d.faixa} />
+                          <span className="font-mono text-xs font-semibold text-[var(--accent)]">R$ {d.custo_faixa}</span>
+                        </div>
+                        <MobileField label="Consultas" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>{d.consultas.toLocaleString('pt-BR')}</span>} />
+                        <MobileField label="Preço unitário" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>R$ {d.preco_unitario}</span>} />
+                        <MobileField label="% do total" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>{pct}%</span>} />
+                      </div>
                     )
                   })}
-                </tbody>
-              </Table>
+                </div>
+              </div>
             </Card>
           )}
         </>
@@ -1076,392 +1331,5 @@ export function SimuladorPage() {
 }
 
 export function CreditosPage() {
-  const [metodo, setMetodo] = useState<'PIX' | 'BOLETO'>('PIX')
-  const [valor, setValor] = useState('100')
-  const [loading, setLoading] = useState(false)
-  const [resultado, setResultado] = useState<{ pix?: string; boleto?: string; boletoUrl?: string } | null>(null)
-
-  async function iniciar() {
-    const v = parseFloat(valor)
-    if (isNaN(v) || v < 50) return toast.error('Valor mínimo: R$ 50,00')
-    setLoading(true)
-    setResultado(null)
-    try {
-      const r = await pedidosApi.iniciar(metodo, v)
-      if (metodo === 'PIX') setResultado({ pix: r.pix_copia_cola })
-      else setResultado({ boleto: r.boleto_linha_digitavel, boletoUrl: r.boleto_url })
-      toast.success('Pedido gerado com sucesso!')
-    } catch {
-      toast.error('Erro ao gerar pedido. Tente novamente.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  function copiar(text: string) {
-    navigator.clipboard.writeText(text).then(() => toast.success('Copiado!'))
-  }
-
-  return (
-    <div style={{ maxWidth: '680px', display: 'flex', flexDirection: 'column', gap: '28px' }}>
-
-      {/* Card principal */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Comprar créditos</CardTitle>
-        </CardHeader>
-
-        <div style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
-
-          {/* Info pré-pago */}
-          <div style={{
-            padding: '18px 20px',
-            borderRadius: '16px',
-            background: 'var(--accent-dim)',
-            border: '1px solid var(--accent-glow)',
-            fontSize: '13px',
-            lineHeight: 1.7,
-          }}>
-            <span style={{ color: 'var(--accent)', fontWeight: 700 }}>Modelo pré-pago.</span>{' '}
-            <span style={{ color: 'var(--text-muted)' }}>
-              Suas recargas ficam registradas em <strong style={{ color: 'var(--text)', fontWeight: 600 }}>pedidos</strong> e o
-              saldo acompanha cada consumo no <strong style={{ color: 'var(--text)', fontWeight: 600 }}>financeiro</strong>, com
-              desconto aplicado conforme as consultas realizadas.
-            </span>
-          </div>
-
-          {/* Método de pagamento */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div style={{
-              fontSize: '11px', fontWeight: 700, textTransform: 'uppercase',
-              letterSpacing: '0.14em', color: 'var(--text-dim)',
-            }}>
-              Método de pagamento
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }} className="credit-method-row">
-              {(['PIX', 'BOLETO'] as const).map((m) => {
-                const ativo = metodo === m
-                return (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => setMetodo(m)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: '12px',
-                      padding: '18px 20px',
-                      borderRadius: '20px',
-                      border: `1px solid ${ativo ? 'var(--accent-glow)' : 'var(--border)'}`,
-                      background: ativo
-                        ? 'linear-gradient(135deg, var(--accent-dim), color-mix(in srgb, var(--info-dim) 40%, transparent))'
-                        : 'color-mix(in srgb, var(--surface-2) 92%, transparent)',
-                      cursor: 'pointer',
-                      transition: 'border-color 0.15s, background 0.15s',
-                      textAlign: 'left',
-                      fontFamily: 'var(--sans)',
-                    }}
-                  >
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0 }}>
-                      <span style={{
-                        width: '42px', height: '42px', borderRadius: '14px', flexShrink: 0,
-                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                        border: `1px solid ${ativo ? 'var(--accent-glow)' : 'var(--border)'}`,
-                        background: ativo ? 'rgba(0,212,170,0.08)' : 'color-mix(in srgb, var(--surface-2) 90%, transparent)',
-                        color: ativo ? 'var(--accent)' : 'var(--text-dim)',
-                      }}>
-                        {m === 'PIX' ? <Sparkles size={16} /> : <Landmark size={16} />}
-                      </span>
-                      <span style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                        <span style={{ fontSize: '13px', fontWeight: 600, color: ativo ? 'var(--text)' : 'var(--text-muted)' }}>
-                          {m === 'PIX' ? 'PIX' : 'Boleto'}
-                        </span>
-                        <span style={{ fontSize: '11px', color: ativo ? 'var(--text-muted)' : 'var(--text-dim)' }}>
-                          {m === 'PIX' ? 'Confirmação instantânea' : '1-3 dias úteis'}
-                        </span>
-                      </span>
-                    </span>
-                    <span style={{
-                      width: '10px', height: '10px', borderRadius: '50%', flexShrink: 0,
-                      background: ativo ? 'var(--accent)' : 'var(--border-bright)',
-                      boxShadow: ativo ? '0 0 0 4px rgba(0,212,170,0.15)' : 'none',
-                      transition: 'background 0.15s, box-shadow 0.15s',
-                    }} />
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Valor */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div style={{
-              fontSize: '11px', fontWeight: 700, textTransform: 'uppercase',
-              letterSpacing: '0.14em', color: 'var(--text-dim)',
-            }}>
-              Valor
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-              {['50', '100', '200', '500', '1000'].map((v) => {
-                const ativo = valor === v
-                return (
-                  <button
-                    key={v}
-                    type="button"
-                    onClick={() => setValor(v)}
-                    style={{
-                      padding: '10px 20px',
-                      borderRadius: '999px',
-                      border: `1px solid ${ativo ? 'var(--accent-glow)' : 'var(--border)'}`,
-                      background: ativo
-                        ? 'var(--accent-dim)'
-                        : 'color-mix(in srgb, var(--surface-2) 88%, transparent)',
-                      color: ativo ? 'var(--accent)' : 'var(--text-muted)',
-                      fontFamily: 'var(--mono)',
-                      fontSize: '13px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      transition: 'border-color 0.15s, background 0.15s, color 0.15s',
-                    }}
-                  >
-                    <span style={{ fontSize: '10px', opacity: 0.7, marginRight: '3px' }}>R$</span>{v}
-                  </button>
-                )
-              })}
-            </div>
-            {/* Input de valor customizado */}
-            <div style={{ position: 'relative' }}>
-              <span style={{
-                position: 'absolute',
-                left: '18px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                fontFamily: 'var(--mono)',
-                fontSize: '14px',
-                fontWeight: 700,
-                color: 'var(--text-dim)',
-                pointerEvents: 'none',
-                userSelect: 'none',
-              }}>
-                R$
-              </span>
-              <input
-                type="number"
-                placeholder="0,00"
-                value={valor}
-                onChange={(e) => setValor(e.target.value)}
-                min={50}
-                style={{
-                  width: '100%',
-                  paddingLeft: '48px',
-                  paddingRight: '18px',
-                  paddingTop: '16px',
-                  paddingBottom: '16px',
-                  borderRadius: '16px',
-                  border: '1px solid var(--border)',
-                  background: 'color-mix(in srgb, var(--surface-2) 94%, transparent)',
-                  color: 'var(--text)',
-                  fontFamily: 'var(--mono)',
-                  fontSize: '18px',
-                  fontWeight: 600,
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                  transition: 'border-color 0.15s, box-shadow 0.15s',
-                }}
-                onFocus={e => {
-                  e.currentTarget.style.borderColor = 'var(--accent)'
-                  e.currentTarget.style.boxShadow = '0 0 0 4px var(--accent-dim)'
-                }}
-                onBlur={e => {
-                  e.currentTarget.style.borderColor = 'var(--border)'
-                  e.currentTarget.style.boxShadow = 'none'
-                }}
-              />
-            </div>
-            <p style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '-4px' }}>
-              Valor mínimo: R$ 50,00
-            </p>
-          </div>
-
-          {/* CTA */}
-          <button
-            type="button"
-            onClick={iniciar}
-            disabled={loading}
-            style={{
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '10px',
-              padding: '18px 24px',
-              borderRadius: '20px',
-              border: '1px solid rgba(255,255,255,0.14)',
-              background: loading
-                ? 'color-mix(in srgb, var(--accent) 60%, transparent)'
-                : 'linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 72%, white))',
-              color: '#041311',
-              fontFamily: 'var(--sans)',
-              fontSize: '15px',
-              fontWeight: 700,
-              cursor: loading ? 'not-allowed' : 'pointer',
-              opacity: loading ? 0.7 : 1,
-              boxShadow: '0 8px 28px rgba(0,212,170,0.22)',
-              transition: 'opacity 0.15s, box-shadow 0.15s, transform 0.1s',
-              letterSpacing: '-0.01em',
-            }}
-            onMouseEnter={e => {
-              if (!loading) {
-                e.currentTarget.style.boxShadow = '0 12px 36px rgba(0,212,170,0.35)'
-                e.currentTarget.style.transform = 'translateY(-1px)'
-              }
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.boxShadow = '0 8px 28px rgba(0,212,170,0.22)'
-              e.currentTarget.style.transform = 'translateY(0)'
-            }}
-            onMouseDown={e => { e.currentTarget.style.transform = 'translateY(0)' }}
-          >
-            {loading
-              ? <Spinner size={16} />
-              : <Banknote size={18} />
-            }
-            {loading
-              ? 'Gerando pedido…'
-              : `Gerar ${metodo === 'PIX' ? 'pedido PIX' : 'boleto'} · R$ ${parseFloat(valor) > 0 ? parseFloat(valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '—'}`
-            }
-          </button>
-        </div>
-      </Card>
-
-      {/* Resultado PIX */}
-      {resultado?.pix && (
-        <Card>
-          <CardHeader>
-            <CardTitle>PIX copia e cola</CardTitle>
-          </CardHeader>
-          <div style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div
-              style={{
-                fontFamily: 'var(--mono)',
-                fontSize: '12px',
-                wordBreak: 'break-all',
-                color: 'var(--text-muted)',
-                background: 'var(--surface-2)',
-                border: '1px solid var(--border)',
-                borderRadius: '14px',
-                padding: '18px',
-                cursor: 'pointer',
-                lineHeight: 1.7,
-                transition: 'border-color 0.15s',
-              }}
-              onClick={() => resultado.pix && copiar(resultado.pix)}
-            >
-              {resultado.pix}
-            </div>
-            <button
-              type="button"
-              onClick={() => resultado.pix && copiar(resultado.pix)}
-              style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '10px',
-                padding: '16px 24px',
-                borderRadius: '18px',
-                border: '1px solid var(--accent-glow)',
-                background: 'linear-gradient(135deg, var(--accent-dim), color-mix(in srgb, var(--info-dim) 40%, transparent))',
-                color: 'var(--accent)',
-                fontFamily: 'var(--sans)',
-                fontSize: '14px',
-                fontWeight: 700,
-                cursor: 'pointer',
-                letterSpacing: '-0.01em',
-                transition: 'border-color 0.15s, box-shadow 0.15s, transform 0.1s',
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.borderColor = 'var(--accent)'
-                e.currentTarget.style.boxShadow = '0 0 0 4px var(--accent-dim)'
-                e.currentTarget.style.transform = 'translateY(-1px)'
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.borderColor = 'var(--accent-glow)'
-                e.currentTarget.style.boxShadow = 'none'
-                e.currentTarget.style.transform = 'translateY(0)'
-              }}
-              onMouseDown={e => { e.currentTarget.style.transform = 'translateY(0)' }}
-            >
-              <Copy size={16} />
-              Copiar código PIX
-            </button>
-          </div>
-        </Card>
-      )}
-
-      {/* Resultado Boleto */}
-      {resultado?.boleto && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Boleto bancário</CardTitle>
-          </CardHeader>
-          <div style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{
-              fontFamily: 'var(--mono)',
-              fontSize: '12px',
-              wordBreak: 'break-all',
-              color: 'var(--text-muted)',
-              background: 'var(--surface-2)',
-              border: '1px solid var(--border)',
-              borderRadius: '14px',
-              padding: '18px',
-              lineHeight: 1.7,
-            }}>
-              {resultado.boleto}
-            </div>
-            <div style={{ display: 'flex', gap: '12px' }} className="credit-result-actions">
-              <Button
-                type="button"
-                variant="ghost"
-                size="lg"
-                icon={<Copy size={14} />}
-                onClick={() => resultado.boleto && copiar(resultado.boleto)}
-                style={{ flex: 1 }}
-              >
-                Copiar linha digitável
-              </Button>
-              {resultado.boletoUrl && (
-                <a
-                  href={resultado.boletoUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    flex: 1,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    padding: '0 20px',
-                    borderRadius: '14px',
-                    background: 'var(--accent)',
-                    border: '1px solid rgba(255,255,255,0.14)',
-                    color: '#041311',
-                    fontSize: '13px',
-                    fontWeight: 700,
-                    textDecoration: 'none',
-                    transition: 'opacity 0.15s',
-                    minHeight: '44px',
-                  }}
-                >
-                  <ExternalLink size={14} />
-                  Abrir PDF
-                </a>
-              )}
-            </div>
-          </div>
-        </Card>
-      )}
-    </div>
-  )
+  return <CreditosCheckout />
 }

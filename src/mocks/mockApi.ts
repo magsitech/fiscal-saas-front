@@ -602,6 +602,16 @@ export const mockPedidosApi = {
       valor: novoPedido.valor,
       status: novoPedido.status,
       expira_em: novoPedido.expira_em,
+      checkout_url: metodo_pagamento === 'CARTAO'
+        ? `https://www.mercadopago.com.br/subscriptions/checkout?preapproval_id=mock-${novoPedido.id}`
+        : undefined,
+      gateway_payload: metodo_pagamento === 'CARTAO'
+        ? JSON.stringify({
+            provider: 'mercado_pago',
+            flow: 'subscription',
+            checkout_url: `https://www.mercadopago.com.br/subscriptions/checkout?preapproval_id=mock-${novoPedido.id}`,
+          })
+        : undefined,
       pix_copia_cola: metodo_pagamento === 'PIX'
         ? `000201mock${novoPedido.id}${valor.toFixed(2).replace('.', '')}`
         : undefined,

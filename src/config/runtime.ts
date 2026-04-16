@@ -20,6 +20,7 @@ const ENVIRONMENT_URLS: Record<AppEnvironment, { frontendUrl: string; apiBaseUrl
 const rawAppEnv = import.meta.env.VITE_APP_ENV
 const rawApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '')
 const rawUseMockApi = import.meta.env.VITE_USE_MOCK_API === 'true'
+const rawMercadoPagoPublicKey = import.meta.env.VITE_MERCADO_PAGO_PUBLIC_KEY?.trim()
 
 if (rawAppEnv !== 'staging' && rawAppEnv !== 'main') {
   throw new Error('VITE_APP_ENV deve ser "staging" ou "main".')
@@ -46,3 +47,4 @@ if (rawApiBaseUrl !== EXPECTED_API_BASE_URL) {
 export const USE_MOCK_API = rawUseMockApi
 export const API_BASE_URL = rawApiBaseUrl
 export const ENVIRONMENT_LABEL = APP_ENV === 'main' ? 'Produção' : 'Staging'
+export const MERCADO_PAGO_PUBLIC_KEY = rawMercadoPagoPublicKey || null

@@ -181,7 +181,7 @@ export const dashboardApi = {
     const { data } = await http.get<SimuladorResponse>('/dashboard/simulador', {
       params: { quantidade },
     })
-    return data
+    return unwrapPayload<SimuladorResponse>(data)
   },
 }
 
