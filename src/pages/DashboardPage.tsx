@@ -105,7 +105,7 @@ export function DashboardPage() {
 
   const disponivel = parseFloat(saldo?.saldo_disponivel ?? '0')
   const gastoPeriodo = parseFloat(resumo?.gasto_periodo ?? '0')
-  const totalPeriodo = disponivel + gastoPeriodo
+  const totalPeriodo = parseFloat(saldo?.valor_inicial ?? '') || (disponivel + gastoPeriodo)
   const usado = Math.max(gastoPeriodo, 0)
   const pctRaw = totalPeriodo > 0 ? Math.min((usado / totalPeriodo) * 100, 100) : 0
   const pct = usado > 0 && pctRaw < 1 ? 1 : Math.round(pctRaw)
@@ -129,7 +129,9 @@ export function DashboardPage() {
     {
       label: 'Consultas no período',
       value: loading ? null : (resumo?.consultas_periodo ?? 0).toLocaleString('pt-BR'),
-      note: `R$ ${fmt(resumo?.gasto_periodo ?? '0')} debitados no período`,
+      note: resumo?.prox_consulta_custo
+        ? `R$ ${fmt(resumo?.gasto_periodo ?? '0')} debitados no período. Próxima consulta: R$ ${fmt(resumo.prox_consulta_custo)}.`
+        : `R$ ${fmt(resumo?.gasto_periodo ?? '0')} debitados no período`,
       tone: 'var(--info)',
       featured: true,
     },
@@ -232,7 +234,7 @@ export function DashboardPage() {
                     Consultas
                   </div>
                   <div style={{ fontFamily: 'var(--mono)', fontSize: '14px', fontWeight: 600 }} className="dashboard-summary-stat-value">
-                    {(saldo?.consultas_no_periodo ?? 0).toLocaleString('pt-BR')}
+                    {(resumo?.consultas_periodo ?? saldo?.consultas_no_periodo ?? 0).toLocaleString('pt-BR')}
                   </div>
                 </div>
                 <div className="dashboard-summary-stat" style={{ borderRadius: '14px', border: '1px solid', padding: '14px 16px' }}>
@@ -262,7 +264,7 @@ export function DashboardPage() {
               marginTop: '12px', fontSize: '12px', gap: '16px',
             }} className="dashboard-summary-meta dashboard-hero-meta">
               <span>{saldoComprometidoLabel}</span>
-              <span>{(saldo?.consultas_no_periodo ?? 0).toLocaleString('pt-BR')} consultas no período</span>
+              <span>{(resumo?.consultas_periodo ?? saldo?.consultas_no_periodo ?? 0).toLocaleString('pt-BR')} consultas no período</span>
             </div>
           </div>
         </div>

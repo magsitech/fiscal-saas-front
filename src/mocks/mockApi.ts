@@ -5,9 +5,11 @@ import type {
   Cliente,
   DashboardResumo,
   ExtratoItem,
+  IniciarPedidoRequest,
   IniciarPedidoResponse,
   LoginPayload,
   Pedido,
+  PedidoDetalhe,
   RegisterPayload,
   SaldoResumo,
   SimuladorResponse,
@@ -36,6 +38,8 @@ type MockDb = {
 
 const DB_KEY = 'validaenota-mock-db-v2'
 const SESSION_KEY = 'validaenota-mock-session-v2'
+const MOCK_PIX_QR_CODE =
+  'data:image/svg+xml;utf8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 240 240%22%3E%3Crect width=%22240%22 height=%22240%22 rx=%2228%22 fill=%22white%22/%3E%3Crect x=%2220%22 y=%2220%22 width=%2260%22 height=%2260%22 rx=%2210%22 fill=%22%23041620%22/%3E%3Crect x=%2234%22 y=%2234%22 width=%2232%22 height=%2232%22 rx=%226%22 fill=%22white%22/%3E%3Crect x=%22160%22 y=%2220%22 width=%2260%22 height=%2260%22 rx=%2210%22 fill=%22%23041620%22/%3E%3Crect x=%22174%22 y=%2234%22 width=%2232%22 height=%2232%22 rx=%226%22 fill=%22white%22/%3E%3Crect x=%2220%22 y=%22160%22 width=%2260%22 height=%2260%22 rx=%2210%22 fill=%22%23041620%22/%3E%3Crect x=%2234%22 y=%22174%22 width=%2232%22 height=%2232%22 rx=%226%22 fill=%22white%22/%3E%3Cg fill=%22%23041620%22%3E%3Crect x=%22104%22 y=%2228%22 width=%2212%22 height=%2212%22 rx=%223%22/%3E%3Crect x=%22124%22 y=%2228%22 width=%2212%22 height=%2212%22 rx=%223%22/%3E%3Crect x=%22104%22 y=%2248%22 width=%2212%22 height=%2212%22 rx=%223%22/%3E%3Crect x=%22124%22 y=%2268%22 width=%2212%22 height=%2212%22 rx=%223%22/%3E%3Crect x=%22144%22 y=%2296%22 width=%2212%22 height=%2212%22 rx=%223%22/%3E%3Crect x=%22164%22 y=%2296%22 width=%2212%22 height=%2212%22 rx=%223%22/%3E%3Crect x=%22184%22 y=%2296%22 width=%2212%22 height=%2212%22 rx=%223%22/%3E%3Crect x=%22104%22 y=%22116%22 width=%2212%22 height=%2212%22 rx=%223%22/%3E%3Crect x=%22124%22 y=%22116%22 width=%2212%22 height=%2212%22 rx=%223%22/%3E%3Crect x=%22164%22 y=%22116%22 width=%2212%22 height=%2212%22 rx=%223%22/%3E%3Crect x=%22104%22 y=%22136%22 width=%2212%22 height=%2212%22 rx=%223%22/%3E%3Crect x=%22144%22 y=%22136%22 width=%2212%22 height=%2212%22 rx=%223%22/%3E%3Crect x=%22184%22 y=%22136%22 width=%2212%22 height=%2212%22 rx=%223%22/%3E%3Crect x=%2296%22 y=%22160%22 width=%2212%22 height=%2212%22 rx=%223%22/%3E%3Crect x=%22116%22 y=%22160%22 width=%2212%22 height=%2212%22 rx=%223%22/%3E%3Crect x=%22136%22 y=%22160%22 width=%2212%22 height=%2212%22 rx=%223%22/%3E%3Crect x=%22176%22 y=%22160%22 width=%2212%22 height=%2212%22 rx=%223%22/%3E%3Crect x=%2296%22 y=%22180%22 width=%2212%22 height=%2212%22 rx=%223%22/%3E%3Crect x=%22136%22 y=%22180%22 width=%2212%22 height=%2212%22 rx=%223%22/%3E%3Crect x=%22156%22 y=%22180%22 width=%2212%22 height=%2212%22 rx=%223%22/%3E%3Crect x=%22176%22 y=%22180%22 width=%2212%22 height=%2212%22 rx=%223%22/%3E%3Crect x=%22116%22 y=%22200%22 width=%2212%22 height=%2212%22 rx=%223%22/%3E%3Crect x=%22156%22 y=%22200%22 width=%2212%22 height=%2212%22 rx=%223%22/%3E%3Crect x=%22196%22 y=%22200%22 width=%2212%22 height=%2212%22 rx=%223%22/%3E%3C/g%3E%3C/svg%3E'
 
 const DEMO_USER: MockUser = {
   id: 'usr_demo_001',
@@ -61,6 +65,7 @@ function ahead(days = 0, hours = 0, minutes = 0) {
 
 const DEFAULT_SALDO: SaldoResumo = {
   saldo_disponivel: '1247.92',
+  valor_inicial: '1500.00',
   expira_em: ahead(21),
   status: 'ATIVO',
   consultas_no_periodo: 4328,
@@ -75,6 +80,7 @@ const DEFAULT_AUDITORIA: AuditoriaItem[] = [
     status: 'AUTORIZADA',
     status_sefaz: '100',
     cache_hit: false,
+    custo: '0.1800',
     custo_consulta: '0.1800',
     saldo_antes: '1248.10',
     saldo_depois: '1247.92',
@@ -89,6 +95,7 @@ const DEFAULT_AUDITORIA: AuditoriaItem[] = [
     status: 'CACHE_HIT',
     status_sefaz: '100',
     cache_hit: true,
+    custo: null,
     custo_consulta: null,
     saldo_antes: null,
     saldo_depois: null,
@@ -103,6 +110,7 @@ const DEFAULT_AUDITORIA: AuditoriaItem[] = [
     status: 'PROCESSANDO',
     status_sefaz: null,
     cache_hit: false,
+    custo: null,
     custo_consulta: null,
     saldo_antes: null,
     saldo_depois: null,
@@ -117,6 +125,7 @@ const DEFAULT_AUDITORIA: AuditoriaItem[] = [
     status: 'ERRO',
     status_sefaz: null,
     cache_hit: false,
+    custo: null,
     custo_consulta: null,
     saldo_antes: null,
     saldo_depois: null,
@@ -131,6 +140,7 @@ const DEFAULT_AUDITORIA: AuditoriaItem[] = [
     status: 'DENEGADA',
     status_sefaz: '301',
     cache_hit: false,
+    custo: '0.1800',
     custo_consulta: '0.1800',
     saldo_antes: '1248.28',
     saldo_depois: '1248.10',
@@ -145,6 +155,7 @@ const DEFAULT_AUDITORIA: AuditoriaItem[] = [
     status: 'CANCELADA',
     status_sefaz: '101',
     cache_hit: false,
+    custo: '0.1800',
     custo_consulta: '0.1800',
     saldo_antes: '1248.46',
     saldo_depois: '1248.28',
@@ -159,6 +170,7 @@ const DEFAULT_AUDITORIA: AuditoriaItem[] = [
     status: 'PENDENTE',
     status_sefaz: null,
     cache_hit: false,
+    custo: null,
     custo_consulta: null,
     saldo_antes: null,
     saldo_depois: null,
@@ -173,6 +185,7 @@ const DEFAULT_AUDITORIA: AuditoriaItem[] = [
     status: 'AUTORIZADA',
     status_sefaz: '100',
     cache_hit: false,
+    custo: '0.1800',
     custo_consulta: '0.1800',
     saldo_antes: '1248.64',
     saldo_depois: '1248.46',
@@ -186,6 +199,9 @@ const DEFAULT_EXTRATO: ExtratoItem[] = [
     id: 'fin_001',
     tipo: 'CREDITO',
     valor: '1000.0000',
+    custo: null,
+    saldo_antes: '248.64',
+    saldo_depois: '1248.64',
     saldo_resultante: '1248.64',
     descricao: 'Crédito confirmado por pagamento via PIX',
     expira_em: ahead(21),
@@ -197,6 +213,9 @@ const DEFAULT_EXTRATO: ExtratoItem[] = [
     id: 'fin_002',
     tipo: 'DEBITO',
     valor: '0.1800',
+    custo: '0.1800',
+    saldo_antes: '1248.10',
+    saldo_depois: '1247.92',
     saldo_resultante: '1247.92',
     descricao: 'Débito por consulta fiscal autorizada',
     expira_em: null,
@@ -208,6 +227,9 @@ const DEFAULT_EXTRATO: ExtratoItem[] = [
     id: 'fin_003',
     tipo: 'DEBITO',
     valor: '0.1800',
+    custo: '0.1800',
+    saldo_antes: '1248.28',
+    saldo_depois: '1248.10',
     saldo_resultante: '1248.10',
     descricao: 'Débito por consulta fiscal denegada',
     expira_em: null,
@@ -219,6 +241,9 @@ const DEFAULT_EXTRATO: ExtratoItem[] = [
     id: 'fin_004',
     tipo: 'DEBITO',
     valor: '0.1800',
+    custo: '0.1800',
+    saldo_antes: '1248.46',
+    saldo_depois: '1248.28',
     saldo_resultante: '1248.28',
     descricao: 'Débito por consulta fiscal cancelada',
     expira_em: null,
@@ -230,6 +255,9 @@ const DEFAULT_EXTRATO: ExtratoItem[] = [
     id: 'fin_005',
     tipo: 'ESTORNO',
     valor: '15.0000',
+    custo: null,
+    saldo_antes: '1233.46',
+    saldo_depois: '1248.46',
     saldo_resultante: '1248.46',
     descricao: 'Estorno operacional liberado pelo suporte',
     expira_em: null,
@@ -241,6 +269,9 @@ const DEFAULT_EXTRATO: ExtratoItem[] = [
     id: 'fin_006',
     tipo: 'EXPIRACAO',
     valor: '32.5000',
+    custo: null,
+    saldo_antes: '1265.96',
+    saldo_depois: '1233.46',
     saldo_resultante: '1233.46',
     descricao: 'Expiração parcial de saldo antigo do período anterior',
     expira_em: ago(1),
@@ -253,53 +284,93 @@ const DEFAULT_EXTRATO: ExtratoItem[] = [
 const DEFAULT_PEDIDOS: Pedido[] = [
   {
     id: 'ped_001',
-    metodo_pagamento: 'PIX',
+    metodo: 'PIX',
     valor: '1000.00',
     status: 'PAGO',
+    mp_status: 'approved',
+    mp_status_detail: 'accredited',
     confirmado_em: ago(5, 1, 40),
     expira_em: ago(5, 1, 10),
     credito_expira_em: ahead(21),
     criado_em: ago(5, 2, 0),
+    checkout_url: 'https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=mock-ped_001',
+    pix_copia_cola: '000201mockped001100000',
+    pix_qr_code_url: MOCK_PIX_QR_CODE,
+    boleto_linha_digitavel: null,
+    boleto_url: null,
+    gateway_id: 'mp_mock_001',
   },
   {
     id: 'ped_002',
-    metodo_pagamento: 'BOLETO',
+    metodo: 'BOLETO',
     valor: '500.00',
     status: 'AGUARDANDO_PAGAMENTO',
+    mp_status: 'pending',
+    mp_status_detail: 'pending_waiting_payment',
     confirmado_em: null,
     expira_em: ahead(1, 6),
     credito_expira_em: null,
     criado_em: ago(0, 4, 30),
+    checkout_url: 'https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=mock-ped_002',
+    pix_copia_cola: null,
+    pix_qr_code_url: null,
+    boleto_linha_digitavel: '34191.79001 01043.510047 91020.150008 1 95870026000',
+    boleto_url: 'https://example.com/mock-boleto.pdf',
+    gateway_id: 'mp_mock_002',
   },
   {
     id: 'ped_003',
-    metodo_pagamento: 'PIX',
+    metodo: 'PIX',
     valor: '250.00',
-    status: 'PENDENTE',
+    status: 'AGUARDANDO_PAGAMENTO',
+    mp_status: 'pending',
+    mp_status_detail: 'pending_waiting_transfer',
     confirmado_em: null,
     expira_em: ahead(0, 0, 25),
     credito_expira_em: null,
     criado_em: ago(0, 0, 5),
+    checkout_url: 'https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=mock-ped_003',
+    pix_copia_cola: '000201mockped003250000',
+    pix_qr_code_url: MOCK_PIX_QR_CODE,
+    boleto_linha_digitavel: null,
+    boleto_url: null,
+    gateway_id: 'mp_mock_003',
   },
   {
     id: 'ped_004',
-    metodo_pagamento: 'CARTAO',
+    metodo: 'CARTAO',
     valor: '750.00',
     status: 'CANCELADO',
+    mp_status: 'cancelled',
+    mp_status_detail: 'cancelled',
     confirmado_em: null,
     expira_em: ago(2, 1),
     credito_expira_em: null,
     criado_em: ago(2, 4, 5),
+    checkout_url: null,
+    pix_copia_cola: null,
+    pix_qr_code_url: null,
+    boleto_linha_digitavel: null,
+    boleto_url: null,
+    gateway_id: 'mp_mock_004',
   },
   {
     id: 'ped_005',
-    metodo_pagamento: 'BOLETO',
+    metodo: 'BOLETO',
     valor: '300.00',
     status: 'EXPIRADO',
+    mp_status: 'cancelled',
+    mp_status_detail: 'expired',
     confirmado_em: null,
     expira_em: ago(7, 3),
     credito_expira_em: null,
     criado_em: ago(8, 1, 20),
+    checkout_url: null,
+    pix_copia_cola: null,
+    pix_qr_code_url: null,
+    boleto_linha_digitavel: '34191.79001 01043.510047 91020.150008 1 95870026000',
+    boleto_url: 'https://example.com/mock-boleto-expired.pdf',
+    gateway_id: 'mp_mock_005',
   },
 ]
 
@@ -423,6 +494,8 @@ function buildResumo(db: MockDb): DashboardResumo {
     gasto_periodo: totalDebitos(db.extrato).toFixed(2),
     consultas_hoje: countToday(db.auditoria),
     gasto_hoje: debitosHoje.reduce((sum, item) => sum + Number(item.valor), 0).toFixed(2),
+    prox_consulta_custo: '0.1800',
+    prox_faixa: '501-2.000',
   }
 }
 
@@ -579,18 +652,31 @@ export const mockDashboardApi = {
 }
 
 export const mockPedidosApi = {
-  async iniciar(metodo_pagamento: 'PIX' | 'BOLETO' | 'CARTAO', valor: number) {
+  async iniciar(payload: IniciarPedidoRequest) {
     const db = readDb()
     const now = Date.now()
+    const metodo = payload.metodo
     const novoPedido: Pedido = {
       id: `ped_${now}`,
-      metodo_pagamento,
-      valor: valor.toFixed(2),
-      status: metodo_pagamento === 'PIX' ? 'PENDENTE' : 'AGUARDANDO_PAGAMENTO',
+      metodo,
+      valor: payload.valor.toFixed(2),
+      status: 'AGUARDANDO_PAGAMENTO',
+      mp_status: 'pending',
+      mp_status_detail: metodo === 'PIX' ? 'pending_waiting_transfer' : 'pending_waiting_payment',
       confirmado_em: null,
       expira_em: new Date(now + 30 * 60 * 1000).toISOString(),
       credito_expira_em: null,
       criado_em: new Date(now).toISOString(),
+      checkout_url: `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=mock-${now}`,
+      pix_copia_cola: metodo === 'PIX'
+        ? `000201mockped${now}${payload.valor.toFixed(2).replace('.', '')}`
+        : null,
+      pix_qr_code_url: metodo === 'PIX' ? MOCK_PIX_QR_CODE : null,
+      boleto_linha_digitavel: metodo === 'BOLETO'
+        ? '34191.79001 01043.510047 91020.150008 1 95870026000'
+        : null,
+      boleto_url: metodo === 'BOLETO' ? 'https://example.com/mock-boleto.pdf' : null,
+      gateway_id: `mp_mock_${now}`,
     }
 
     db.pedidos.unshift(novoPedido)
@@ -598,29 +684,25 @@ export const mockPedidosApi = {
 
     const response: IniciarPedidoResponse = {
       pedido_id: novoPedido.id,
-      metodo_pagamento,
+      metodo,
       valor: novoPedido.valor,
       status: novoPedido.status,
+      mp_status: novoPedido.mp_status,
+      mp_status_detail: novoPedido.mp_status_detail,
       expira_em: novoPedido.expira_em,
-      checkout_url: metodo_pagamento === 'CARTAO'
-        ? `https://www.mercadopago.com.br/subscriptions/checkout?preapproval_id=mock-${novoPedido.id}`
-        : undefined,
-      gateway_payload: metodo_pagamento === 'CARTAO'
-        ? JSON.stringify({
-            provider: 'mercado_pago',
-            flow: 'subscription',
-            checkout_url: `https://www.mercadopago.com.br/subscriptions/checkout?preapproval_id=mock-${novoPedido.id}`,
-          })
-        : undefined,
-      pix_copia_cola: metodo_pagamento === 'PIX'
-        ? `000201mock${novoPedido.id}${valor.toFixed(2).replace('.', '')}`
-        : undefined,
-      boleto_linha_digitavel: metodo_pagamento === 'BOLETO'
-        ? '34191.79001 01043.510047 91020.150008 1 95870026000'
-        : undefined,
-      boleto_url: metodo_pagamento === 'BOLETO'
-        ? 'https://example.com/mock-boleto.pdf'
-        : undefined,
+      credito_expira_em: new Date(now + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      checkout_url: novoPedido.checkout_url,
+      gateway_id: novoPedido.gateway_id,
+      gateway_payload: JSON.stringify({
+        provider: 'mercado_pago',
+        flow: 'checkout',
+        checkout_url: novoPedido.checkout_url,
+      }),
+      pix_copia_cola: novoPedido.pix_copia_cola,
+      pix_qr_code_url: novoPedido.pix_qr_code_url,
+      boleto_linha_digitavel: novoPedido.boleto_linha_digitavel,
+      boleto_url: novoPedido.boleto_url,
+      credito_lancado: false,
     }
 
     return delay(response)
@@ -628,6 +710,18 @@ export const mockPedidosApi = {
 
   async listar() {
     return delay(readDb().pedidos)
+  },
+
+  async detalhar(pedidoId: string) {
+    const pedido = readDb().pedidos.find((item) => item.id === pedidoId)
+    if (!pedido) fail('Pedido nao encontrado', 404)
+
+    const response: PedidoDetalhe = {
+      ...pedido,
+      descricao: null,
+    }
+
+    return delay(response)
   },
 }
 
@@ -647,6 +741,7 @@ export const mockFiscalApi = {
       status: badgeToStatus('PROCESSANDO'),
       status_sefaz: null,
       cache_hit: false,
+      custo: null,
       custo_consulta: null,
       saldo_antes: null,
       saldo_depois: null,
@@ -658,6 +753,9 @@ export const mockFiscalApi = {
       id: `fin_${Date.now()}`,
       tipo: 'DEBITO' as TipoMovimentacao,
       valor: custoConsulta.toFixed(4),
+      custo: custoConsulta.toFixed(4),
+      saldo_antes: saldoAntes.toFixed(2),
+      saldo_depois: saldoDepois.toFixed(2),
       saldo_resultante: saldoDepois.toFixed(2),
       descricao: 'Débito por consulta fiscal',
       expira_em: null,

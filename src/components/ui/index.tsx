@@ -68,11 +68,17 @@ type BadgeVariant = 'green' | 'yellow' | 'red' | 'blue' | 'gray'
 const STATUS_MAP: Record<string, [BadgeVariant, string]> = {
   AUTORIZADA:   ['green',  'Autorizada'],
   CONFIRMADO:   ['green',  'Confirmado'],
+  PAGO:         ['green',  'Pago'],
   ATIVO:        ['green',  'Ativo'],
+  CREDITO:      ['green',  'Crédito'],
+  AGUARDANDO_PAGAMENTO: ['yellow', 'Pendente'],
+  ESTORNO:      ['yellow', 'Estorno'],
   CANCELADA:    ['red',    'Cancelada'],
   DENEGADA:     ['red',    'Denegada'],
   ERRO:         ['red',    'Erro'],
   EXPIRADO:     ['red',    'Expirado'],
+  DEBITO:       ['red',    'Débito'],
+  EXPIRACAO:    ['red',    'Expiração'],
   ZERADO:       ['red',    'Zerado'],
   PENDENTE:     ['yellow', 'Pendente'],
   PROCESSANDO:  ['blue',   'Processando'],
@@ -202,7 +208,7 @@ export function Table({ children }: { children: React.ReactNode }) {
 
 export function Th({ children }: { children: React.ReactNode }) {
   return (
-    <th className="text-left px-5 py-2.5 text-xs font-semibold tracking-wider uppercase text-[var(--text-dim)] bg-[var(--surface-2)] border-b border-[var(--border)]">
+    <th className="align-middle text-left px-5 py-2.5 text-xs font-semibold tracking-wider uppercase text-[var(--text-dim)] bg-[var(--surface-2)] border-b border-[var(--border)]">
       {children}
     </th>
   )
@@ -210,7 +216,7 @@ export function Th({ children }: { children: React.ReactNode }) {
 
 export function Td({ children, mono }: { children: React.ReactNode; mono?: boolean }) {
   return (
-    <td className={`px-5 py-3 border-b border-[var(--border)] text-[var(--text)] last:border-b-0 ${mono ? 'font-mono text-xs' : ''}`}>
+    <td className={`align-middle px-5 py-3 border-b border-[var(--border)] text-[var(--text)] last:border-b-0 ${mono ? 'font-mono text-xs tabular-nums' : ''}`}>
       {children}
     </td>
   )
