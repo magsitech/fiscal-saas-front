@@ -1,6 +1,6 @@
 # fiscal-saas-front
 
-Frontend do `validaeNota`, publicado no Vercel, com separação explícita entre ambiente `staging` para testes e ambiente `main` para produção.
+Frontend do `validaeNota`, publicado no Vercel, com separação explícita entre ambiente `staging` para testes e ambiente `main` para produção
 
 ## Ambientes oficiais
 
