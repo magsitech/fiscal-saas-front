@@ -1,6 +1,7 @@
 export type TipoCliente = 'PF' | 'PJ'
 export type ModeloNotaFiscal = '55' | '65'
 export type MetodoPagamento = 'PIX' | 'BOLETO' | 'CARTAO'
+export type GatewayPayload = Record<string, unknown> | string | null
 export type StatusPedido =
   | 'PENDENTE'
   | 'AGUARDANDO_PAGAMENTO'
@@ -109,37 +110,62 @@ export interface SimuladorResponse {
   }>
 }
 
-export interface Pedido {
+export interface PedidoBoletoPayerPayload {
+  payer_zip_code: string
+  payer_street_name: string
+  payer_street_number: string
+  payer_neighborhood: string
+  payer_city: string
+  payer_federal_unit: string
+}
+
+export interface IniciarPedidoRequest extends Partial<PedidoBoletoPayerPayload> {
+  metodo: Extract<MetodoPagamento, 'PIX' | 'BOLETO'>
+  valor: number
+}
+
+export interface PedidoStatusGatewayInfo {
+  mp_status?: string | null
+  mp_status_detail?: string | null
+  gateway_id?: string | null
+  gateway_payload?: GatewayPayload
+}
+
+export interface PedidoPagamentoData {
+  checkout_url?: string | null
+  pix_copia_cola?: string | null
+  pix_qr_code_url?: string | null
+  boleto_linha_digitavel?: string | null
+  boleto_url?: string | null
+}
+
+export interface PedidoBase extends PedidoStatusGatewayInfo, PedidoPagamentoData {
   id: string
-  metodo_pagamento: MetodoPagamento
+  metodo: MetodoPagamento
   valor: string
   status: StatusPedido
-  confirmado_em: string | null
   expira_em: string | null
   credito_expira_em: string | null
+  confirmado_em: string | null
   criado_em: string
 }
 
-export interface IniciarPedidoResponse {
+export interface Pedido extends PedidoBase {}
+
+export interface PedidoDetalhe extends PedidoBase {
+  descricao?: string | null
+}
+
+export interface IniciarPedidoResponse extends PedidoPagamentoData, PedidoStatusGatewayInfo {
   pedido_id: string
-  metodo_pagamento: MetodoPagamento
+  metodo: MetodoPagamento
   valor: string
   status: StatusPedido
-  gateway_id?: string | null
-  gateway_payload?: string | null
-  checkout_url?: string | null
-  redirect_url?: string | null
-  init_point?: string | null
-  public_key?: string | null
-  subscription_id?: string | null
-  pix_copia_cola?: string
-  pix_qr_code_url?: string
-  boleto_linha_digitavel?: string
-  boleto_url?: string
   expira_em?: string | null
   credito_expira_em?: string | null
-  criado_em?: string
-  atualizado_em?: string
+  criado_em?: string | null
+  confirmado_em?: string | null
+  credito_lancado?: boolean
 }
 
 export interface ValidarNotaPayload {

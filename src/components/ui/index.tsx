@@ -68,6 +68,7 @@ type BadgeVariant = 'green' | 'yellow' | 'red' | 'blue' | 'gray'
 const STATUS_MAP: Record<string, [BadgeVariant, string]> = {
   AUTORIZADA:   ['green',  'Autorizada'],
   CONFIRMADO:   ['green',  'Confirmado'],
+  PAGO:         ['green',  'Pago'],
   ATIVO:        ['green',  'Ativo'],
   AGUARDANDO_PAGAMENTO: ['yellow', 'Pendente'],
   CANCELADA:    ['red',    'Cancelada'],

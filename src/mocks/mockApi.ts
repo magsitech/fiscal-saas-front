@@ -5,9 +5,11 @@ import type {
   Cliente,
   DashboardResumo,
   ExtratoItem,
+  IniciarPedidoRequest,
   IniciarPedidoResponse,
   LoginPayload,
   Pedido,
+  PedidoDetalhe,
   RegisterPayload,
   SaldoResumo,
   SimuladorResponse,
@@ -253,53 +255,93 @@ const DEFAULT_EXTRATO: ExtratoItem[] = [
 const DEFAULT_PEDIDOS: Pedido[] = [
   {
     id: 'ped_001',
-    metodo_pagamento: 'PIX',
+    metodo: 'PIX',
     valor: '1000.00',
     status: 'PAGO',
+    mp_status: 'approved',
+    mp_status_detail: 'accredited',
     confirmado_em: ago(5, 1, 40),
     expira_em: ago(5, 1, 10),
     credito_expira_em: ahead(21),
     criado_em: ago(5, 2, 0),
+    checkout_url: 'https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=mock-ped_001',
+    pix_copia_cola: '000201mockped001100000',
+    pix_qr_code_url: 'data:image/png;base64,mockpixped001',
+    boleto_linha_digitavel: null,
+    boleto_url: null,
+    gateway_id: 'mp_mock_001',
   },
   {
     id: 'ped_002',
-    metodo_pagamento: 'BOLETO',
+    metodo: 'BOLETO',
     valor: '500.00',
     status: 'AGUARDANDO_PAGAMENTO',
+    mp_status: 'pending',
+    mp_status_detail: 'pending_waiting_payment',
     confirmado_em: null,
     expira_em: ahead(1, 6),
     credito_expira_em: null,
     criado_em: ago(0, 4, 30),
+    checkout_url: 'https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=mock-ped_002',
+    pix_copia_cola: null,
+    pix_qr_code_url: null,
+    boleto_linha_digitavel: '34191.79001 01043.510047 91020.150008 1 95870026000',
+    boleto_url: 'https://example.com/mock-boleto.pdf',
+    gateway_id: 'mp_mock_002',
   },
   {
     id: 'ped_003',
-    metodo_pagamento: 'PIX',
+    metodo: 'PIX',
     valor: '250.00',
-    status: 'PENDENTE',
+    status: 'AGUARDANDO_PAGAMENTO',
+    mp_status: 'pending',
+    mp_status_detail: 'pending_waiting_transfer',
     confirmado_em: null,
     expira_em: ahead(0, 0, 25),
     credito_expira_em: null,
     criado_em: ago(0, 0, 5),
+    checkout_url: 'https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=mock-ped_003',
+    pix_copia_cola: '000201mockped003250000',
+    pix_qr_code_url: 'data:image/png;base64,mockpixped003',
+    boleto_linha_digitavel: null,
+    boleto_url: null,
+    gateway_id: 'mp_mock_003',
   },
   {
     id: 'ped_004',
-    metodo_pagamento: 'CARTAO',
+    metodo: 'CARTAO',
     valor: '750.00',
     status: 'CANCELADO',
+    mp_status: 'cancelled',
+    mp_status_detail: 'cancelled',
     confirmado_em: null,
     expira_em: ago(2, 1),
     credito_expira_em: null,
     criado_em: ago(2, 4, 5),
+    checkout_url: null,
+    pix_copia_cola: null,
+    pix_qr_code_url: null,
+    boleto_linha_digitavel: null,
+    boleto_url: null,
+    gateway_id: 'mp_mock_004',
   },
   {
     id: 'ped_005',
-    metodo_pagamento: 'BOLETO',
+    metodo: 'BOLETO',
     valor: '300.00',
     status: 'EXPIRADO',
+    mp_status: 'cancelled',
+    mp_status_detail: 'expired',
     confirmado_em: null,
     expira_em: ago(7, 3),
     credito_expira_em: null,
     criado_em: ago(8, 1, 20),
+    checkout_url: null,
+    pix_copia_cola: null,
+    pix_qr_code_url: null,
+    boleto_linha_digitavel: '34191.79001 01043.510047 91020.150008 1 95870026000',
+    boleto_url: 'https://example.com/mock-boleto-expired.pdf',
+    gateway_id: 'mp_mock_005',
   },
 ]
 
@@ -579,18 +621,31 @@ export const mockDashboardApi = {
 }
 
 export const mockPedidosApi = {
-  async iniciar(metodo_pagamento: 'PIX' | 'BOLETO' | 'CARTAO', valor: number) {
+  async iniciar(payload: IniciarPedidoRequest) {
     const db = readDb()
     const now = Date.now()
+    const metodo = payload.metodo
     const novoPedido: Pedido = {
       id: `ped_${now}`,
-      metodo_pagamento,
-      valor: valor.toFixed(2),
-      status: metodo_pagamento === 'PIX' ? 'PENDENTE' : 'AGUARDANDO_PAGAMENTO',
+      metodo,
+      valor: payload.valor.toFixed(2),
+      status: 'AGUARDANDO_PAGAMENTO',
+      mp_status: 'pending',
+      mp_status_detail: metodo === 'PIX' ? 'pending_waiting_transfer' : 'pending_waiting_payment',
       confirmado_em: null,
       expira_em: new Date(now + 30 * 60 * 1000).toISOString(),
       credito_expira_em: null,
       criado_em: new Date(now).toISOString(),
+      checkout_url: `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=mock-${now}`,
+      pix_copia_cola: metodo === 'PIX'
+        ? `000201mockped${now}${payload.valor.toFixed(2).replace('.', '')}`
+        : null,
+      pix_qr_code_url: metodo === 'PIX' ? 'data:image/png;base64,mockpixnew' : null,
+      boleto_linha_digitavel: metodo === 'BOLETO'
+        ? '34191.79001 01043.510047 91020.150008 1 95870026000'
+        : null,
+      boleto_url: metodo === 'BOLETO' ? 'https://example.com/mock-boleto.pdf' : null,
+      gateway_id: `mp_mock_${now}`,
     }
 
     db.pedidos.unshift(novoPedido)
@@ -598,29 +653,25 @@ export const mockPedidosApi = {
 
     const response: IniciarPedidoResponse = {
       pedido_id: novoPedido.id,
-      metodo_pagamento,
+      metodo,
       valor: novoPedido.valor,
       status: novoPedido.status,
+      mp_status: novoPedido.mp_status,
+      mp_status_detail: novoPedido.mp_status_detail,
       expira_em: novoPedido.expira_em,
-      checkout_url: metodo_pagamento === 'CARTAO'
-        ? `https://www.mercadopago.com.br/subscriptions/checkout?preapproval_id=mock-${novoPedido.id}`
-        : undefined,
-      gateway_payload: metodo_pagamento === 'CARTAO'
-        ? JSON.stringify({
-            provider: 'mercado_pago',
-            flow: 'subscription',
-            checkout_url: `https://www.mercadopago.com.br/subscriptions/checkout?preapproval_id=mock-${novoPedido.id}`,
-          })
-        : undefined,
-      pix_copia_cola: metodo_pagamento === 'PIX'
-        ? `000201mock${novoPedido.id}${valor.toFixed(2).replace('.', '')}`
-        : undefined,
-      boleto_linha_digitavel: metodo_pagamento === 'BOLETO'
-        ? '34191.79001 01043.510047 91020.150008 1 95870026000'
-        : undefined,
-      boleto_url: metodo_pagamento === 'BOLETO'
-        ? 'https://example.com/mock-boleto.pdf'
-        : undefined,
+      credito_expira_em: new Date(now + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      checkout_url: novoPedido.checkout_url,
+      gateway_id: novoPedido.gateway_id,
+      gateway_payload: JSON.stringify({
+        provider: 'mercado_pago',
+        flow: 'checkout',
+        checkout_url: novoPedido.checkout_url,
+      }),
+      pix_copia_cola: novoPedido.pix_copia_cola,
+      pix_qr_code_url: novoPedido.pix_qr_code_url,
+      boleto_linha_digitavel: novoPedido.boleto_linha_digitavel,
+      boleto_url: novoPedido.boleto_url,
+      credito_lancado: false,
     }
 
     return delay(response)
@@ -628,6 +679,18 @@ export const mockPedidosApi = {
 
   async listar() {
     return delay(readDb().pedidos)
+  },
+
+  async detalhar(pedidoId: string) {
+    const pedido = readDb().pedidos.find((item) => item.id === pedidoId)
+    if (!pedido) fail('Pedido nao encontrado', 404)
+
+    const response: PedidoDetalhe = {
+      ...pedido,
+      descricao: null,
+    }
+
+    return delay(response)
   },
 }
 

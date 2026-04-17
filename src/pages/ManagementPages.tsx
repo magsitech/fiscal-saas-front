@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { endOfDay, format, parseISO, startOfDay, subDays } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { CreditCard, Download, Landmark, Sparkles } from 'lucide-react'
+import { CreditCard, Download, ExternalLink, Landmark, RefreshCw, Sparkles } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { dashboardApi, pedidosApi } from '@/services/api'
-import type { AuditoriaItem, ExtratoItem, Pedido, SimuladorResponse } from '@/types'
+import type { AuditoriaItem, ExtratoItem, Pedido, PedidoDetalhe, SimuladorResponse } from '@/types'
 import { CreditosCheckout } from '@/components/credits/CreditosCheckout'
 import {
   Badge,
@@ -225,6 +225,10 @@ function matchesPedidoStatusFilter(itemStatus: Pedido['status'], selectedStatus:
     return itemStatus === 'PENDENTE' || itemStatus === 'AGUARDANDO_PAGAMENTO'
   }
   return itemStatus === selectedStatus
+}
+
+function pedidoPodeContinuar(status: Pedido['status']) {
+  return status === 'AGUARDANDO_PAGAMENTO'
 }
 
 function Pagination({
@@ -854,6 +858,8 @@ export function ConsumoPage() {
 export function PagamentosPage() {
   const [items, setItems] = useState<Pedido[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingDetalhe, setLoadingDetalhe] = useState(false)
+  const [pedidoSelecionado, setPedidoSelecionado] = useState<PedidoDetalhe | null>(null)
   const [status, setStatus] = useState('')
   const [metodo, setMetodo] = useState('')
   const [page, setPage] = useState(1)
@@ -869,7 +875,7 @@ export function PagamentosPage() {
     () =>
       items.filter((item) => {
         if (!matchesPedidoStatusFilter(item.status, status)) return false
-        if (metodo && item.metodo_pagamento !== metodo) return false
+        if (metodo && item.metodo !== metodo) return false
         return inDateRange(item.criado_em, periodo, inicio, fim)
       }),
     [items, status, metodo, periodo, inicio, fim]
@@ -879,10 +885,22 @@ export function PagamentosPage() {
   const pendentes = filteredItems.filter((item) => item.status === 'PENDENTE' || item.status === 'AGUARDANDO_PAGAMENTO').length
   const { pageItems, totalPages, safePage } = paginateItems(filteredItems, page)
 
-  function paymentTone(method: Pedido['metodo_pagamento']) {
+  function paymentTone(method: Pedido['metodo']) {
     if (method === 'PIX') return { color: 'var(--accent)', bg: 'var(--accent-dim)', icon: <Sparkles size={14} /> }
     if (method === 'BOLETO') return { color: 'var(--warn)', bg: 'var(--warn-dim)', icon: <Landmark size={14} /> }
     return { color: 'var(--info)', bg: 'var(--info-dim)', icon: <CreditCard size={14} /> }
+  }
+
+  async function carregarDetalhe(id: string) {
+    setLoadingDetalhe(true)
+    try {
+      const data = await pedidosApi.detalhar(id)
+      setPedidoSelecionado(data)
+    } catch {
+      toast.error('Nao foi possivel carregar o detalhe do pedido.')
+    } finally {
+      setLoadingDetalhe(false)
+    }
   }
 
   useEffect(() => {
@@ -899,7 +917,7 @@ export function PagamentosPage() {
       ['ID', 'Método', 'Valor', 'Status', 'Confirmado em', 'Expira em', 'Crédito expira', 'Criado em'],
       filteredItems.map((item) => [
         item.id,
-        item.metodo_pagamento,
+        item.metodo,
         item.valor,
         item.status,
         item.confirmado_em ?? '',
@@ -915,6 +933,99 @@ export function PagamentosPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+      {pedidoSelecionado && (
+        <Card>
+          <CardHeader className="card-header-responsive">
+            <div>
+              <CardTitle>Detalhe do pedido</CardTitle>
+              <div className="text-xs text-[var(--text-muted)] mt-1">Reabertura do fluxo usando `GET /pedidos/{'{pedido_id}'}`.</div>
+            </div>
+            <Button type="button" variant="ghost" size="sm" icon={<RefreshCw size={14} />} onClick={() => carregarDetalhe(pedidoSelecionado.id)} loading={loadingDetalhe}>
+              Atualizar
+            </Button>
+          </CardHeader>
+          <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+              <div style={{ padding: '16px', borderRadius: '14px', background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+                <div style={{ fontSize: '11px', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '8px' }}>Pedido</div>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: '13px', color: 'var(--text)' }}>{pedidoSelecionado.id}</div>
+              </div>
+              <div style={{ padding: '16px', borderRadius: '14px', background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+                <div style={{ fontSize: '11px', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '8px' }}>Metodo</div>
+                <div style={{ fontSize: '13px', color: 'var(--text)' }}>{pedidoSelecionado.metodo}</div>
+              </div>
+              <div style={{ padding: '16px', borderRadius: '14px', background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+                <div style={{ fontSize: '11px', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '8px' }}>Status</div>
+                <Badge status={pedidoSelecionado.status} />
+              </div>
+              <div style={{ padding: '16px', borderRadius: '14px', background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+                <div style={{ fontSize: '11px', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '8px' }}>Valor</div>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: '13px', color: 'var(--text)' }}>R$ {Number(pedidoSelecionado.valor).toFixed(2)}</div>
+              </div>
+            </div>
+
+            {pedidoSelecionado.metodo === 'PIX' && pedidoSelecionado.pix_copia_cola && (
+              <div style={{ padding: '16px', borderRadius: '14px', border: '1px solid var(--border)', background: 'color-mix(in srgb, var(--surface-2) 94%, transparent)', fontFamily: 'var(--mono)', fontSize: '12px', color: 'var(--text-muted)', wordBreak: 'break-all' }}>
+                {pedidoSelecionado.pix_copia_cola}
+              </div>
+            )}
+
+            {pedidoSelecionado.metodo === 'BOLETO' && pedidoSelecionado.boleto_linha_digitavel && (
+              <div style={{ padding: '16px', borderRadius: '14px', border: '1px solid var(--border)', background: 'color-mix(in srgb, var(--surface-2) 94%, transparent)', fontFamily: 'var(--mono)', fontSize: '12px', color: 'var(--text-muted)', wordBreak: 'break-all' }}>
+                {pedidoSelecionado.boleto_linha_digitavel}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              {pedidoSelecionado.checkout_url && (
+                <a
+                  href={pedidoSelecionado.checkout_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '14px 18px',
+                    borderRadius: '16px',
+                    border: '1px solid var(--accent-glow)',
+                    background: 'linear-gradient(135deg, color-mix(in srgb, var(--accent-dim) 88%, transparent), color-mix(in srgb, var(--info-dim) 56%, transparent))',
+                    color: 'var(--text)',
+                    textDecoration: 'none',
+                    opacity: pedidoPodeContinuar(pedidoSelecionado.status) ? 1 : 0.55,
+                    pointerEvents: pedidoPodeContinuar(pedidoSelecionado.status) ? 'auto' : 'none',
+                  }}
+                >
+                  <ExternalLink size={16} />
+                  Concluir transacao
+                </a>
+              )}
+              {pedidoSelecionado.boleto_url && (
+                <a
+                  href={pedidoSelecionado.boleto_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '14px 18px',
+                    borderRadius: '16px',
+                    border: '1px solid var(--border)',
+                    background: 'color-mix(in srgb, var(--surface-2) 92%, transparent)',
+                    color: 'var(--text)',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <ExternalLink size={16} />
+                  Abrir boleto
+                </a>
+              )}
+            </div>
+          </div>
+        </Card>
+      )}
+
       <div
         className="grid grid-cols-3 gap-4 management-grid-3"
         style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}
@@ -1008,7 +1119,7 @@ export function PagamentosPage() {
             </Select>
             <Select label="Método" value={metodo} onChange={(e) => setMetodo(e.target.value)}>
               <option value="">Todos os métodos</option>
-              {['PIX', 'BOLETO', 'CARTAO'].map((item) => (
+              {['PIX', 'BOLETO'].map((item) => (
                 <option key={item} value={item}>{item}</option>
               ))}
             </Select>
@@ -1022,8 +1133,9 @@ export function PagamentosPage() {
               <col style={{ width: '18%' }} />
               <col style={{ width: '20%' }} />
               <col style={{ width: '14%' }} />
-              <col style={{ width: '16%' }} />
-              <col style={{ width: '16%' }} />
+              <col style={{ width: '14%' }} />
+              <col style={{ width: '14%' }} />
+              <col style={{ width: '18%' }} />
               <col style={{ width: '16%' }} />
             </colgroup>
             <thead>
@@ -1040,18 +1152,18 @@ export function PagamentosPage() {
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TrHover key={i}>
-                    {Array.from({ length: 6 }).map((__, j) => <Td key={j}><Skeleton className="h-4 w-full" /></Td>)}
+                    {Array.from({ length: 7 }).map((__, j) => <Td key={j}><Skeleton className="h-4 w-full" /></Td>)}
                   </TrHover>
                 ))
               ) : filteredItems.length === 0 ? (
-                <tr><td colSpan={6}><Empty message="Nenhum pedido encontrado para os filtros selecionados" /></td></tr>
+                <tr><td colSpan={7}><Empty message="Nenhum pedido encontrado para os filtros selecionados" /></td></tr>
               ) : (
                 pageItems.map((p) => (
                   <TrHover key={p.id}>
                     <Td mono><div style={{ textAlign: 'left' }}>{`${p.id.slice(0, 8)}…`}</div></Td>
                     <Td>
                       {(() => {
-                        const tone = paymentTone(p.metodo_pagamento)
+                        const tone = paymentTone(p.metodo)
                         return (
                           <span style={{
                             display: 'inline-flex',
@@ -1066,7 +1178,7 @@ export function PagamentosPage() {
                             letterSpacing: '0.08em',
                           }}>
                             {tone.icon}
-                            {p.metodo_pagamento}
+                            {p.metodo}
                           </span>
                         )
                       })()}
@@ -1084,6 +1196,38 @@ export function PagamentosPage() {
                     <Td><div style={{ paddingLeft: '10px' }}><Badge status={p.status} /></div></Td>
                     <Td><div style={{ textAlign: 'right' }}><span style={{ fontSize: '12px' }}>{fmtDate(p.confirmado_em)}</span></div></Td>
                     <Td><div style={{ textAlign: 'right' }}><span style={{ fontSize: '12px' }}>{fmtDate(p.credito_expira_em)}</span></div></Td>
+                    <Td>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        <Button type="button" variant="ghost" size="sm" onClick={() => carregarDetalhe(p.id)}>
+                          Detalhes
+                        </Button>
+                        {p.checkout_url && (
+                          <a
+                            href={p.checkout_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              padding: '8px 12px',
+                              borderRadius: '999px',
+                              border: '1px solid var(--accent-glow)',
+                              background: 'var(--accent-dim)',
+                              color: 'var(--accent)',
+                              textDecoration: 'none',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              opacity: pedidoPodeContinuar(p.status) ? 1 : 0.55,
+                              pointerEvents: pedidoPodeContinuar(p.status) ? 'auto' : 'none',
+                            }}
+                          >
+                            <ExternalLink size={12} />
+                            Concluir
+                          </a>
+                        )}
+                      </div>
+                    </Td>
                   </TrHover>
                 ))
               )}
@@ -1117,7 +1261,7 @@ export function PagamentosPage() {
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
                     {(() => {
-                      const tone = paymentTone(p.metodo_pagamento)
+                      const tone = paymentTone(p.metodo)
                       return (
                         <span style={{
                           display: 'inline-flex',
@@ -1132,7 +1276,7 @@ export function PagamentosPage() {
                           letterSpacing: '0.08em',
                         }}>
                           {tone.icon}
-                          {p.metodo_pagamento}
+                          {p.metodo}
                         </span>
                       )
                     })()}
@@ -1142,6 +1286,36 @@ export function PagamentosPage() {
                   <MobileField label="Confirmado em" value={<span style={{ fontSize: '12px' }}>{fmtDate(p.confirmado_em)}</span>} />
                   <MobileField label="Crédito expira" value={<span style={{ fontSize: '12px' }}>{fmtDate(p.credito_expira_em)}</span>} />
                   <MobileField label="Data" value={<span style={{ fontSize: '12px' }}>{fmtAgo(p.criado_em)}</span>} />
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => carregarDetalhe(p.id)}>
+                      Detalhes
+                    </Button>
+                    {p.checkout_url && (
+                      <a
+                        href={p.checkout_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '8px 12px',
+                          borderRadius: '999px',
+                          border: '1px solid var(--accent-glow)',
+                          background: 'var(--accent-dim)',
+                          color: 'var(--accent)',
+                          textDecoration: 'none',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          opacity: pedidoPodeContinuar(p.status) ? 1 : 0.55,
+                          pointerEvents: pedidoPodeContinuar(p.status) ? 'auto' : 'none',
+                        }}
+                      >
+                        <ExternalLink size={12} />
+                        Concluir
+                      </a>
+                    )}
+                  </div>
                 </div>
               ))
             )}

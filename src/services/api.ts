@@ -6,9 +6,11 @@ import type {
   Cliente,
   DashboardResumo,
   ExtratoItem,
+  IniciarPedidoRequest,
   IniciarPedidoResponse,
   LoginPayload,
   Pedido,
+  PedidoDetalhe,
   RegisterPayload,
   SaldoResumo,
   SimuladorResponse,
@@ -50,6 +52,68 @@ function unwrapList<T>(payload: unknown): T[] {
     if (Array.isArray(list)) return list as T[]
   }
   return []
+}
+
+function normalizeMetodo(value: unknown) {
+  if (value === 'PIX' || value === 'BOLETO' || value === 'CARTAO') return value as Pedido['metodo']
+  return 'PIX' as Pedido['metodo']
+}
+
+function normalizePedidoBase(raw: Record<string, unknown>) {
+  return {
+    id: String(raw.id ?? raw.pedido_id ?? ''),
+    metodo: normalizeMetodo(raw.metodo ?? raw.metodo_pagamento),
+    valor: String(raw.valor ?? '0.00'),
+    status: String(raw.status ?? 'PENDENTE') as Pedido['status'],
+    mp_status: typeof raw.mp_status === 'string' ? raw.mp_status : null,
+    mp_status_detail: typeof raw.mp_status_detail === 'string' ? raw.mp_status_detail : null,
+    descricao: typeof raw.descricao === 'string' ? raw.descricao : null,
+    gateway_id: typeof raw.gateway_id === 'string' ? raw.gateway_id : raw.gateway_id == null ? null : String(raw.gateway_id),
+    gateway_payload: (raw.gateway_payload ?? null) as Pedido['gateway_payload'],
+    checkout_url: typeof raw.checkout_url === 'string' ? raw.checkout_url : null,
+    pix_copia_cola: typeof raw.pix_copia_cola === 'string' ? raw.pix_copia_cola : null,
+    pix_qr_code_url: typeof raw.pix_qr_code_url === 'string' ? raw.pix_qr_code_url : null,
+    boleto_linha_digitavel: typeof raw.boleto_linha_digitavel === 'string' ? raw.boleto_linha_digitavel : null,
+    boleto_url: typeof raw.boleto_url === 'string' ? raw.boleto_url : null,
+    expira_em: typeof raw.expira_em === 'string' ? raw.expira_em : null,
+    credito_expira_em: typeof raw.credito_expira_em === 'string' ? raw.credito_expira_em : null,
+    confirmado_em: typeof raw.confirmado_em === 'string' ? raw.confirmado_em : null,
+    criado_em: typeof raw.criado_em === 'string' ? raw.criado_em : new Date().toISOString(),
+  }
+}
+
+function normalizePedido(payload: unknown): Pedido {
+  const raw = unwrapPayload<Record<string, unknown>>(payload)
+  return normalizePedidoBase(raw)
+}
+
+function normalizePedidoDetalhe(payload: unknown): PedidoDetalhe {
+  const raw = unwrapPayload<Record<string, unknown>>(payload)
+  return normalizePedidoBase(raw)
+}
+
+function normalizePedidoCriado(payload: unknown): IniciarPedidoResponse {
+  const raw = unwrapPayload<Record<string, unknown>>(payload)
+  return {
+    pedido_id: String(raw.pedido_id ?? raw.id ?? ''),
+    metodo: normalizeMetodo(raw.metodo ?? raw.metodo_pagamento),
+    valor: String(raw.valor ?? '0.00'),
+    status: String(raw.status ?? 'PENDENTE') as IniciarPedidoResponse['status'],
+    mp_status: typeof raw.mp_status === 'string' ? raw.mp_status : null,
+    mp_status_detail: typeof raw.mp_status_detail === 'string' ? raw.mp_status_detail : null,
+    gateway_id: typeof raw.gateway_id === 'string' ? raw.gateway_id : raw.gateway_id == null ? null : String(raw.gateway_id),
+    gateway_payload: (raw.gateway_payload ?? null) as IniciarPedidoResponse['gateway_payload'],
+    checkout_url: typeof raw.checkout_url === 'string' ? raw.checkout_url : null,
+    pix_copia_cola: typeof raw.pix_copia_cola === 'string' ? raw.pix_copia_cola : null,
+    pix_qr_code_url: typeof raw.pix_qr_code_url === 'string' ? raw.pix_qr_code_url : null,
+    boleto_linha_digitavel: typeof raw.boleto_linha_digitavel === 'string' ? raw.boleto_linha_digitavel : null,
+    boleto_url: typeof raw.boleto_url === 'string' ? raw.boleto_url : null,
+    expira_em: typeof raw.expira_em === 'string' ? raw.expira_em : null,
+    credito_expira_em: typeof raw.credito_expira_em === 'string' ? raw.credito_expira_em : null,
+    criado_em: typeof raw.criado_em === 'string' ? raw.criado_em : null,
+    confirmado_em: typeof raw.confirmado_em === 'string' ? raw.confirmado_em : null,
+    credito_lancado: typeof raw.credito_lancado === 'boolean' ? raw.credito_lancado : false,
+  }
 }
 
 http.interceptors.request.use((config) => {
@@ -186,16 +250,13 @@ export const dashboardApi = {
 }
 
 export const pedidosApi = {
-  iniciar: async (metodo_pagamento: 'PIX' | 'BOLETO' | 'CARTAO', valor: number) => {
+  iniciar: async (payload: IniciarPedidoRequest) => {
     if (USE_MOCK_API) {
       const { mockPedidosApi } = await loadMockApi()
-      return mockPedidosApi.iniciar(metodo_pagamento, valor)
+      return mockPedidosApi.iniciar(payload)
     }
-    const { data } = await http.post<IniciarPedidoResponse>('/pedidos/iniciar', {
-      metodo_pagamento,
-      valor,
-    })
-    return data
+    const { data } = await http.post<IniciarPedidoResponse>('/pedidos/iniciar', payload)
+    return normalizePedidoCriado(data)
   },
 
   listar: async () => {
@@ -204,7 +265,16 @@ export const pedidosApi = {
       return mockPedidosApi.listar()
     }
     const { data } = await http.get<Pedido[]>('/pedidos')
-    return data
+    return unwrapList<Record<string, unknown>>(data).map(normalizePedido)
+  },
+
+  detalhar: async (pedidoId: string) => {
+    if (USE_MOCK_API) {
+      const { mockPedidosApi } = await loadMockApi()
+      return mockPedidosApi.detalhar(pedidoId)
+    }
+    const { data } = await http.get<PedidoDetalhe>(`/pedidos/${pedidoId}`)
+    return normalizePedidoDetalhe(data)
   },
 }
 
