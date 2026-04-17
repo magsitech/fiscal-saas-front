@@ -227,6 +227,22 @@ function matchesPedidoStatusFilter(itemStatus: Pedido['status'], selectedStatus:
   return itemStatus === selectedStatus
 }
 
+function getAuditoriaCost(item: AuditoriaItem) {
+  return item.custo ?? item.custo_consulta ?? null
+}
+
+function getExtratoCost(item: ExtratoItem) {
+  return item.custo ?? null
+}
+
+function getExtratoSaldoAntes(item: ExtratoItem) {
+  return item.saldo_antes ?? null
+}
+
+function getExtratoSaldoDepois(item: ExtratoItem) {
+  return item.saldo_depois ?? item.saldo_resultante ?? null
+}
+
 function pedidoPodeContinuar(status: Pedido['status']) {
   return status === 'AGUARDANDO_PAGAMENTO'
 }
@@ -333,10 +349,10 @@ export function ValidacoesPage() {
 
   useEffect(() => {
     setLoading(true)
-    dashboardApi.auditoria({ status: status || undefined, limit: 200 })
+    dashboardApi.auditoria({ limit: 200 })
       .then(setItems)
       .finally(() => setLoading(false))
-  }, [status])
+  }, [])
 
   const filteredItems = useMemo(
     () => items.filter((item) => inDateRange(item.criado_em, periodo, inicio, fim)),
@@ -344,7 +360,7 @@ export function ValidacoesPage() {
   )
   const autorizadas = filteredItems.filter((item) => item.status === 'AUTORIZADA').length
   const cacheHits = filteredItems.filter((item) => item.cache_hit).length
-  const custoTotal = filteredItems.reduce((sum, item) => sum + Number(item.custo_consulta ?? 0), 0)
+  const custoTotal = filteredItems.reduce((sum, item) => sum + Number(getAuditoriaCost(item) ?? 0), 0)
   const { pageItems, totalPages, safePage } = paginateItems(filteredItems, page)
 
   useEffect(() => {
@@ -367,7 +383,7 @@ export function ValidacoesPage() {
         item.status,
         item.status_sefaz,
         item.cache_hit ? 'Sim' : 'Não',
-        item.custo_consulta ?? '',
+        getAuditoriaCost(item) ?? '',
         item.criado_em,
         item.processado_em ?? '',
       ])
@@ -529,7 +545,7 @@ export function ValidacoesPage() {
                     </Td>
                     <Td mono><div style={{ textAlign: 'right' }}>{v.cnpj_emitente}</div></Td>
                     <Td><Badge status={v.status} /></Td>
-                    <Td><div style={{ textAlign: 'right' }}><span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>{v.custo_consulta ? `R$ ${Number(v.custo_consulta).toFixed(4)}` : '-'}</span></div></Td>
+                    <Td><div style={{ textAlign: 'right' }}><span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>{getAuditoriaCost(v) ? `R$ ${Number(getAuditoriaCost(v)).toFixed(4)}` : '-'}</span></div></Td>
                     <Td><div style={{ display: 'flex', justifyContent: 'flex-end' }}>{v.cache_hit ? <Badge status="CACHE_HIT" label="Sim" /> : <span style={{ color: 'var(--text-dim)', fontSize: '12px' }}>-</span>}</div></Td>
                     <Td><div style={{ textAlign: 'right' }}><span style={{ fontSize: '12px' }}>{fmtAgo(v.criado_em)}</span></div></Td>
                     <Td><div style={{ textAlign: 'right' }}><span style={{ fontSize: '12px' }}>{fmtDate(v.processado_em)}</span></div></Td>
@@ -574,7 +590,7 @@ export function ValidacoesPage() {
                   </div>
                   <MobileField label="Modelo" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px', fontWeight: 700, color: v.modelo === '55' ? 'var(--info)' : 'var(--accent)' }}>NF-{v.modelo === '55' ? 'e' : 'Ce'}</span>} />
                   <MobileField label="CNPJ emitente" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>{v.cnpj_emitente}</span>} />
-                  <MobileField label="Custo" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>{v.custo_consulta ? `R$ ${Number(v.custo_consulta).toFixed(4)}` : '-'}</span>} />
+                  <MobileField label="Custo" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>{getAuditoriaCost(v) ? `R$ ${Number(getAuditoriaCost(v)).toFixed(4)}` : '-'}</span>} />
                   <MobileField label="Cache" value={v.cache_hit ? <Badge status="CACHE_HIT" label="Sim" /> : <span style={{ fontSize: '12px', color: 'var(--text-dim)' }}>Não</span>} />
                   <MobileField label="Criado" value={<span style={{ fontSize: '12px' }}>{fmtAgo(v.criado_em)}</span>} />
                   <MobileField label="Processado" value={<span style={{ fontSize: '12px' }}>{fmtDate(v.processado_em)}</span>} />
@@ -600,10 +616,10 @@ export function ConsumoPage() {
 
   useEffect(() => {
     setLoading(true)
-    dashboardApi.extrato({ tipo: tipo || undefined, limit: 200 })
+    dashboardApi.extrato({ limit: 200 })
       .then(setItems)
       .finally(() => setLoading(false))
-  }, [tipo])
+  }, [])
 
   const filteredItems = useMemo(
     () => items.filter((item) => inDateRange(item.criado_em, periodo, inicio, fim)),
@@ -625,12 +641,14 @@ export function ConsumoPage() {
   function handleExport() {
     exportCsv(
       'extrato.csv',
-      ['ID', 'Tipo', 'Valor', 'Saldo resultante', 'Descrição', 'Pedido', 'Auditoria', 'Expira em', 'Criado em'],
+      ['ID', 'Tipo', 'Valor', 'Custo', 'Saldo antes', 'Saldo depois', 'Descrição', 'Pedido', 'Auditoria', 'Expira em', 'Criado em'],
       filteredItems.map((item) => [
         item.id,
         item.tipo,
         item.valor,
-        item.saldo_resultante,
+        getExtratoCost(item) ?? '',
+        getExtratoSaldoAntes(item) ?? '',
+        getExtratoSaldoDepois(item) ?? '',
         item.descricao ?? '',
         item.pedido_id ?? '',
         item.log_auditoria_id ?? '',
@@ -749,18 +767,22 @@ export function ConsumoPage() {
             <colgroup>
               <col style={{ width: '12%' }} />
               <col style={{ width: '12%' }} />
-              <col style={{ width: '13%' }} />
-              <col style={{ width: '25%' }} />
-              <col style={{ width: '10%' }} />
-              <col style={{ width: '10%' }} />
+              <col style={{ width: '11%' }} />
+              <col style={{ width: '11%' }} />
+              <col style={{ width: '11%' }} />
+              <col style={{ width: '20%' }} />
               <col style={{ width: '9%' }} />
               <col style={{ width: '9%' }} />
+              <col style={{ width: '8%' }} />
+              <col style={{ width: '8%' }} />
             </colgroup>
                   <thead>
                     <tr>
                       <Th>Tipo</Th>
                       <Th><div style={{ textAlign: 'right' }}>Valor</div></Th>
-                      <Th><div style={{ textAlign: 'right' }}>Saldo resultante</div></Th>
+                      <Th><div style={{ textAlign: 'right' }}>Custo</div></Th>
+                      <Th><div style={{ textAlign: 'right' }}>Saldo antes</div></Th>
+                      <Th><div style={{ textAlign: 'right' }}>Saldo depois</div></Th>
                       <Th>Descrição</Th>
                       <Th><div style={{ textAlign: 'right' }}>Pedido</div></Th>
                       <Th><div style={{ textAlign: 'right' }}>Auditoria</div></Th>
@@ -772,15 +794,15 @@ export function ConsumoPage() {
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TrHover key={i}>
-                    {Array.from({ length: 8 }).map((__, j) => <Td key={j}><Skeleton className="h-4 w-full" /></Td>)}
+                    {Array.from({ length: 10 }).map((__, j) => <Td key={j}><Skeleton className="h-4 w-full" /></Td>)}
                   </TrHover>
                 ))
               ) : filteredItems.length === 0 ? (
-                <tr><td colSpan={8}><Empty message="Nenhum lançamento encontrado para os filtros selecionados" /></td></tr>
+                <tr><td colSpan={10}><Empty message="Nenhum lançamento encontrado para os filtros selecionados" /></td></tr>
               ) : (
                 pageItems.map((c) => (
                   <TrHover key={c.id}>
-                    <Td><Badge status="PROCESSANDO" label={c.tipo} /></Td>
+                    <Td><Badge status={c.tipo} /></Td>
                     <Td>
                       <div style={{ textAlign: 'right' }}>
                         <span style={{
@@ -791,7 +813,9 @@ export function ConsumoPage() {
                         </span>
                       </div>
                     </Td>
-                    <Td mono><div style={{ textAlign: 'right' }}>R$ {Number(c.saldo_resultante).toFixed(2)}</div></Td>
+                    <Td mono><div style={{ textAlign: 'right' }}>{getExtratoCost(c) ? `R$ ${Number(getExtratoCost(c)).toFixed(4)}` : '-'}</div></Td>
+                    <Td mono><div style={{ textAlign: 'right' }}>{getExtratoSaldoAntes(c) ? `R$ ${Number(getExtratoSaldoAntes(c)).toFixed(2)}` : '-'}</div></Td>
+                    <Td mono><div style={{ textAlign: 'right' }}>{getExtratoSaldoDepois(c) ? `R$ ${Number(getExtratoSaldoDepois(c)).toFixed(2)}` : '-'}</div></Td>
                     <Td>{c.descricao ?? '-'}</Td>
                     <Td mono><div style={{ textAlign: 'right' }}>{c.pedido_id ? `${c.pedido_id.slice(0, 8)}…` : '-'}</div></Td>
                     <Td mono><div style={{ textAlign: 'right' }}>{c.log_auditoria_id ? `${c.log_auditoria_id.slice(0, 8)}…` : '-'}</div></Td>
@@ -830,7 +854,7 @@ export function ConsumoPage() {
                   gap: '12px',
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-                    <Badge status="PROCESSANDO" label={c.tipo} />
+                    <Badge status={c.tipo} />
                     <span style={{
                       fontFamily: 'var(--mono)', fontSize: '12px', fontWeight: 700,
                       color: c.tipo === 'DEBITO' ? 'var(--danger)' : 'var(--accent)',
@@ -838,7 +862,9 @@ export function ConsumoPage() {
                       {c.tipo === 'DEBITO' ? '-' : '+'} R$ {Number(c.valor).toFixed(4)}
                     </span>
                   </div>
-                  <MobileField label="Saldo resultante" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>R$ {Number(c.saldo_resultante).toFixed(2)}</span>} />
+                  <MobileField label="Custo" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>{getExtratoCost(c) ? `R$ ${Number(getExtratoCost(c)).toFixed(4)}` : '-'}</span>} />
+                  <MobileField label="Saldo antes" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>{getExtratoSaldoAntes(c) ? `R$ ${Number(getExtratoSaldoAntes(c)).toFixed(2)}` : '-'}</span>} />
+                  <MobileField label="Saldo depois" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>{getExtratoSaldoDepois(c) ? `R$ ${Number(getExtratoSaldoDepois(c)).toFixed(2)}` : '-'}</span>} />
                   <MobileField label="Descrição" value={c.descricao ?? '-'} />
                   <MobileField label="Pedido" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>{c.pedido_id ? `${c.pedido_id.slice(0, 8)}…` : '-'}</span>} />
                   <MobileField label="Auditoria" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>{c.log_auditoria_id ? `${c.log_auditoria_id.slice(0, 8)}…` : '-'}</span>} />
@@ -897,7 +923,7 @@ export function PagamentosPage() {
       const data = await pedidosApi.detalhar(id)
       setPedidoSelecionado(data)
     } catch {
-      toast.error('Nao foi possivel carregar o detalhe do pedido.')
+      toast.error('Não foi possível carregar o detalhe do pedido.')
     } finally {
       setLoadingDetalhe(false)
     }
@@ -938,11 +964,34 @@ export function PagamentosPage() {
           <CardHeader className="card-header-responsive">
             <div>
               <CardTitle>Detalhe do pedido</CardTitle>
-              <div className="text-xs text-[var(--text-muted)] mt-1">Reabertura do fluxo usando `GET /pedidos/{'{pedido_id}'}`.</div>
+              <div className="text-xs text-[var(--text-muted)] mt-1">Consulte os dados do pagamento e retome a próxima ação quando necessário.</div>
             </div>
-            <Button type="button" variant="ghost" size="sm" icon={<RefreshCw size={14} />} onClick={() => carregarDetalhe(pedidoSelecionado.id)} loading={loadingDetalhe}>
+            <button
+              type="button"
+              onClick={() => carregarDetalhe(pedidoSelecionado.id)}
+              disabled={loadingDetalhe}
+              style={{
+                minHeight: '44px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '10px',
+                padding: '0 18px',
+                borderRadius: '999px',
+                border: '1px solid color-mix(in srgb, var(--accent-glow) 72%, var(--border))',
+                background: 'linear-gradient(135deg, color-mix(in srgb, var(--surface) 88%, transparent), color-mix(in srgb, var(--accent-dim) 62%, transparent))',
+                color: 'var(--text)',
+                fontFamily: 'var(--sans)',
+                fontSize: '13px',
+                fontWeight: 700,
+                boxShadow: '0 16px 36px rgba(0,212,170,0.12)',
+                opacity: loadingDetalhe ? 0.75 : 1,
+                cursor: loadingDetalhe ? 'wait' : 'pointer',
+              }}
+            >
+              {loadingDetalhe ? <Spinner size={14} /> : <RefreshCw size={14} />}
               Atualizar
-            </Button>
+            </button>
           </CardHeader>
           <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
@@ -951,7 +1000,7 @@ export function PagamentosPage() {
                 <div style={{ fontFamily: 'var(--mono)', fontSize: '13px', color: 'var(--text)' }}>{pedidoSelecionado.id}</div>
               </div>
               <div style={{ padding: '16px', borderRadius: '14px', background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-                <div style={{ fontSize: '11px', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '8px' }}>Metodo</div>
+                <div style={{ fontSize: '11px', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '8px' }}>Método</div>
                 <div style={{ fontSize: '13px', color: 'var(--text)' }}>{pedidoSelecionado.metodo}</div>
               </div>
               <div style={{ padding: '16px', borderRadius: '14px', background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
@@ -997,7 +1046,7 @@ export function PagamentosPage() {
                   }}
                 >
                   <ExternalLink size={16} />
-                  Concluir transacao
+                  Concluir transação
                 </a>
               )}
               {pedidoSelecionado.boleto_url && (

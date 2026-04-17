@@ -54,6 +54,94 @@ function unwrapList<T>(payload: unknown): T[] {
   return []
 }
 
+function normalizeDashboardResumo(payload: unknown): DashboardResumo {
+  const raw = unwrapPayload<Record<string, unknown>>(payload)
+  return {
+    saldo_disponivel: String(raw.saldo_disponivel ?? raw.saldo ?? '0.00'),
+    saldo_expira_em: typeof raw.saldo_expira_em === 'string'
+      ? raw.saldo_expira_em
+      : typeof raw.expira_em === 'string'
+        ? raw.expira_em
+        : null,
+    saldo_status: String(raw.saldo_status ?? raw.status ?? 'SEM_SALDO') as DashboardResumo['saldo_status'],
+    consultas_periodo: Number(raw.consultas_periodo ?? raw.consultas_no_periodo ?? 0),
+    gasto_periodo: String(raw.gasto_periodo ?? '0.00'),
+    consultas_hoje: Number(raw.consultas_hoje ?? 0),
+    gasto_hoje: String(raw.gasto_hoje ?? '0.00'),
+    prox_consulta_custo: typeof raw.prox_consulta_custo === 'string' ? raw.prox_consulta_custo : null,
+    prox_faixa: typeof raw.prox_faixa === 'string' ? raw.prox_faixa : null,
+  }
+}
+
+function normalizeSaldoResumo(payload: unknown): SaldoResumo {
+  const raw = unwrapPayload<Record<string, unknown>>(payload)
+  return {
+    saldo_disponivel: String(raw.saldo_disponivel ?? '0.00'),
+    valor_inicial: typeof raw.valor_inicial === 'string' ? raw.valor_inicial : null,
+    expira_em: typeof raw.expira_em === 'string' ? raw.expira_em : null,
+    status: String(raw.status ?? 'SEM_SALDO') as SaldoResumo['status'],
+    consultas_no_periodo: Number(raw.consultas_no_periodo ?? raw.consultas_periodo ?? 0),
+  }
+}
+
+function normalizeAuditoriaItem(payload: unknown): AuditoriaItem {
+  const raw = unwrapPayload<Record<string, unknown>>(payload)
+  const custo = typeof raw.custo === 'string'
+    ? raw.custo
+    : typeof raw.custo_consulta === 'string'
+      ? raw.custo_consulta
+      : null
+
+  return {
+    id: String(raw.id ?? ''),
+    chave_nf: String(raw.chave_nf ?? ''),
+    modelo: String(raw.modelo ?? '55') as AuditoriaItem['modelo'],
+    cnpj_emitente: String(raw.cnpj_emitente ?? ''),
+    status: String(raw.status ?? 'PENDENTE') as AuditoriaItem['status'],
+    status_sefaz: typeof raw.status_sefaz === 'string' ? raw.status_sefaz : null,
+    cache_hit: Boolean(raw.cache_hit),
+    custo,
+    custo_consulta: custo,
+    saldo_antes: typeof raw.saldo_antes === 'string' ? raw.saldo_antes : null,
+    saldo_depois: typeof raw.saldo_depois === 'string' ? raw.saldo_depois : null,
+    criado_em: typeof raw.criado_em === 'string' ? raw.criado_em : new Date().toISOString(),
+    processado_em: typeof raw.processado_em === 'string' ? raw.processado_em : null,
+  }
+}
+
+function normalizeExtratoItem(payload: unknown): ExtratoItem {
+  const raw = unwrapPayload<Record<string, unknown>>(payload)
+  const saldoDepois = typeof raw.saldo_depois === 'string'
+    ? raw.saldo_depois
+    : typeof raw.saldo_resultante === 'string'
+      ? raw.saldo_resultante
+      : null
+  const valor = typeof raw.valor === 'string'
+    ? raw.valor
+    : typeof raw.custo === 'string'
+      ? raw.custo
+      : '0.00'
+
+  return {
+    id: String(raw.id ?? ''),
+    tipo: String(raw.tipo ?? 'DEBITO') as ExtratoItem['tipo'],
+    valor,
+    custo: typeof raw.custo === 'string' ? raw.custo : null,
+    saldo_antes: typeof raw.saldo_antes === 'string' ? raw.saldo_antes : null,
+    saldo_depois: saldoDepois,
+    saldo_resultante: saldoDepois,
+    descricao: typeof raw.descricao === 'string' ? raw.descricao : null,
+    expira_em: typeof raw.expira_em === 'string' ? raw.expira_em : null,
+    pedido_id: typeof raw.pedido_id === 'string' ? raw.pedido_id : null,
+    log_auditoria_id: typeof raw.log_auditoria_id === 'string'
+      ? raw.log_auditoria_id
+      : typeof raw.auditoria_id === 'string'
+        ? raw.auditoria_id
+        : null,
+    criado_em: typeof raw.criado_em === 'string' ? raw.criado_em : new Date().toISOString(),
+  }
+}
+
 function normalizeMetodo(value: unknown) {
   if (value === 'PIX' || value === 'BOLETO' || value === 'CARTAO') return value as Pedido['metodo']
   return 'PIX' as Pedido['metodo']
@@ -205,7 +293,7 @@ export const saldoApi = {
       return mockSaldoApi.resumo()
     }
     const { data } = await http.get<SaldoResumo>('/saldo')
-    return unwrapPayload<SaldoResumo>(data)
+    return normalizeSaldoResumo(data)
   },
 }
 
@@ -216,7 +304,7 @@ export const dashboardApi = {
       return mockDashboardApi.resumo()
     }
     const { data } = await http.get<DashboardResumo>('/dashboard/resumo')
-    return unwrapPayload<DashboardResumo>(data)
+    return normalizeDashboardResumo(data)
   },
 
   auditoria: async (params?: { status?: string; limit?: number; offset?: number }) => {
@@ -224,8 +312,8 @@ export const dashboardApi = {
       const { mockDashboardApi } = await loadMockApi()
       return mockDashboardApi.auditoria(params)
     }
-    const { data } = await http.get<AuditoriaItem[]>('/dashboard/auditoria', { params })
-    return unwrapList<AuditoriaItem>(data)
+    const { data } = await http.get<AuditoriaItem[]>('/dashboard/validacoes', { params })
+    return unwrapList<Record<string, unknown>>(data).map(normalizeAuditoriaItem)
   },
 
   extrato: async (params?: { tipo?: string; limit?: number; offset?: number }) => {
@@ -233,8 +321,8 @@ export const dashboardApi = {
       const { mockDashboardApi } = await loadMockApi()
       return mockDashboardApi.extrato(params)
     }
-    const { data } = await http.get<ExtratoItem[]>('/dashboard/extrato', { params })
-    return unwrapList<ExtratoItem>(data)
+    const { data } = await http.get<ExtratoItem[]>('/dashboard/consumo', { params })
+    return unwrapList<Record<string, unknown>>(data).map(normalizeExtratoItem)
   },
 
   simulador: async (quantidade: number) => {

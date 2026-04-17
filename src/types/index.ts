@@ -55,6 +55,7 @@ export interface Cliente {
 
 export interface SaldoResumo {
   saldo_disponivel: string
+  valor_inicial?: string | null
   expira_em: string | null
   status: 'ATIVO' | 'SEM_SALDO'
   consultas_no_periodo: number
@@ -68,6 +69,8 @@ export interface DashboardResumo {
   gasto_periodo: string
   consultas_hoje: number
   gasto_hoje: string
+  prox_consulta_custo: string | null
+  prox_faixa: string | null
 }
 
 export interface AuditoriaItem {
@@ -78,6 +81,7 @@ export interface AuditoriaItem {
   status: StatusAuditoria
   status_sefaz: string | null
   cache_hit: boolean
+  custo: string | null
   custo_consulta: string | null
   saldo_antes: string | null
   saldo_depois: string | null
@@ -89,7 +93,10 @@ export interface ExtratoItem {
   id: string
   tipo: TipoMovimentacao
   valor: string
-  saldo_resultante: string
+  custo: string | null
+  saldo_antes: string | null
+  saldo_depois: string | null
+  saldo_resultante: string | null
   descricao: string | null
   expira_em: string | null
   pedido_id: string | null
