@@ -16,8 +16,10 @@ import type {
   StatusAuditoria,
   TipoMovimentacao,
   TokenResponse,
-  ValidarNotaPayload,
-  ValidarNotaResponse,
+  ConsultarNotaPayload,
+  ConsultarNotaResponse,
+  TipoConsulta,
+  UfConsulta,
 } from '@/types'
 
 type MockUser = Cliente & { senha: string }
@@ -597,7 +599,7 @@ export const mockAuthApi = {
 
     const user: MockUser = {
       id: `cli_${Date.now()}`,
-      tipo: payload.tipo,
+      tipo: payload.tipo_cliente,
       nome: payload.nome,
       nome_fantasia: payload.nome_fantasia ?? null,
       email: payload.email,
@@ -726,7 +728,7 @@ export const mockPedidosApi = {
 }
 
 export const mockFiscalApi = {
-  async validar(payload: ValidarNotaPayload) {
+  async consultar(_uf: UfConsulta, _tipo: TipoConsulta, payload: ConsultarNotaPayload) {
     const db = readDb()
     const saldoAntes = Number(db.saldo.saldo_disponivel)
     const custoConsulta = 0.18
@@ -736,8 +738,8 @@ export const mockFiscalApi = {
     const auditoria: AuditoriaItem = {
       id: auditoriaId,
       chave_nf: payload.chave_nf,
-      modelo: payload.modelo,
-      cnpj_emitente: payload.cnpj_emitente,
+      modelo: '55',
+      cnpj_emitente: '',
       status: badgeToStatus('PROCESSANDO'),
       status_sefaz: null,
       cache_hit: false,
@@ -770,21 +772,34 @@ export const mockFiscalApi = {
     nextSaldo(db, -custoConsulta)
     writeDb(db)
 
-    const response: ValidarNotaResponse = {
+    const response: ConsultarNotaResponse = {
       auditoria_id: auditoriaId,
       chave_nf: payload.chave_nf,
-      modelo: payload.modelo,
+      modelo: '55',
+      uf: _uf,
       status: 'PROCESSANDO',
+      mensagem: 'Consulta em processamento',
       cache_hit: false,
+      dados_nf: null,
     }
 
     return delay(response)
   },
 
-  async consultar(id: string) {
+  async obterResultado(_uf: UfConsulta, id: string, _tipo: TipoConsulta) {
     const item = readDb().auditoria.find((auditoria) => auditoria.id === id)
     if (!item) fail('Auditoria não encontrada', 404)
-    return delay(item)
+    const response: ConsultarNotaResponse = {
+      auditoria_id: item!.id,
+      chave_nf: item!.chave_nf,
+      modelo: item!.modelo,
+      uf: _uf,
+      status: item!.status,
+      mensagem: item!.status_sefaz ?? '',
+      cache_hit: item!.cache_hit,
+      dados_nf: null,
+    }
+    return delay(response)
   },
 }
 

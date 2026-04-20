@@ -24,13 +24,14 @@ export interface LoginPayload {
 }
 
 export interface RegisterPayload {
-  tipo: TipoCliente
+  tipo_cliente: TipoCliente
   nome: string
   nome_fantasia?: string | null
   email: string
   telefone?: string | null
   nr_documento: string
   senha: string
+  confirmacao_senha: string
 }
 
 export interface TokenResponse {
@@ -126,9 +127,19 @@ export interface PedidoBoletoPayerPayload {
   payer_federal_unit: string
 }
 
-export interface IniciarPedidoRequest extends Partial<PedidoBoletoPayerPayload> {
-  metodo: Extract<MetodoPagamento, 'PIX' | 'BOLETO'>
+export interface PedidoCartaoPayerPayload {
+  card_token: string
+  payment_method_id: string
+  installments?: number
+  issuer_id?: string
+  payer_doc_type?: string
+  payer_doc_number?: string
+}
+
+export interface IniciarPedidoRequest extends Partial<PedidoBoletoPayerPayload>, Partial<PedidoCartaoPayerPayload> {
+  metodo: MetodoPagamento
   valor: number
+  descricao?: string
 }
 
 export interface PedidoStatusGatewayInfo {
@@ -168,6 +179,8 @@ export interface IniciarPedidoResponse extends PedidoPagamentoData, PedidoStatus
   metodo: MetodoPagamento
   valor: string
   status: StatusPedido
+  three_ds_external_resource_url?: string | null
+  three_ds_creq?: string | null
   expira_em?: string | null
   credito_expira_em?: string | null
   criado_em?: string | null
@@ -175,20 +188,23 @@ export interface IniciarPedidoResponse extends PedidoPagamentoData, PedidoStatus
   credito_lancado?: boolean
 }
 
-export interface ValidarNotaPayload {
+export type UfConsulta = 'rj' | 'sp'
+export type TipoConsulta = 'resumida' | 'completa'
+
+export interface ConsultarNotaPayload {
   chave_nf: string
-  modelo: ModeloNotaFiscal
-  cnpj_emitente: string
-  cpf_destinatario?: string
-  valor_total_informado?: number
+  webhook_url?: string | null
 }
 
-export interface ValidarNotaResponse {
+export interface ConsultarNotaResponse {
   auditoria_id: string
   chave_nf: string
-  modelo: ModeloNotaFiscal
+  modelo: string
+  uf: string
   status: StatusAuditoria
+  mensagem: string
   cache_hit: boolean
+  dados_nf: Record<string, unknown> | null
 }
 
 export interface ApiKeyInfo {

@@ -311,11 +311,12 @@ export function AuthPage() {
     setLoading(true)
     try {
       await authApi.register({
-        tipo: 'PF',
+        tipo_cliente: 'PF',
         nome: pfForm.nome,
         email: pfForm.email,
         nr_documento: pfForm.cpf.replace(/\D/g, ''),
         senha: pfForm.senha,
+        confirmacao_senha: pfForm.confirmar,
       })
       toast.success('Conta criada! Faça o login.')
       setMode('login')
@@ -333,12 +334,13 @@ export function AuthPage() {
     setLoading(true)
     try {
       await authApi.register({
-        tipo: 'PJ',
+        tipo_cliente: 'PJ',
         nome: pjForm.responsavel,
         nome_fantasia: pjForm.razao_social,
         email: pjForm.email,
         nr_documento: pjForm.cnpj.replace(/\D/g, ''),
         senha: pjForm.senha,
+        confirmacao_senha: pjForm.confirmar,
       })
       toast.success('Conta criada! Faça o login.')
       setMode('login')
