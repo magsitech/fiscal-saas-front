@@ -4,16 +4,20 @@ import type {
   ApiKeyInfo,
   AuditoriaItem,
   Cliente,
+  ConfirmarEmailResponse,
   ConsultarNotaPayload,
   ConsultarNotaResponse,
   DashboardResumo,
+  EsqueciSenhaPayload,
   ExtratoItem,
   IniciarPedidoRequest,
   IniciarPedidoResponse,
   LoginPayload,
   Pedido,
   PedidoDetalhe,
+  RedefinirSenhaPayload,
   RegisterPayload,
+  ReenviarConfirmacaoPayload,
   SaldoResumo,
   SimuladorResponse,
   TipoConsulta,
@@ -287,6 +291,28 @@ export const authApi = {
       return mockAuthApi.me()
     }
     const { data } = await http.get<Cliente>('/auth/me')
+    return data
+  },
+
+  confirmarEmail: async (token: string) => {
+    const { data } = await axios.get<ConfirmarEmailResponse>(`${apiBaseUrl}/clientes/confirmar-email`, {
+      params: { token },
+    })
+    return data
+  },
+
+  reenviarConfirmacao: async (payload: ReenviarConfirmacaoPayload) => {
+    const { data } = await axios.post(`${apiBaseUrl}/clientes/reenviar-confirmacao`, payload)
+    return data
+  },
+
+  esqueciSenha: async (payload: EsqueciSenhaPayload) => {
+    const { data } = await axios.post(`${apiBaseUrl}/auth/esqueci-senha`, payload)
+    return data
+  },
+
+  redefinirSenha: async (payload: RedefinirSenhaPayload) => {
+    const { data } = await axios.post(`${apiBaseUrl}/auth/redefinir-senha`, payload)
     return data
   },
 }

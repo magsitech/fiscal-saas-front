@@ -41,6 +41,23 @@ export interface TokenResponse {
   expires_in: number
 }
 
+export interface ConfirmarEmailResponse {
+  mensagem: string
+}
+
+export interface ReenviarConfirmacaoPayload {
+  email: string
+}
+
+export interface EsqueciSenhaPayload {
+  email: string
+}
+
+export interface RedefinirSenhaPayload {
+  token: string
+  nova_senha: string
+}
+
 export interface Cliente {
   id: string
   tipo: TipoCliente

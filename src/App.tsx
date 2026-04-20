@@ -12,6 +12,8 @@ import {
   SimuladorPage, CreditosPage,
 } from '@/pages/ManagementPages'
 import { PerfilPage } from '@/pages/PerfilPage'
+import { ConfirmarEmailPage } from '@/pages/ConfirmarEmailPage'
+import { RedefinirSenhaPage } from '@/pages/RedefinirSenhaPage'
 import { authApi } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
 import { resetWindowScroll } from '@/utils/scroll'
@@ -146,6 +148,8 @@ export default function App() {
             <Route path="/app/pagamentos" element={<Navigate to="/app/pedidos" replace />} />
           </Route>
         </Route>
+        <Route path="/confirmar-email" element={<ConfirmarEmailPage />} />
+        <Route path="/redefinir-senha" element={<RedefinirSenhaPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
