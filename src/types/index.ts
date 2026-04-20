@@ -117,6 +117,15 @@ export interface SimuladorResponse {
   }>
 }
 
+export type GatewayPixBoleto = 'mercadopago' | 'abacatepay'
+
+export interface PedidosConfig {
+  public_key: string
+  sandbox: boolean
+  gateway_pix_boleto: GatewayPixBoleto
+  gateway_pix_boleto_sandbox: boolean
+}
+
 export interface PedidoBoletoPayerPayload {
   payer_zip_code: string
   payer_street_name: string
@@ -129,6 +138,7 @@ export interface PedidoBoletoPayerPayload {
 export interface IniciarPedidoRequest extends Partial<PedidoBoletoPayerPayload> {
   metodo: Extract<MetodoPagamento, 'PIX' | 'BOLETO'>
   valor: number
+  descricao?: string
 }
 
 export interface PedidoStatusGatewayInfo {

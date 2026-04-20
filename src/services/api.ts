@@ -11,6 +11,7 @@ import type {
   LoginPayload,
   Pedido,
   PedidoDetalhe,
+  PedidosConfig,
   RegisterPayload,
   SaldoResumo,
   SimuladorResponse,
@@ -338,6 +339,15 @@ export const dashboardApi = {
 }
 
 export const pedidosApi = {
+  config: async (): Promise<PedidosConfig> => {
+    if (USE_MOCK_API) {
+      const { mockPedidosApi } = await loadMockApi()
+      return mockPedidosApi.config()
+    }
+    const { data } = await http.get<PedidosConfig>('/pedidos/config')
+    return data
+  },
+
   iniciar: async (payload: IniciarPedidoRequest) => {
     if (USE_MOCK_API) {
       const { mockPedidosApi } = await loadMockApi()
@@ -363,6 +373,15 @@ export const pedidosApi = {
     }
     const { data } = await http.get<PedidoDetalhe>(`/pedidos/${pedidoId}`)
     return normalizePedidoDetalhe(data)
+  },
+
+  simularPagamento: async (pedidoId: string) => {
+    if (USE_MOCK_API) {
+      const { mockPedidosApi } = await loadMockApi()
+      return mockPedidosApi.simularPagamento(pedidoId)
+    }
+    const { data } = await http.post(`/pedidos/${pedidoId}/simular-pagamento`)
+    return data
   },
 }
 

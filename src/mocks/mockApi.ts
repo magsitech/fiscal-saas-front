@@ -10,6 +10,7 @@ import type {
   LoginPayload,
   Pedido,
   PedidoDetalhe,
+  PedidosConfig,
   RegisterPayload,
   SaldoResumo,
   SimuladorResponse,
@@ -652,6 +653,27 @@ export const mockDashboardApi = {
 }
 
 export const mockPedidosApi = {
+  async config(): Promise<PedidosConfig> {
+    return delay({
+      public_key: 'mock_public_key',
+      sandbox: true,
+      gateway_pix_boleto: 'mercadopago' as const,
+      gateway_pix_boleto_sandbox: true,
+    })
+  },
+
+  async simularPagamento(pedidoId: string) {
+    const db = readDb()
+    const pedido = db.pedidos.find((item) => item.id === pedidoId)
+    if (!pedido) fail('Pedido nao encontrado', 404)
+    pedido.status = 'PAGO'
+    pedido.mp_status = 'approved'
+    pedido.mp_status_detail = 'accredited'
+    pedido.confirmado_em = new Date().toISOString()
+    writeDb(db)
+    return delay({ ok: true })
+  },
+
   async iniciar(payload: IniciarPedidoRequest) {
     const db = readDb()
     const now = Date.now()
