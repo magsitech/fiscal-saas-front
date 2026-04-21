@@ -18,7 +18,7 @@ import { authApi } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
 import { Spinner } from '@/components/ui'
 
-type Mode = 'login' | 'tipo' | 'form-pf' | 'form-pj'
+type Mode = 'login' | 'tipo' | 'form-pf' | 'form-pj' | 'esqueci-senha'
 
 const S = {
   root: {
@@ -260,14 +260,21 @@ export function AuthPage() {
     return !Object.keys(e).length
   }
 
+  function validarSenhaForca(senha: string): string | null {
+    if (senha.length < 8) return 'Mínimo de 8 caracteres'
+    if (!/[A-Z]/.test(senha)) return 'Precisa de uma maiúscula'
+    if (!/\d/.test(senha)) return 'Precisa de um número'
+    if (!/[^A-Za-z0-9]/.test(senha)) return 'Precisa de um símbolo'
+    return null
+  }
+
   function validarPF() {
     const e: Record<string, string> = {}
     if (!pfForm.nome || pfForm.nome.length < 3) e.nome = 'Mínimo de 3 caracteres'
     if (!pfForm.email || !/\S+@\S+\.\S+/.test(pfForm.email)) e.email = 'E-mail inválido'
     if (!/^\d{11}$/.test(pfForm.cpf.replace(/\D/g, ''))) e.cpf = 'CPF: 11 dígitos'
-    if (pfForm.senha.length < 8) e.senha = 'Mínimo de 8 caracteres'
-    if (!/[A-Z]/.test(pfForm.senha)) e.senha = 'Precisa de uma maiúscula'
-    if (!/\d/.test(pfForm.senha)) e.senha = 'Precisa de um número'
+    const senhaErro = validarSenhaForca(pfForm.senha)
+    if (senhaErro) e.senha = senhaErro
     if (pfForm.senha !== pfForm.confirmar) e.confirmar = 'As senhas não coincidem'
     setPfErros(e)
     return !Object.keys(e).length
@@ -279,9 +286,8 @@ export function AuthPage() {
     if (!/^\d{14}$/.test(pjForm.cnpj.replace(/\D/g, ''))) e.cnpj = 'CNPJ: 14 dígitos'
     if (!pjForm.responsavel.trim()) e.responsavel = 'Obrigatório'
     if (!pjForm.email || !/\S+@\S+\.\S+/.test(pjForm.email)) e.email = 'E-mail inválido'
-    if (pjForm.senha.length < 8) e.senha = 'Mínimo de 8 caracteres'
-    if (!/[A-Z]/.test(pjForm.senha)) e.senha = 'Precisa de uma maiúscula'
-    if (!/\d/.test(pjForm.senha)) e.senha = 'Precisa de um número'
+    const senhaErro = validarSenhaForca(pjForm.senha)
+    if (senhaErro) e.senha = senhaErro
     if (pjForm.senha !== pjForm.confirmar) e.confirmar = 'As senhas não coincidem'
     setPjErros(e)
     return !Object.keys(e).length
@@ -311,15 +317,14 @@ export function AuthPage() {
     setLoading(true)
     try {
       await authApi.register({
-        tipo: 'PF',
+        tipo_cliente: 'PF',
         nome: pfForm.nome,
         email: pfForm.email,
         nr_documento: pfForm.cpf.replace(/\D/g, ''),
         senha: pfForm.senha,
+        confirmacao_senha: pfForm.confirmar,
       })
-      toast.success('Conta criada! Faça o login.')
-      setMode('login')
-      setLoginForm({ email: pfForm.email, senha: '' })
+      navigate(`/verificar-email?email=${encodeURIComponent(pfForm.email)}`)
     } catch (err: any) {
       toast.error(err?.response?.data?.detail ?? 'Erro ao criar conta')
     } finally {
@@ -333,18 +338,37 @@ export function AuthPage() {
     setLoading(true)
     try {
       await authApi.register({
-        tipo: 'PJ',
+        tipo_cliente: 'PJ',
         nome: pjForm.responsavel,
         nome_fantasia: pjForm.razao_social,
         email: pjForm.email,
         nr_documento: pjForm.cnpj.replace(/\D/g, ''),
         senha: pjForm.senha,
+        confirmacao_senha: pjForm.confirmar,
       })
-      toast.success('Conta criada! Faça o login.')
-      setMode('login')
-      setLoginForm({ email: pjForm.email, senha: '' })
+      navigate(`/verificar-email?email=${encodeURIComponent(pjForm.email)}`)
     } catch (err: any) {
       toast.error(err?.response?.data?.detail ?? 'Erro ao criar conta')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const [esqueciEmail, setEsqueciEmail] = useState('')
+  const [esqueciEnviado, setEsqueciEnviado] = useState(false)
+
+  async function handleEsqueciSenha(e: FormEvent) {
+    e.preventDefault()
+    if (!esqueciEmail || !/\S+@\S+\.\S+/.test(esqueciEmail)) {
+      toast.error('Informe um e-mail válido')
+      return
+    }
+    setLoading(true)
+    try {
+      await authApi.esqueciSenha({ email: esqueciEmail })
+      setEsqueciEnviado(true)
+    } catch {
+      setEsqueciEnviado(true)
     } finally {
       setLoading(false)
     }
@@ -432,14 +456,16 @@ export function AuthPage() {
 
           <div style={S.card}>
             <div style={S.form} className="auth-form">
-              <div style={S.tabBar}>
-                <button style={S.tab(mode === 'login')} onClick={switchToLogin}>
-                  Entrar
-                </button>
-                <button style={S.tab(mode !== 'login')} onClick={switchToCadastro}>
-                  Criar conta
-                </button>
-              </div>
+              {mode !== 'esqueci-senha' && (
+                <div style={S.tabBar}>
+                  <button style={S.tab(mode === 'login')} onClick={switchToLogin}>
+                    Entrar
+                  </button>
+                  <button style={S.tab(mode !== 'login')} onClick={switchToCadastro}>
+                    Criar conta
+                  </button>
+                </div>
+              )}
 
               {mode === 'login' && (
                 <form onSubmit={handleLogin} noValidate>
@@ -459,8 +485,49 @@ export function AuthPage() {
                     {loading ? <Spinner size={16} /> : <>Entrar <ArrowRight size={16} /></>}
                   </button>
                   <p style={S.linkTxt}>
+                    <span style={S.linkSpan} onClick={() => { setEsqueciEmail(''); setEsqueciEnviado(false); setMode('esqueci-senha') }}>Esqueci minha senha</span>
+                  </p>
+                  <p style={S.linkTxt}>
                     Não tem conta? <span style={S.linkSpan} onClick={switchToCadastro}>Criar conta</span>
                   </p>
+                </form>
+              )}
+
+              {mode === 'esqueci-senha' && (
+                <form onSubmit={handleEsqueciSenha} noValidate>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
+                    <button type="button" onClick={switchToLogin} style={S.ghostBtn}>
+                      <ArrowLeft size={14} />
+                    </button>
+                    <div>
+                      <div style={{ fontSize: '20px', fontWeight: 700, lineHeight: 1 }}>Esqueci minha senha</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>Enviaremos um link de redefinição</div>
+                    </div>
+                  </div>
+                  {esqueciEnviado ? (
+                    <div style={{ textAlign: 'center', padding: '12px 0' }}>
+                      <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: 'var(--accent-dim)', border: '1px solid var(--accent-glow)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+                        <Mail size={22} color="var(--accent)" />
+                      </div>
+                      <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '24px' }}>
+                        Se esse e-mail estiver cadastrado, você receberá as instruções em breve.
+                      </p>
+                      <p style={S.linkTxt}>
+                        <span style={S.linkSpan} onClick={switchToLogin}>Voltar para o login</span>
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      <Field label="E-mail">
+                        <IcInput icon={<Mail size={15} />}>
+                          <input type="email" placeholder="seu@email.com" value={esqueciEmail} onChange={(e) => setEsqueciEmail(e.target.value)} style={S.inp()} />
+                        </IcInput>
+                      </Field>
+                      <button type="submit" disabled={loading} style={S.submitBtn(loading)}>
+                        {loading ? <Spinner size={16} /> : <>Enviar link <ArrowRight size={16} /></>}
+                      </button>
+                    </>
+                  )}
                 </form>
               )}
 

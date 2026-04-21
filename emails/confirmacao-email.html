@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Confirme seu e-mail – validaeNota</title>
+</head>
+<body style="margin:0;padding:0;background:#0a0f0d;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0f0d;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;">
+
+          <!-- Logo -->
+          <tr>
+            <td align="center" style="padding-bottom:32px;">
+              <span style="font-size:20px;font-weight:800;letter-spacing:-0.04em;color:#00d4aa;">
+                validae<span style="color:#ffffff;">Nota</span>
+              </span>
+            </td>
+          </tr>
+
+          <!-- Card -->
+          <tr>
+            <td style="background:#111a16;border:1px solid #1e2e26;border-radius:20px;padding:40px 36px;">
+
+              <!-- Ícone -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="padding-bottom:24px;">
+                    <div style="width:56px;height:56px;background:#0d2b22;border:1px solid #00d4aa33;border-radius:16px;display:inline-flex;align-items:center;justify-content:center;font-size:26px;line-height:56px;">
+                      ✉️
+                    </div>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Título -->
+              <p style="margin:0 0 8px;font-size:22px;font-weight:700;color:#f0faf6;text-align:center;letter-spacing:-0.02em;">
+                Confirme seu e-mail
+              </p>
+
+              <!-- Subtítulo -->
+              <p style="margin:0 0 28px;font-size:14px;color:#7a9e8e;text-align:center;line-height:1.7;">
+                Olá, <strong style="color:#c8e6da;">{{nome}}</strong>! Clique no botão abaixo para ativar sua conta na validaeNota.
+              </p>
+
+              <!-- Botão -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+                <tr>
+                  <td align="center">
+                    <a href="{{link}}"
+                       style="display:inline-block;background:#00d4aa;color:#041311;font-size:15px;font-weight:700;text-decoration:none;padding:14px 36px;border-radius:12px;letter-spacing:-0.01em;">
+                      Ativar minha conta
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Aviso de expiração -->
+              <p style="margin:0 0 24px;font-size:12px;color:#4d7a66;text-align:center;line-height:1.6;">
+                Este link expira em <strong style="color:#7a9e8e;">60 minutos</strong> e é de uso único.
+              </p>
+
+              <!-- Divisor -->
+              <hr style="border:none;border-top:1px solid #1e2e26;margin:0 0 24px;" />
+
+              <!-- Link alternativo -->
+              <p style="margin:0 0 8px;font-size:12px;color:#4d7a66;text-align:center;">
+                Se o botão não funcionar, copie e cole o link abaixo no navegador:
+              </p>
+              <p style="margin:0;font-size:11px;color:#00d4aa;text-align:center;word-break:break-all;font-family:'Courier New',monospace;">
+                {{link}}
+              </p>
+
+            </td>
+          </tr>
+
+          <!-- Rodapé -->
+          <tr>
+            <td align="center" style="padding-top:28px;">
+              <p style="margin:0 0 6px;font-size:11px;color:#2e4a3a;">
+                Você recebeu este e-mail porque se cadastrou em validaeNota.
+              </p>
+              <p style="margin:0;font-size:11px;color:#2e4a3a;">
+                Se não foi você, ignore esta mensagem.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

@@ -17,8 +17,10 @@ import type {
   StatusAuditoria,
   TipoMovimentacao,
   TokenResponse,
-  ValidarNotaPayload,
-  ValidarNotaResponse,
+  ConsultarNotaPayload,
+  ConsultarNotaResponse,
+  TipoConsulta,
+  UfConsulta,
 } from '@/types'
 
 type MockUser = Cliente & { senha: string }
@@ -288,62 +290,62 @@ const DEFAULT_PEDIDOS: Pedido[] = [
     metodo: 'PIX',
     valor: '1000.00',
     status: 'PAGO',
-    mp_status: 'approved',
-    mp_status_detail: 'accredited',
+    mp_status: null,
+    mp_status_detail: null,
     confirmado_em: ago(5, 1, 40),
     expira_em: ago(5, 1, 10),
     credito_expira_em: ahead(21),
     criado_em: ago(5, 2, 0),
-    checkout_url: 'https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=mock-ped_001',
+    checkout_url: null,
     pix_copia_cola: '000201mockped001100000',
     pix_qr_code_url: MOCK_PIX_QR_CODE,
     boleto_linha_digitavel: null,
     boleto_url: null,
-    gateway_id: 'mp_mock_001',
+    gateway_id: 'mock_001',
   },
   {
     id: 'ped_002',
     metodo: 'BOLETO',
     valor: '500.00',
     status: 'AGUARDANDO_PAGAMENTO',
-    mp_status: 'pending',
-    mp_status_detail: 'pending_waiting_payment',
+    mp_status: null,
+    mp_status_detail: null,
     confirmado_em: null,
     expira_em: ahead(1, 6),
     credito_expira_em: null,
     criado_em: ago(0, 4, 30),
-    checkout_url: 'https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=mock-ped_002',
+    checkout_url: null,
     pix_copia_cola: null,
     pix_qr_code_url: null,
     boleto_linha_digitavel: '34191.79001 01043.510047 91020.150008 1 95870026000',
     boleto_url: 'https://example.com/mock-boleto.pdf',
-    gateway_id: 'mp_mock_002',
+    gateway_id: 'mock_002',
   },
   {
     id: 'ped_003',
     metodo: 'PIX',
     valor: '250.00',
     status: 'AGUARDANDO_PAGAMENTO',
-    mp_status: 'pending',
-    mp_status_detail: 'pending_waiting_transfer',
+    mp_status: null,
+    mp_status_detail: null,
     confirmado_em: null,
     expira_em: ahead(0, 0, 25),
     credito_expira_em: null,
     criado_em: ago(0, 0, 5),
-    checkout_url: 'https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=mock-ped_003',
+    checkout_url: null,
     pix_copia_cola: '000201mockped003250000',
     pix_qr_code_url: MOCK_PIX_QR_CODE,
     boleto_linha_digitavel: null,
     boleto_url: null,
-    gateway_id: 'mp_mock_003',
+    gateway_id: 'mock_003',
   },
   {
     id: 'ped_004',
     metodo: 'CARTAO',
     valor: '750.00',
     status: 'CANCELADO',
-    mp_status: 'cancelled',
-    mp_status_detail: 'cancelled',
+    mp_status: null,
+    mp_status_detail: null,
     confirmado_em: null,
     expira_em: ago(2, 1),
     credito_expira_em: null,
@@ -353,15 +355,15 @@ const DEFAULT_PEDIDOS: Pedido[] = [
     pix_qr_code_url: null,
     boleto_linha_digitavel: null,
     boleto_url: null,
-    gateway_id: 'mp_mock_004',
+    gateway_id: 'mock_004',
   },
   {
     id: 'ped_005',
     metodo: 'BOLETO',
     valor: '300.00',
     status: 'EXPIRADO',
-    mp_status: 'cancelled',
-    mp_status_detail: 'expired',
+    mp_status: null,
+    mp_status_detail: null,
     confirmado_em: null,
     expira_em: ago(7, 3),
     credito_expira_em: null,
@@ -371,7 +373,7 @@ const DEFAULT_PEDIDOS: Pedido[] = [
     pix_qr_code_url: null,
     boleto_linha_digitavel: '34191.79001 01043.510047 91020.150008 1 95870026000',
     boleto_url: 'https://example.com/mock-boleto-expired.pdf',
-    gateway_id: 'mp_mock_005',
+    gateway_id: 'mock_005',
   },
 ]
 
@@ -598,7 +600,7 @@ export const mockAuthApi = {
 
     const user: MockUser = {
       id: `cli_${Date.now()}`,
-      tipo: payload.tipo,
+      tipo: payload.tipo_cliente,
       nome: payload.nome,
       nome_fantasia: payload.nome_fantasia ?? null,
       email: payload.email,
@@ -683,13 +685,13 @@ export const mockPedidosApi = {
       metodo,
       valor: payload.valor.toFixed(2),
       status: 'AGUARDANDO_PAGAMENTO',
-      mp_status: 'pending',
+      mp_status: null,
       mp_status_detail: metodo === 'PIX' ? 'pending_waiting_transfer' : 'pending_waiting_payment',
       confirmado_em: null,
       expira_em: new Date(now + 30 * 60 * 1000).toISOString(),
       credito_expira_em: null,
       criado_em: new Date(now).toISOString(),
-      checkout_url: `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=mock-${now}`,
+      checkout_url: null,
       pix_copia_cola: metodo === 'PIX'
         ? `000201mockped${now}${payload.valor.toFixed(2).replace('.', '')}`
         : null,
@@ -698,7 +700,7 @@ export const mockPedidosApi = {
         ? '34191.79001 01043.510047 91020.150008 1 95870026000'
         : null,
       boleto_url: metodo === 'BOLETO' ? 'https://example.com/mock-boleto.pdf' : null,
-      gateway_id: `mp_mock_${now}`,
+      gateway_id: `mock_${now}`,
     }
 
     db.pedidos.unshift(novoPedido)
@@ -716,7 +718,7 @@ export const mockPedidosApi = {
       checkout_url: novoPedido.checkout_url,
       gateway_id: novoPedido.gateway_id,
       gateway_payload: JSON.stringify({
-        provider: 'mercado_pago',
+        provider: 'gateway',
         flow: 'checkout',
         checkout_url: novoPedido.checkout_url,
       }),
@@ -748,7 +750,7 @@ export const mockPedidosApi = {
 }
 
 export const mockFiscalApi = {
-  async validar(payload: ValidarNotaPayload) {
+  async consultar(_uf: UfConsulta, _tipo: TipoConsulta, payload: ConsultarNotaPayload) {
     const db = readDb()
     const saldoAntes = Number(db.saldo.saldo_disponivel)
     const custoConsulta = 0.18
@@ -758,8 +760,8 @@ export const mockFiscalApi = {
     const auditoria: AuditoriaItem = {
       id: auditoriaId,
       chave_nf: payload.chave_nf,
-      modelo: payload.modelo,
-      cnpj_emitente: payload.cnpj_emitente,
+      modelo: '55',
+      cnpj_emitente: '',
       status: badgeToStatus('PROCESSANDO'),
       status_sefaz: null,
       cache_hit: false,
@@ -792,21 +794,34 @@ export const mockFiscalApi = {
     nextSaldo(db, -custoConsulta)
     writeDb(db)
 
-    const response: ValidarNotaResponse = {
+    const response: ConsultarNotaResponse = {
       auditoria_id: auditoriaId,
       chave_nf: payload.chave_nf,
-      modelo: payload.modelo,
+      modelo: '55',
+      uf: _uf,
       status: 'PROCESSANDO',
+      mensagem: 'Consulta em processamento',
       cache_hit: false,
+      dados_nf: null,
     }
 
     return delay(response)
   },
 
-  async consultar(id: string) {
+  async obterResultado(_uf: UfConsulta, id: string, _tipo: TipoConsulta) {
     const item = readDb().auditoria.find((auditoria) => auditoria.id === id)
     if (!item) fail('Auditoria não encontrada', 404)
-    return delay(item)
+    const response: ConsultarNotaResponse = {
+      auditoria_id: item!.id,
+      chave_nf: item!.chave_nf,
+      modelo: item!.modelo,
+      uf: _uf,
+      status: item!.status,
+      mensagem: item!.status_sefaz ?? '',
+      cache_hit: item!.cache_hit,
+      dados_nf: null,
+    }
+    return delay(response)
   },
 }
 

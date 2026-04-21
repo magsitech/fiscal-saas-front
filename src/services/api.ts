@@ -4,20 +4,25 @@ import type {
   ApiKeyInfo,
   AuditoriaItem,
   Cliente,
+  ConfirmarEmailResponse,
+  ConsultarNotaPayload,
+  ConsultarNotaResponse,
   DashboardResumo,
+  EsqueciSenhaPayload,
   ExtratoItem,
   IniciarPedidoRequest,
   IniciarPedidoResponse,
   LoginPayload,
   Pedido,
   PedidoDetalhe,
-  PedidosConfig,
+  RedefinirSenhaPayload,
   RegisterPayload,
+  ReenviarConfirmacaoPayload,
   SaldoResumo,
   SimuladorResponse,
+  TipoConsulta,
   TokenResponse,
-  ValidarNotaPayload,
-  ValidarNotaResponse,
+  UfConsulta,
 } from '@/types'
 import { API_BASE_URL, USE_MOCK_API } from '@/config/runtime'
 import { clearAuthTokens, getAccessToken, getRefreshToken, setAuthTokens } from '@/utils/authStorage'
@@ -273,7 +278,10 @@ export const authApi = {
       const { mockAuthApi } = await loadMockApi()
       return mockAuthApi.register(payload)
     }
-    const { data } = await http.post<Cliente>('/clientes', payload)
+    const { data } = await http.post<Cliente>('/clientes', {
+      ...payload,
+      tipo_cliente: payload.tipo_cliente,
+    })
     return data
   },
 
@@ -283,6 +291,28 @@ export const authApi = {
       return mockAuthApi.me()
     }
     const { data } = await http.get<Cliente>('/auth/me')
+    return data
+  },
+
+  confirmarEmail: async (token: string) => {
+    const { data } = await axios.get<ConfirmarEmailResponse>(`${apiBaseUrl}/clientes/confirmar-email`, {
+      params: { token },
+    })
+    return data
+  },
+
+  reenviarConfirmacao: async (payload: ReenviarConfirmacaoPayload) => {
+    const { data } = await axios.post(`${apiBaseUrl}/clientes/reenviar-confirmacao`, payload)
+    return data
+  },
+
+  esqueciSenha: async (payload: EsqueciSenhaPayload) => {
+    const { data } = await axios.post(`${apiBaseUrl}/auth/esqueci-senha`, payload)
+    return data
+  },
+
+  redefinirSenha: async (payload: RedefinirSenhaPayload) => {
+    const { data } = await axios.post(`${apiBaseUrl}/auth/redefinir-senha`, payload)
     return data
   },
 }
@@ -313,7 +343,7 @@ export const dashboardApi = {
       const { mockDashboardApi } = await loadMockApi()
       return mockDashboardApi.auditoria(params)
     }
-    const { data } = await http.get<AuditoriaItem[]>('/dashboard/validacoes', { params })
+    const { data } = await http.get<AuditoriaItem[]>('/dashboard/auditoria', { params })
     return unwrapList<Record<string, unknown>>(data).map(normalizeAuditoriaItem)
   },
 
@@ -322,7 +352,7 @@ export const dashboardApi = {
       const { mockDashboardApi } = await loadMockApi()
       return mockDashboardApi.extrato(params)
     }
-    const { data } = await http.get<ExtratoItem[]>('/dashboard/consumo', { params })
+    const { data } = await http.get<ExtratoItem[]>('/dashboard/extrato', { params })
     return unwrapList<Record<string, unknown>>(data).map(normalizeExtratoItem)
   },
 
@@ -339,15 +369,6 @@ export const dashboardApi = {
 }
 
 export const pedidosApi = {
-  config: async (): Promise<PedidosConfig> => {
-    if (USE_MOCK_API) {
-      const { mockPedidosApi } = await loadMockApi()
-      return mockPedidosApi.config()
-    }
-    const { data } = await http.get<PedidosConfig>('/pedidos/config')
-    return data
-  },
-
   iniciar: async (payload: IniciarPedidoRequest) => {
     if (USE_MOCK_API) {
       const { mockPedidosApi } = await loadMockApi()
@@ -374,33 +395,26 @@ export const pedidosApi = {
     const { data } = await http.get<PedidoDetalhe>(`/pedidos/${pedidoId}`)
     return normalizePedidoDetalhe(data)
   },
-
-  simularPagamento: async (pedidoId: string) => {
-    if (USE_MOCK_API) {
-      const { mockPedidosApi } = await loadMockApi()
-      return mockPedidosApi.simularPagamento(pedidoId)
-    }
-    const { data } = await http.post(`/pedidos/${pedidoId}/simular-pagamento`)
-    return data
-  },
 }
 
 export const fiscalApi = {
-  validar: async (payload: ValidarNotaPayload) => {
+  consultar: async (uf: UfConsulta, tipo: TipoConsulta = 'resumida', payload: ConsultarNotaPayload) => {
     if (USE_MOCK_API) {
       const { mockFiscalApi } = await loadMockApi()
-      return mockFiscalApi.validar(payload)
+      return mockFiscalApi.consultar(uf, tipo, payload)
     }
-    const { data } = await http.post<ValidarNotaResponse>('/validar-nota', payload)
+    const path = uf === 'sp' ? '/sp/consultar-nota' : `/rj/consultar-nota/${tipo}`
+    const { data } = await http.post<ConsultarNotaResponse>(path, payload)
     return data
   },
 
-  consultar: async (id: string) => {
+  obterResultado: async (uf: UfConsulta, auditoriaId: string, tipo: TipoConsulta = 'resumida') => {
     if (USE_MOCK_API) {
       const { mockFiscalApi } = await loadMockApi()
-      return mockFiscalApi.consultar(id)
+      return mockFiscalApi.obterResultado(uf, auditoriaId, tipo)
     }
-    const { data } = await http.get(`/validar-nota/${id}`)
+    const path = uf === 'sp' ? `/sp/consultar-nota/${auditoriaId}` : `/rj/consultar-nota/${tipo}/${auditoriaId}`
+    const { data } = await http.get<ConsultarNotaResponse>(path)
     return data
   },
 }
