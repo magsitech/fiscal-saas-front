@@ -26,9 +26,11 @@ interface DocContent {
   curlExample: string
   pythonExample: string
   jsExample: string
+  javaExample: string
   getCurlExample: string
   getPythonExample: string
   getJsExample: string
+  getJavaExample: string
   responseExample: string
 }
 
@@ -95,6 +97,46 @@ const response = await fetch(
 
 const data = await response.json();
 console.log(data);`,
+    javaExample: `import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+
+HttpClient client = HttpClient.newHttpClient();
+String body = """
+        {
+            "chave_nf": "35240112345678000190550010000012341234567890",
+            "webhook_url": "https://meu-sistema.com/webhook/nf"
+        }
+        """;
+
+HttpRequest request = HttpRequest.newBuilder()
+    .uri(URI.create("${BASE_URL}/rj/consultar-nota/resumida"))
+    .header("Authorization", "Bearer <SUA_API_KEY>")
+    .header("Content-Type", "application/json")
+    .POST(HttpRequest.BodyPublishers.ofString(body))
+    .build();
+
+HttpResponse<String> response = client.send(request,
+    HttpResponse.BodyHandlers.ofString());
+System.out.println(response.body());`,
+    getJavaExample: `import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+
+String auditoriaId = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
+HttpClient client = HttpClient.newHttpClient();
+
+HttpRequest request = HttpRequest.newBuilder()
+    .uri(URI.create("${BASE_URL}/rj/consultar-nota/resumida/" + auditoriaId))
+    .header("Authorization", "Bearer <SUA_API_KEY>")
+    .GET()
+    .build();
+
+HttpResponse<String> response = client.send(request,
+    HttpResponse.BodyHandlers.ofString());
+System.out.println(response.body());`,
     responseExample: `{
   "auditoria_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "chave_nf": "35240112345678000190550010000012341234567890",
@@ -174,6 +216,46 @@ const response = await fetch(
 
 const data = await response.json();
 console.log(data);`,
+    javaExample: `import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+
+HttpClient client = HttpClient.newHttpClient();
+String body = """
+        {
+            "chave_nf": "35240112345678000190550010000012341234567890",
+            "webhook_url": "https://meu-sistema.com/webhook/nf"
+        }
+        """;
+
+HttpRequest request = HttpRequest.newBuilder()
+    .uri(URI.create("${BASE_URL}/rj/consultar-nota/completa"))
+    .header("Authorization", "Bearer <SUA_API_KEY>")
+    .header("Content-Type", "application/json")
+    .POST(HttpRequest.BodyPublishers.ofString(body))
+    .build();
+
+HttpResponse<String> response = client.send(request,
+    HttpResponse.BodyHandlers.ofString());
+System.out.println(response.body());`,
+    getJavaExample: `import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+
+String auditoriaId = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
+HttpClient client = HttpClient.newHttpClient();
+
+HttpRequest request = HttpRequest.newBuilder()
+    .uri(URI.create("${BASE_URL}/rj/consultar-nota/completa/" + auditoriaId))
+    .header("Authorization", "Bearer <SUA_API_KEY>")
+    .GET()
+    .build();
+
+HttpResponse<String> response = client.send(request,
+    HttpResponse.BodyHandlers.ofString());
+System.out.println(response.body());`,
     responseExample: `{
   "auditoria_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "chave_nf": "35240112345678000190550010000012341234567890",
@@ -214,7 +296,7 @@ const STATUS_TABLE = [
   { status: 'ERRO', color: '#ef4444', description: 'Falha na comunicação com a SEFAZ' },
 ]
 
-type Lang = 'curl' | 'python' | 'javascript'
+type Lang = 'curl' | 'python' | 'javascript' | 'java'
 
 const WEBHOOK_PAYLOAD_EXAMPLE = `{
   "auditoria_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
@@ -246,6 +328,31 @@ def receber_resultado():
         print(f"Nota {auditoria_id} com problema: {status}")
 
     return jsonify({"ok": True}), 200`
+
+const WEBHOOK_HANDLER_JAVA = `import org.springframework.web.bind.annotation.*;
+import java.util.Map;
+import java.util.Set;
+
+@RestController
+public class WebhookController {
+
+    @PostMapping("/webhook/nf")
+    public Map<String, Boolean> receberResultado(
+            @RequestBody Map<String, Object> payload) {
+
+        String auditoriaId = (String) payload.get("auditoria_id");
+        String status = (String) payload.get("status");
+
+        if ("AUTORIZADA".equals(status)) {
+            System.out.println("Nota autorizada: " + auditoriaId);
+        } else if (Set.of("CANCELADA", "DENEGADA", "ERRO").contains(status)) {
+            System.out.println("Problema: " + auditoriaId + " - " + status);
+        }
+
+        // Sempre retorne 200 — o sistema pode retentar se não receber OK
+        return Map.of("ok", true);
+    }
+}`
 
 const WEBHOOK_HANDLER_JS = `import express from "express";
 
@@ -379,17 +486,17 @@ export function DocumentacaoPage() {
   const [active, setActive] = useState<DocSection>('rj-resumida')
   const [postLang, setPostLang] = useState<Lang>('curl')
   const [getLang, setGetLang] = useState<Lang>('curl')
-  const [webhookLang, setWebhookLang] = useState<'python' | 'javascript'>('python')
+  const [webhookLang, setWebhookLang] = useState<'python' | 'javascript' | 'java'>('python')
 
   const doc = active !== 'sp' ? DOCS[active] : null
 
   const postCodeMap: Record<Lang, string> = doc
-    ? { curl: doc.curlExample, python: doc.pythonExample, javascript: doc.jsExample }
-    : { curl: '', python: '', javascript: '' }
+    ? { curl: doc.curlExample, python: doc.pythonExample, javascript: doc.jsExample, java: doc.javaExample }
+    : { curl: '', python: '', javascript: '', java: '' }
 
   const getCodeMap: Record<Lang, string> = doc
-    ? { curl: doc.getCurlExample, python: doc.getPythonExample, javascript: doc.getJsExample }
-    : { curl: '', python: '', javascript: '' }
+    ? { curl: doc.getCurlExample, python: doc.getPythonExample, javascript: doc.getJsExample, java: doc.getJavaExample }
+    : { curl: '', python: '', javascript: '', java: '' }
 
   return (
     <div style={{ padding: '32px 24px', maxWidth: '900px', margin: '0 auto' }}>
@@ -642,7 +749,7 @@ export function DocumentacaoPage() {
               code={postCodeMap[postLang]}
               lang={postLang}
               onLangChange={setPostLang}
-              langs={['curl', 'python', 'javascript']}
+              langs={['curl', 'python', 'javascript', 'java']}
             />
           </Card>
 
@@ -652,7 +759,7 @@ export function DocumentacaoPage() {
               code={getCodeMap[getLang]}
               lang={getLang}
               onLangChange={setGetLang}
-              langs={['curl', 'python', 'javascript']}
+              langs={['curl', 'python', 'javascript', 'java']}
             />
           </Card>
 
@@ -758,7 +865,7 @@ export function DocumentacaoPage() {
                 Exemplo de handler no seu sistema
               </div>
               <div style={{ display: 'flex', gap: '6px', marginBottom: '14px', alignItems: 'center' }}>
-                {(['python', 'javascript'] as const).map((l) => (
+                {(['python', 'javascript', 'java'] as const).map((l) => (
                   <button
                     key={l}
                     type="button"
@@ -781,7 +888,7 @@ export function DocumentacaoPage() {
                   </button>
                 ))}
                 <div style={{ flex: 1 }} />
-                <CopyButton text={webhookLang === 'python' ? WEBHOOK_HANDLER_PYTHON : WEBHOOK_HANDLER_JS} />
+                <CopyButton text={webhookLang === 'python' ? WEBHOOK_HANDLER_PYTHON : webhookLang === 'java' ? WEBHOOK_HANDLER_JAVA : WEBHOOK_HANDLER_JS} />
               </div>
               <pre
                 style={{
@@ -798,7 +905,7 @@ export function DocumentacaoPage() {
                   whiteSpace: 'pre',
                 }}
               >
-                {webhookLang === 'python' ? WEBHOOK_HANDLER_PYTHON : WEBHOOK_HANDLER_JS}
+                {webhookLang === 'python' ? WEBHOOK_HANDLER_PYTHON : webhookLang === 'java' ? WEBHOOK_HANDLER_JAVA : WEBHOOK_HANDLER_JS}
               </pre>
             </div>
 

@@ -27,6 +27,7 @@ import type {
 } from '@/types'
 import { API_BASE_URL, USE_MOCK_API } from '@/config/runtime'
 import { clearAuthTokens, getAccessToken, getRefreshToken, setAuthTokens } from '@/utils/authStorage'
+import { useAuthStore } from '@/store/auth'
 
 const apiBaseUrl = API_BASE_URL
 
@@ -245,9 +246,9 @@ http.interceptors.response.use(
         queue = []
         return http(original)
       } catch {
-        clearAuthTokens()
+        queue = []
+        useAuthStore.getState().logout()
         if (typeof window !== 'undefined') {
-          window.sessionStorage.removeItem('validaenota-auth')
           window.location.href = '/login'
         }
       } finally {
