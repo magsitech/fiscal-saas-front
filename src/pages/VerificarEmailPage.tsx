@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { Mail } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { authApi } from '@/services/api'
@@ -7,9 +7,9 @@ import { Spinner } from '@/components/ui'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 
 export function VerificarEmailPage() {
-  const [params] = useSearchParams()
   const navigate = useNavigate()
-  const email = params.get('email') ?? ''
+  const { state } = useLocation()
+  const email: string = state?.email ?? ''
   const [loading, setLoading] = useState(false)
   const [reenvioAt, setReenvioAt] = useState<number | null>(null)
   const [cooldownRestante, setCooldownRestante] = useState(0)

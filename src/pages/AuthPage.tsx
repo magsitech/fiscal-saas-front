@@ -324,7 +324,7 @@ export function AuthPage() {
         senha: pfForm.senha,
         confirmacao_senha: pfForm.confirmar,
       })
-      navigate(`/verificar-email?email=${encodeURIComponent(pfForm.email)}`)
+      navigate('/verificar-email', { state: { email: pfForm.email } })
     } catch (err: any) {
       toast.error(err?.response?.data?.detail ?? 'Erro ao criar conta')
     } finally {
@@ -346,7 +346,7 @@ export function AuthPage() {
         senha: pjForm.senha,
         confirmacao_senha: pjForm.confirmar,
       })
-      navigate(`/verificar-email?email=${encodeURIComponent(pjForm.email)}`)
+      navigate('/verificar-email', { state: { email: pjForm.email } })
     } catch (err: any) {
       toast.error(err?.response?.data?.detail ?? 'Erro ao criar conta')
     } finally {
