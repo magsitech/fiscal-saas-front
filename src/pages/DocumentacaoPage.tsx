@@ -208,6 +208,7 @@ const STATUS_TABLE = [
   { status: 'AUTORIZADA', color: '#00d4aa', description: 'Nota autorizada pela SEFAZ' },
   { status: 'CANCELADA', color: '#ef4444', description: 'Nota cancelada pelo emitente' },
   { status: 'DENEGADA', color: '#f97316', description: 'Nota denegada pela SEFAZ' },
+  { status: 'PENDENTE', color: '#a78bfa', description: 'Consulta recebida, aguardando o worker iniciar — tente o GET novamente em alguns segundos' },
   { status: 'PROCESSANDO', color: '#a78bfa', description: 'Consulta em andamento — tente o GET novamente em alguns segundos' },
   { status: 'CACHE_HIT', color: '#60a5fa', description: 'Resultado retornado do cache (sem custo adicional)' },
   { status: 'ERRO', color: '#ef4444', description: 'Falha na comunicação com a SEFAZ' },
