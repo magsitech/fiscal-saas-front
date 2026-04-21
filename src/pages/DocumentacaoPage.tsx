@@ -19,32 +19,35 @@ const DOC_OPTIONS: DocOption[] = [
 const BASE_URL = 'https://api.validaenota.com.br'
 
 interface DocContent {
-  endpoint: string
-  method: string
+  postEndpoint: string
+  getEndpoint: string
   description: string
   requestFields: Array<{ field: string; type: string; required: boolean; description: string }>
   curlExample: string
   pythonExample: string
   jsExample: string
+  getCurlExample: string
+  getPythonExample: string
+  getJsExample: string
   responseExample: string
 }
 
 const DOCS: Record<Exclude<DocSection, 'sp'>, DocContent> = {
   'rj-resumida': {
-    endpoint: `${BASE_URL}/rj/consultar-nota/resumida`,
-    method: 'POST',
+    postEndpoint: `${BASE_URL}/rj/consultar-nota/resumida`,
+    getEndpoint: `${BASE_URL}/rj/consultar-nota/resumida/{auditoria_id}`,
     description:
-      'Consulta resumida de NF-e/NFC-e emitidas no Estado do Rio de Janeiro. Retorna status SEFAZ e dados básicos da nota. Processamento assíncrono — use o auditoria_id para consultar o resultado.',
+      'Consulta resumida de NF-e/NFC-e emitidas no Estado do Rio de Janeiro. Retorna status SEFAZ e dados básicos da nota.',
     requestFields: [
       { field: 'chave_nf', type: 'string', required: true, description: 'Chave de acesso da nota fiscal (44 dígitos)' },
-      { field: 'webhook_url', type: 'string', required: false, description: 'URL para receber callback quando o resultado estiver disponível' },
+      { field: 'webhook_url', type: 'string | null', required: false, description: 'URL para receber o resultado via POST quando o worker terminar. Se omitido, a requisição aguarda de forma síncrona (até 120s).' },
     ],
     curlExample: `curl -X POST "${BASE_URL}/rj/consultar-nota/resumida" \\
   -H "Authorization: Bearer <SUA_API_KEY>" \\
   -H "Content-Type: application/json" \\
   -d '{
     "chave_nf": "35240112345678000190550010000012341234567890",
-    "webhook_url": null
+    "webhook_url": "https://meu-sistema.com/webhook/nf"
   }'`,
     pythonExample: `import requests
 
@@ -55,7 +58,7 @@ headers = {
 }
 payload = {
     "chave_nf": "35240112345678000190550010000012341234567890",
-    "webhook_url": None
+    "webhook_url": "https://meu-sistema.com/webhook/nf"  # ou None para síncrono
 }
 
 response = requests.post(url, json=payload, headers=headers)
@@ -68,9 +71,27 @@ print(response.json())`,
   },
   body: JSON.stringify({
     chave_nf: "35240112345678000190550010000012341234567890",
-    webhook_url: null
+    webhook_url: "https://meu-sistema.com/webhook/nf" // ou null para síncrono
   })
 });
+
+const data = await response.json();
+console.log(data);`,
+    getCurlExample: `curl -X GET "${BASE_URL}/rj/consultar-nota/resumida/a1b2c3d4-e5f6-7890-abcd-ef1234567890" \\
+  -H "Authorization: Bearer <SUA_API_KEY>"`,
+    getPythonExample: `import requests
+
+auditoria_id = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+url = f"${BASE_URL}/rj/consultar-nota/resumida/{auditoria_id}"
+headers = {"Authorization": "Bearer <SUA_API_KEY>"}
+
+response = requests.get(url, headers=headers)
+print(response.json())`,
+    getJsExample: `const auditoriaId = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
+const response = await fetch(
+  \`${BASE_URL}/rj/consultar-nota/resumida/\${auditoriaId}\`,
+  { headers: { "Authorization": "Bearer <SUA_API_KEY>" } }
+);
 
 const data = await response.json();
 console.log(data);`,
@@ -92,20 +113,20 @@ console.log(data);`,
 }`,
   },
   'rj-completa': {
-    endpoint: `${BASE_URL}/rj/consultar-nota/completa`,
-    method: 'POST',
+    postEndpoint: `${BASE_URL}/rj/consultar-nota/completa`,
+    getEndpoint: `${BASE_URL}/rj/consultar-nota/completa/{auditoria_id}`,
     description:
-      'Consulta completa de NF-e/NFC-e emitidas no Estado do Rio de Janeiro. Retorna XML completo e todos os dados da nota. Processamento assíncrono — use o auditoria_id para consultar o resultado.',
+      'Consulta completa de NF-e/NFC-e emitidas no Estado do Rio de Janeiro. Retorna XML completo e todos os dados estruturados da nota.',
     requestFields: [
       { field: 'chave_nf', type: 'string', required: true, description: 'Chave de acesso da nota fiscal (44 dígitos)' },
-      { field: 'webhook_url', type: 'string', required: false, description: 'URL para receber callback quando o resultado estiver disponível' },
+      { field: 'webhook_url', type: 'string | null', required: false, description: 'URL para receber o resultado via POST quando o worker terminar. Se omitido, a requisição aguarda de forma síncrona (até 120s).' },
     ],
     curlExample: `curl -X POST "${BASE_URL}/rj/consultar-nota/completa" \\
   -H "Authorization: Bearer <SUA_API_KEY>" \\
   -H "Content-Type: application/json" \\
   -d '{
     "chave_nf": "35240112345678000190550010000012341234567890",
-    "webhook_url": null
+    "webhook_url": "https://meu-sistema.com/webhook/nf"
   }'`,
     pythonExample: `import requests
 
@@ -116,7 +137,7 @@ headers = {
 }
 payload = {
     "chave_nf": "35240112345678000190550010000012341234567890",
-    "webhook_url": None
+    "webhook_url": "https://meu-sistema.com/webhook/nf"  # ou None para síncrono
 }
 
 response = requests.post(url, json=payload, headers=headers)
@@ -129,9 +150,27 @@ print(response.json())`,
   },
   body: JSON.stringify({
     chave_nf: "35240112345678000190550010000012341234567890",
-    webhook_url: null
+    webhook_url: "https://meu-sistema.com/webhook/nf" // ou null para síncrono
   })
 });
+
+const data = await response.json();
+console.log(data);`,
+    getCurlExample: `curl -X GET "${BASE_URL}/rj/consultar-nota/completa/a1b2c3d4-e5f6-7890-abcd-ef1234567890" \\
+  -H "Authorization: Bearer <SUA_API_KEY>"`,
+    getPythonExample: `import requests
+
+auditoria_id = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+url = f"${BASE_URL}/rj/consultar-nota/completa/{auditoria_id}"
+headers = {"Authorization": "Bearer <SUA_API_KEY>"}
+
+response = requests.get(url, headers=headers)
+print(response.json())`,
+    getJsExample: `const auditoriaId = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
+const response = await fetch(
+  \`${BASE_URL}/rj/consultar-nota/completa/\${auditoriaId}\`,
+  { headers: { "Authorization": "Bearer <SUA_API_KEY>" } }
+);
 
 const data = await response.json();
 console.log(data);`,
@@ -159,7 +198,7 @@ console.log(data);`,
         "valor_total": "1500.00"
       }
     ],
-    "xml": "<?xml version=\"1.0\"?>..."
+    "xml": "<?xml version=\\"1.0\\"?>..."
   }
 }`,
   },
@@ -169,12 +208,63 @@ const STATUS_TABLE = [
   { status: 'AUTORIZADA', color: '#00d4aa', description: 'Nota autorizada pela SEFAZ' },
   { status: 'CANCELADA', color: '#ef4444', description: 'Nota cancelada pelo emitente' },
   { status: 'DENEGADA', color: '#f97316', description: 'Nota denegada pela SEFAZ' },
-  { status: 'PROCESSANDO', color: '#a78bfa', description: 'Consulta em andamento' },
+  { status: 'PROCESSANDO', color: '#a78bfa', description: 'Consulta em andamento — tente o GET novamente em alguns segundos' },
   { status: 'CACHE_HIT', color: '#60a5fa', description: 'Resultado retornado do cache (sem custo adicional)' },
   { status: 'ERRO', color: '#ef4444', description: 'Falha na comunicação com a SEFAZ' },
 ]
 
 type Lang = 'curl' | 'python' | 'javascript'
+
+const WEBHOOK_PAYLOAD_EXAMPLE = `{
+  "auditoria_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "chave_nf": "35240112345678000190550010000012341234567890",
+  "modelo": "55",
+  "uf": "rj",
+  "status": "AUTORIZADA",
+  "mensagem": "Nota autorizada pela SEFAZ",
+  "cache_hit": false,
+  "dados_nf": { ... }
+}`
+
+const WEBHOOK_HANDLER_PYTHON = `from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+
+@app.route("/webhook/nf", methods=["POST"])
+def receber_resultado():
+    dados = request.get_json()
+
+    auditoria_id = dados["auditoria_id"]
+    status = dados["status"]
+    dados_nf = dados.get("dados_nf")
+
+    # Processe conforme o status
+    if status == "AUTORIZADA":
+        print(f"Nota {auditoria_id} autorizada:", dados_nf)
+    elif status in ("CANCELADA", "DENEGADA", "ERRO"):
+        print(f"Nota {auditoria_id} com problema: {status}")
+
+    return jsonify({"ok": True}), 200`
+
+const WEBHOOK_HANDLER_JS = `import express from "express";
+
+const app = express();
+app.use(express.json());
+
+app.post("/webhook/nf", (req, res) => {
+  const { auditoria_id, status, dados_nf } = req.body;
+
+  if (status === "AUTORIZADA") {
+    console.log("Nota autorizada:", auditoria_id, dados_nf);
+  } else if (["CANCELADA", "DENEGADA", "ERRO"].includes(status)) {
+    console.warn("Nota com problema:", auditoria_id, status);
+  }
+
+  // Sempre responda 200 — caso contrário o sistema pode retentar
+  res.json({ ok: true });
+});
+
+app.listen(3000);`
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false)
@@ -211,14 +301,93 @@ function CopyButton({ text }: { text: string }) {
   )
 }
 
+function CodeBlock({ code, lang, onLangChange, langs }: {
+  code: string
+  lang: Lang
+  onLangChange: (l: Lang) => void
+  langs: Lang[]
+}) {
+  return (
+    <>
+      <div style={{ display: 'flex', gap: '6px', marginBottom: '14px', alignItems: 'center' }}>
+        {langs.map((l) => (
+          <button
+            key={l}
+            type="button"
+            onClick={() => onLangChange(l)}
+            style={{
+              padding: '5px 13px',
+              borderRadius: '9px',
+              fontSize: '12px',
+              fontWeight: 700,
+              border: lang === l ? '1px solid var(--accent-glow)' : '1px solid var(--border)',
+              background: lang === l ? 'var(--accent-dim)' : 'var(--surface-2)',
+              color: lang === l ? 'var(--accent)' : 'var(--text-muted)',
+              cursor: 'pointer',
+              fontFamily: 'var(--sans)',
+              transition: 'all .15s',
+              textTransform: l === 'curl' ? 'uppercase' : 'capitalize',
+            }}
+          >
+            {l}
+          </button>
+        ))}
+        <div style={{ flex: 1 }} />
+        <CopyButton text={code} />
+      </div>
+      <pre
+        style={{
+          margin: 0,
+          padding: '16px',
+          background: 'var(--surface-2)',
+          border: '1px solid var(--border)',
+          borderRadius: '12px',
+          fontFamily: 'var(--mono)',
+          fontSize: '12px',
+          color: 'var(--text)',
+          overflowX: 'auto',
+          lineHeight: 1.7,
+          whiteSpace: 'pre',
+        }}
+      >
+        {code}
+      </pre>
+    </>
+  )
+}
+
+function Card({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
+        borderRadius: '16px',
+        padding: '20px 24px',
+      }}
+    >
+      <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: '14px' }}>
+        {title}
+      </div>
+      {children}
+    </div>
+  )
+}
+
 export function DocumentacaoPage() {
   const [active, setActive] = useState<DocSection>('rj-resumida')
-  const [lang, setLang] = useState<Lang>('curl')
+  const [postLang, setPostLang] = useState<Lang>('curl')
+  const [getLang, setGetLang] = useState<Lang>('curl')
+  const [webhookLang, setWebhookLang] = useState<'python' | 'javascript'>('python')
 
   const doc = active !== 'sp' ? DOCS[active] : null
 
-  const codeMap: Record<Lang, string> = doc
+  const postCodeMap: Record<Lang, string> = doc
     ? { curl: doc.curlExample, python: doc.pythonExample, javascript: doc.jsExample }
+    : { curl: '', python: '', javascript: '' }
+
+  const getCodeMap: Record<Lang, string> = doc
+    ? { curl: doc.getCurlExample, python: doc.getPythonExample, javascript: doc.getJsExample }
     : { curl: '', python: '', javascript: '' }
 
   return (
@@ -294,19 +463,10 @@ export function DocumentacaoPage() {
 
       {doc && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {/* Endpoint */}
-          <div
-            style={{
-              background: 'var(--surface)',
-              border: '1px solid var(--border)',
-              borderRadius: '16px',
-              padding: '20px 24px',
-            }}
-          >
-            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: '10px' }}>
-              Endpoint
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+
+          {/* POST Endpoint */}
+          <Card title="Endpoint — Iniciar Consulta">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '14px' }}>
               <span
                 style={{
                   padding: '4px 10px',
@@ -320,29 +480,46 @@ export function DocumentacaoPage() {
                   letterSpacing: '.06em',
                 }}
               >
-                {doc.method}
+                POST
               </span>
               <code style={{ fontFamily: 'var(--mono)', fontSize: '13px', color: 'var(--text)', wordBreak: 'break-all' }}>
-                {doc.endpoint}
+                {doc.postEndpoint}
               </code>
             </div>
-            <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.7, marginTop: '14px', marginBottom: 0 }}>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.7, marginBottom: 0 }}>
               {doc.description}
             </p>
-          </div>
+          </Card>
+
+          {/* GET Endpoint */}
+          <Card title="Endpoint — Consultar Resultado">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '14px' }}>
+              <span
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: '8px',
+                  background: 'rgba(96,165,250,0.1)',
+                  border: '1px solid rgba(96,165,250,0.2)',
+                  color: '#60a5fa',
+                  fontSize: '12px',
+                  fontWeight: 800,
+                  fontFamily: 'var(--mono)',
+                  letterSpacing: '.06em',
+                }}
+              >
+                GET
+              </span>
+              <code style={{ fontFamily: 'var(--mono)', fontSize: '13px', color: 'var(--text)', wordBreak: 'break-all' }}>
+                {doc.getEndpoint}
+              </code>
+            </div>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.7, marginBottom: 0 }}>
+              Use o <code style={{ fontFamily: 'var(--mono)', color: 'var(--text)', background: 'var(--surface-2)', padding: '1px 5px', borderRadius: '4px' }}>auditoria_id</code> retornado pelo POST para consultar o resultado. Útil quando o status ainda for <strong style={{ color: '#a78bfa' }}>PROCESSANDO</strong>.
+            </p>
+          </Card>
 
           {/* Auth */}
-          <div
-            style={{
-              background: 'var(--surface)',
-              border: '1px solid var(--border)',
-              borderRadius: '16px',
-              padding: '20px 24px',
-            }}
-          >
-            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: '10px' }}>
-              Autenticação
-            </div>
+          <Card title="Autenticação">
             <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.7, marginBottom: '10px' }}>
               Envie sua API Key no header <code style={{ fontFamily: 'var(--mono)', color: 'var(--text)', background: 'var(--surface-2)', padding: '1px 6px', borderRadius: '5px' }}>Authorization</code> como Bearer token:
             </p>
@@ -355,28 +532,19 @@ export function DocumentacaoPage() {
                 borderRadius: '10px',
                 padding: '12px 14px',
                 color: 'var(--text-muted)',
+                marginBottom: '10px',
               }}
             >
               Authorization: Bearer <span style={{ color: 'var(--accent)' }}>{'<SUA_API_KEY>'}</span>
             </div>
-            <p style={{ fontSize: '12px', color: 'var(--text-dim)', marginTop: '10px', marginBottom: 0 }}>
+            <p style={{ fontSize: '12px', color: 'var(--text-dim)', marginBottom: 0 }}>
               Gere e gerencie suas API Keys na página de{' '}
               <span style={{ color: 'var(--accent)' }}>Perfil</span>.
             </p>
-          </div>
+          </Card>
 
           {/* Request body */}
-          <div
-            style={{
-              background: 'var(--surface)',
-              border: '1px solid var(--border)',
-              borderRadius: '16px',
-              padding: '20px 24px',
-            }}
-          >
-            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: '14px' }}>
-              Corpo da Requisição (JSON)
-            </div>
+          <Card title="Corpo da Requisição (JSON)">
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                 <thead>
@@ -433,78 +601,63 @@ export function DocumentacaoPage() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </Card>
 
-          {/* Code examples */}
-          <div
-            style={{
-              background: 'var(--surface)',
-              border: '1px solid var(--border)',
-              borderRadius: '16px',
-              padding: '20px 24px',
-            }}
-          >
-            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: '14px' }}>
-              Exemplo de Código
-            </div>
-            <div style={{ display: 'flex', gap: '6px', marginBottom: '14px' }}>
-              {(['curl', 'python', 'javascript'] as Lang[]).map((l) => (
-                <button
-                  key={l}
-                  type="button"
-                  onClick={() => setLang(l)}
-                  style={{
-                    padding: '5px 13px',
-                    borderRadius: '9px',
-                    fontSize: '12px',
-                    fontWeight: 700,
-                    border: lang === l ? '1px solid var(--accent-glow)' : '1px solid var(--border)',
-                    background: lang === l ? 'var(--accent-dim)' : 'var(--surface-2)',
-                    color: lang === l ? 'var(--accent)' : 'var(--text-muted)',
-                    cursor: 'pointer',
-                    fontFamily: 'var(--sans)',
-                    transition: 'all .15s',
-                    textTransform: l === 'curl' ? 'uppercase' : 'capitalize',
-                  }}
-                >
-                  {l}
-                </button>
-              ))}
-              <div style={{ flex: 1 }} />
-              <CopyButton text={codeMap[lang]} />
-            </div>
-            <pre
+          {/* Sync vs Async note */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div
               style={{
-                margin: 0,
-                padding: '16px',
-                background: 'var(--surface-2)',
-                border: '1px solid var(--border)',
-                borderRadius: '12px',
-                fontFamily: 'var(--mono)',
-                fontSize: '12px',
-                color: 'var(--text)',
-                overflowX: 'auto',
+                background: 'rgba(0,212,170,0.05)',
+                border: '1px solid rgba(0,212,170,0.15)',
+                borderRadius: '14px',
+                padding: '16px 18px',
+                fontSize: '13px',
+                color: 'var(--text-muted)',
                 lineHeight: 1.7,
-                whiteSpace: 'pre',
               }}
             >
-              {codeMap[lang]}
-            </pre>
+              <strong style={{ color: 'var(--accent)', display: 'block', marginBottom: '6px' }}>Sem webhook_url (síncrono)</strong>
+              A requisição aguarda o resultado por até <strong style={{ color: 'var(--text)' }}>120 segundos</strong>. Ideal para integrações simples onde você quer a resposta diretamente no retorno do POST.
+            </div>
+            <div
+              style={{
+                background: 'rgba(167,139,250,0.05)',
+                border: '1px solid rgba(167,139,250,0.15)',
+                borderRadius: '14px',
+                padding: '16px 18px',
+                fontSize: '13px',
+                color: 'var(--text-muted)',
+                lineHeight: 1.7,
+              }}
+            >
+              <strong style={{ color: '#a78bfa', display: 'block', marginBottom: '6px' }}>Com webhook_url (assíncrono)</strong>
+              O POST retorna imediatamente com o <code style={{ fontFamily: 'var(--mono)', color: 'var(--text)', background: 'var(--surface-2)', padding: '1px 5px', borderRadius: '4px' }}>auditoria_id</code>. Quando o worker terminar, fazemos um <strong style={{ color: 'var(--text)' }}>POST</strong> na sua URL com o resultado completo.
+            </div>
           </div>
 
+          {/* POST example */}
+          <Card title="Exemplo — Iniciar Consulta (POST)">
+            <CodeBlock
+              code={postCodeMap[postLang]}
+              lang={postLang}
+              onLangChange={setPostLang}
+              langs={['curl', 'python', 'javascript']}
+            />
+          </Card>
+
+          {/* GET example */}
+          <Card title="Exemplo — Consultar Resultado (GET)">
+            <CodeBlock
+              code={getCodeMap[getLang]}
+              lang={getLang}
+              onLangChange={setGetLang}
+              langs={['curl', 'python', 'javascript']}
+            />
+          </Card>
+
           {/* Response example */}
-          <div
-            style={{
-              background: 'var(--surface)',
-              border: '1px solid var(--border)',
-              borderRadius: '16px',
-              padding: '20px 24px',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '.12em' }}>
-                Exemplo de Resposta
-              </div>
+          <Card title="Exemplo de Resposta">
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '14px' }}>
               <CopyButton text={doc.responseExample} />
             </div>
             <pre
@@ -524,20 +677,10 @@ export function DocumentacaoPage() {
             >
               {doc.responseExample}
             </pre>
-          </div>
+          </Card>
 
           {/* Status table */}
-          <div
-            style={{
-              background: 'var(--surface)',
-              border: '1px solid var(--border)',
-              borderRadius: '16px',
-              padding: '20px 24px',
-            }}
-          >
-            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: '14px' }}>
-              Status Possíveis
-            </div>
+          <Card title="Status Possíveis">
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {STATUS_TABLE.map(({ status, color, description }) => (
                 <div
@@ -575,26 +718,104 @@ export function DocumentacaoPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
 
-          {/* Async note */}
-          <div
-            style={{
-              background: 'rgba(167,139,250,0.06)',
-              border: '1px solid rgba(167,139,250,0.18)',
-              borderRadius: '14px',
-              padding: '16px 20px',
-              fontSize: '13px',
-              color: 'var(--text-muted)',
-              lineHeight: 1.7,
-            }}
-          >
-            <strong style={{ color: '#a78bfa' }}>Processamento assíncrono</strong> — A consulta retorna imediatamente com o{' '}
-            <code style={{ fontFamily: 'var(--mono)', color: 'var(--text)', background: 'var(--surface-2)', padding: '1px 5px', borderRadius: '4px' }}>auditoria_id</code>.
-            {' '}Use esse ID para acompanhar o resultado na aba <strong style={{ color: 'var(--text)' }}>Auditoria</strong> ou configure um{' '}
-            <code style={{ fontFamily: 'var(--mono)', color: 'var(--text)', background: 'var(--surface-2)', padding: '1px 5px', borderRadius: '4px' }}>webhook_url</code>{' '}
-            para receber o callback automaticamente quando o processamento concluir.
-          </div>
+          {/* Webhook section */}
+          <Card title="Recebendo o Resultado via Webhook">
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.7, marginBottom: '16px' }}>
+              Quando o worker conclui o processamento, fazemos um <strong style={{ color: 'var(--text)' }}>POST</strong> na URL que você informou em <code style={{ fontFamily: 'var(--mono)', color: 'var(--text)', background: 'var(--surface-2)', padding: '1px 5px', borderRadius: '4px' }}>webhook_url</code> com o resultado no corpo:
+            </p>
+
+            <div style={{ marginBottom: '20px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '10px' }}>
+                Payload enviado para sua URL
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+                <CopyButton text={WEBHOOK_PAYLOAD_EXAMPLE} />
+              </div>
+              <pre
+                style={{
+                  margin: 0,
+                  padding: '16px',
+                  background: 'var(--surface-2)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '12px',
+                  fontFamily: 'var(--mono)',
+                  fontSize: '12px',
+                  color: 'var(--text)',
+                  overflowX: 'auto',
+                  lineHeight: 1.7,
+                  whiteSpace: 'pre',
+                }}
+              >
+                {WEBHOOK_PAYLOAD_EXAMPLE}
+              </pre>
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '10px' }}>
+                Exemplo de handler no seu sistema
+              </div>
+              <div style={{ display: 'flex', gap: '6px', marginBottom: '14px', alignItems: 'center' }}>
+                {(['python', 'javascript'] as const).map((l) => (
+                  <button
+                    key={l}
+                    type="button"
+                    onClick={() => setWebhookLang(l)}
+                    style={{
+                      padding: '5px 13px',
+                      borderRadius: '9px',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      border: webhookLang === l ? '1px solid var(--accent-glow)' : '1px solid var(--border)',
+                      background: webhookLang === l ? 'var(--accent-dim)' : 'var(--surface-2)',
+                      color: webhookLang === l ? 'var(--accent)' : 'var(--text-muted)',
+                      cursor: 'pointer',
+                      fontFamily: 'var(--sans)',
+                      transition: 'all .15s',
+                      textTransform: 'capitalize',
+                    }}
+                  >
+                    {l}
+                  </button>
+                ))}
+                <div style={{ flex: 1 }} />
+                <CopyButton text={webhookLang === 'python' ? WEBHOOK_HANDLER_PYTHON : WEBHOOK_HANDLER_JS} />
+              </div>
+              <pre
+                style={{
+                  margin: 0,
+                  padding: '16px',
+                  background: 'var(--surface-2)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '12px',
+                  fontFamily: 'var(--mono)',
+                  fontSize: '12px',
+                  color: 'var(--text)',
+                  overflowX: 'auto',
+                  lineHeight: 1.7,
+                  whiteSpace: 'pre',
+                }}
+              >
+                {webhookLang === 'python' ? WEBHOOK_HANDLER_PYTHON : WEBHOOK_HANDLER_JS}
+              </pre>
+            </div>
+
+            <div
+              style={{
+                background: 'rgba(249,115,22,0.06)',
+                border: '1px solid rgba(249,115,22,0.18)',
+                borderRadius: '10px',
+                padding: '12px 16px',
+                fontSize: '12px',
+                color: 'var(--text-muted)',
+                lineHeight: 1.7,
+              }}
+            >
+              <strong style={{ color: '#f97316' }}>Importante:</strong> sua URL de webhook deve responder com HTTP <strong style={{ color: 'var(--text)' }}>200</strong> dentro de alguns segundos. Se não responder ou retornar erro, o sistema pode retentar a entrega. Certifique-se de que o endpoint seja idempotente.
+            </div>
+          </Card>
+
         </div>
       )}
     </div>
