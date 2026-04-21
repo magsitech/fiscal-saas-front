@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Mail } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -12,8 +12,18 @@ export function VerificarEmailPage() {
   const email = params.get('email') ?? ''
   const [loading, setLoading] = useState(false)
   const [reenvioAt, setReenvioAt] = useState<number | null>(null)
+  const [cooldownRestante, setCooldownRestante] = useState(0)
 
-  const cooldownRestante = reenvioAt ? Math.max(0, 60 - Math.floor((Date.now() - reenvioAt) / 1000)) : 0
+  useEffect(() => {
+    if (!reenvioAt) return
+    setCooldownRestante(60)
+    const timer = setInterval(() => {
+      const restante = Math.max(0, 60 - Math.floor((Date.now() - reenvioAt) / 1000))
+      setCooldownRestante(restante)
+      if (restante === 0) clearInterval(timer)
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [reenvioAt])
 
   async function handleReenviar() {
     if (cooldownRestante > 0) {
