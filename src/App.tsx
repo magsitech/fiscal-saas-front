@@ -12,6 +12,7 @@ import {
   SimuladorPage, CreditosPage,
 } from '@/pages/ManagementPages'
 import { PerfilPage } from '@/pages/PerfilPage'
+import { DocumentacaoPage } from '@/pages/DocumentacaoPage'
 import { ConfirmarEmailPage } from '@/pages/ConfirmarEmailPage'
 import { RedefinirSenhaPage } from '@/pages/RedefinirSenhaPage'
 import { VerificarEmailPage } from '@/pages/VerificarEmailPage'
@@ -144,6 +145,7 @@ export default function App() {
             <Route path="/app/pedidos" element={<PagamentosPage />} />
             <Route path="/app/simulador" element={<SimuladorPage />} />
             <Route path="/app/perfil" element={<PerfilPage />} />
+            <Route path="/app/documentacao" element={<DocumentacaoPage />} />
             <Route path="/app/validacoes" element={<Navigate to="/app/auditoria" replace />} />
             <Route path="/app/consumo" element={<Navigate to="/app/extrato" replace />} />
             <Route path="/app/pagamentos" element={<Navigate to="/app/pedidos" replace />} />

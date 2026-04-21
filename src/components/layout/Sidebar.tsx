@@ -1,6 +1,7 @@
 import type { MouseEvent as ReactMouseEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
+  Book,
   Calculator,
   CreditCard,
   FileText,
@@ -32,6 +33,12 @@ const NAV = [
       { to: '/app/pedidos', label: 'Pedidos', icon: Receipt },
       { to: '/app/simulador', label: 'Simulador', icon: Calculator },
       { to: '/app/perfil', label: 'Perfil', icon: User },
+    ],
+  },
+  {
+    section: 'Recursos',
+    items: [
+      { to: '/app/documentacao', label: 'Documentação', icon: Book },
     ],
   },
 ]
