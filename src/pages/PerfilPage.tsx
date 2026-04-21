@@ -19,7 +19,7 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import type { ApiKeyCreateResponse, ApiKeyInfo } from '@/types'
-import { apiKeyApi } from '@/services/api'
+import { apiKeyApi, authApi } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
 import { Skeleton, Spinner } from '@/components/ui'
 
@@ -307,8 +307,12 @@ export function PerfilPage() {
     if (!perfil.nome.trim()) return toast.error('Nome é obrigatório')
     setSavingPerfil(true)
     try {
-      await new Promise((resolve) => setTimeout(resolve, 800))
-      if (usuario) setUsuario({ ...usuario, nome: perfil.nome, nome_fantasia: perfil.nome_fantasia || null, email: perfil.email, telefone: perfil.telefone || null })
+      const atualizado = await authApi.atualizarPerfil({
+        nome: perfil.nome,
+        nome_fantasia: perfil.nome_fantasia || null,
+        telefone: perfil.telefone || null,
+      })
+      setUsuario(atualizado)
       toast.success('Perfil atualizado!')
     } catch { toast.error('Erro ao salvar perfil') }
     finally { setSavingPerfil(false) }

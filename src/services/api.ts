@@ -3,6 +3,7 @@ import type {
   ApiKeyCreateResponse,
   ApiKeyInfo,
   AuditoriaItem,
+  AtualizarPerfilPayload,
   Cliente,
   ConfirmarEmailResponse,
   ConsultarNotaPayload,
@@ -313,6 +314,15 @@ export const authApi = {
 
   redefinirSenha: async (payload: RedefinirSenhaPayload) => {
     const { data } = await axios.post(`${apiBaseUrl}/auth/redefinir-senha`, payload)
+    return data
+  },
+
+  atualizarPerfil: async (payload: AtualizarPerfilPayload) => {
+    if (USE_MOCK_API) {
+      const { mockAuthApi } = await loadMockApi()
+      return mockAuthApi.atualizarPerfil(payload)
+    }
+    const { data } = await http.patch<Cliente>('/clientes/me', payload)
     return data
   },
 }

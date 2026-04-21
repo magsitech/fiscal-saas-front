@@ -17,6 +17,7 @@ import type {
   StatusAuditoria,
   TipoMovimentacao,
   TokenResponse,
+  AtualizarPerfilPayload,
   ConsultarNotaPayload,
   ConsultarNotaResponse,
   TipoConsulta,
@@ -619,6 +620,19 @@ export const mockAuthApi = {
 
   async me() {
     return delay(sanitizeUser(getCurrentUserOrFail()))
+  },
+
+  async atualizarPerfil(payload: AtualizarPerfilPayload) {
+    const db = readDb()
+    const user = getCurrentUserOrFail()
+    const idx = db.users.findIndex((u) => u.id === user.id)
+    if (idx !== -1) {
+      if (payload.nome !== undefined) db.users[idx].nome = payload.nome
+      if (payload.nome_fantasia !== undefined) db.users[idx].nome_fantasia = payload.nome_fantasia ?? null
+      if (payload.telefone !== undefined) db.users[idx].telefone = payload.telefone ?? null
+      writeDb(db)
+    }
+    return delay(sanitizeUser(db.users[idx]))
   },
 }
 

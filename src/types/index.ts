@@ -58,6 +58,12 @@ export interface RedefinirSenhaPayload {
   nova_senha: string
 }
 
+export interface AtualizarPerfilPayload {
+  nome?: string
+  nome_fantasia?: string | null
+  telefone?: string | null
+}
+
 export interface Cliente {
   id: string
   tipo: TipoCliente
