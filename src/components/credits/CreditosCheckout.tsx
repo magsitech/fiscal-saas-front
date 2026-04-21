@@ -4,7 +4,7 @@ import { ptBR } from 'date-fns/locale'
 import { Banknote, Check, Copy, ExternalLink, Landmark, MapPinHouse, QrCode, RefreshCw, Sparkles } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { pedidosApi } from '@/services/api'
-import type { IniciarPedidoRequest, MetodoPagamento, PedidoDetalhe, PedidoStatusGatewayInfo } from '@/types'
+import type { IniciarPedidoRequest, MetodoPagamento, PedidoDetalhe } from '@/types'
 import { Badge, Card, CardHeader, CardTitle, Input, Spinner } from '@/components/ui'
 const POLLING_INTERVAL_MS = 5000
 
@@ -20,8 +20,8 @@ type BoletoFormState = {
 }
 
 const PAYMENT_OPTIONS: Array<{ id: MetodoAtivo; label: string; note: string; icon: React.ReactNode }> = [
-  { id: 'PIX', label: 'PIX', note: 'Geração imediata com copia e cola, QR Code e checkout do Mercado Pago.', icon: <Sparkles size={16} /> },
-  { id: 'BOLETO', label: 'Boleto bancário', note: 'Gere o pedido com os dados do pagador e conclua no Mercado Pago.', icon: <Landmark size={16} /> },
+  { id: 'PIX', label: 'PIX', note: 'Geração imediata com copia e cola e QR Code.', icon: <Sparkles size={16} /> },
+  { id: 'BOLETO', label: 'Boleto bancário', note: 'Gere o pedido com os dados do pagador.', icon: <Landmark size={16} /> },
 ]
 
 const EMPTY_BOLETO_FORM: BoletoFormState = {
@@ -99,16 +99,12 @@ function normalizePedidoCriadoToDetalhe(response: Awaited<ReturnType<typeof pedi
 
 function getStatusMessage(pedido: PedidoDetalhe) {
   if (pedido.status === 'PAGO') return 'Pagamento confirmado. O saldo será refletido conforme a confirmação oficial do backend.'
-  if (pedido.status === 'AGUARDANDO_PAGAMENTO') return 'Pedido aguardando pagamento. Use os dados abaixo ou conclua a transação no Mercado Pago.'
+  if (pedido.status === 'AGUARDANDO_PAGAMENTO') return 'Pedido aguardando pagamento. Use os dados abaixo para concluir a transação.'
   if (pedido.status === 'CANCELADO') return 'Pedido cancelado. O fluxo de pagamento foi encerrado.'
   if (pedido.status === 'EXPIRADO') return 'Pedido expirado. Gere um novo pedido para continuar.'
   return 'Pedido criado e aguardando atualização de status pelo backend.'
 }
 
-function getMpStatusLabel(info: PedidoStatusGatewayInfo) {
-  if (!info.mp_status && !info.mp_status_detail) return null
-  return [info.mp_status, info.mp_status_detail].filter(Boolean).join(' / ')
-}
 
 function isQrImageSource(value?: string | null) {
   return typeof value === 'string' && (value.startsWith('data:image') || value.startsWith('http'))
@@ -154,7 +150,6 @@ export function CreditosCheckout() {
 
   const shouldShowBoletoForm = metodo === 'BOLETO'
   const canContinue = Boolean(pedido?.checkout_url) && Boolean(pedido && isContinuable(pedido.status))
-  const mpStatusLabel = pedido ? getMpStatusLabel(pedido) : null
   const boletoMissingFields = useMemo(() => {
     if (!shouldShowBoletoForm) return []
     return Object.entries(boletoForm)
@@ -271,9 +266,8 @@ export function CreditosCheckout() {
 
         <div style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
           <div style={{ padding: '20px 22px', borderRadius: '18px', background: 'linear-gradient(135deg, color-mix(in srgb, var(--accent-dim) 88%, transparent), color-mix(in srgb, var(--info-dim) 42%, transparent))', border: '1px solid var(--accent-glow)', fontSize: '13px', lineHeight: 1.8, boxShadow: '0 16px 34px rgba(0,212,170,0.08)' }}>
-            <span style={{ color: 'var(--accent)', fontWeight: 700 }}>Mercado Pago.</span>{' '}
             <span style={{ color: 'var(--text-muted)' }}>
-              Gere seu pedido por PIX ou boleto e acompanhe tudo por aqui. Assim que o checkout estiver disponível, você poderá concluir o pagamento com segurança no Mercado Pago.
+              Gere seu pedido por PIX ou boleto e acompanhe tudo por aqui. Assim que o checkout estiver disponível, você poderá concluir o pagamento com segurança.
             </span>
           </div>
 
@@ -455,12 +449,6 @@ export function CreditosCheckout() {
                   {getStatusMessage(pedido)}
                 </div>
 
-                {mpStatusLabel && (
-                  <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                    Mercado Pago: <span style={{ fontFamily: 'var(--mono)', color: 'var(--text)' }}>{mpStatusLabel}</span>
-                  </div>
-                )}
-
                 {pedido.metodo === 'PIX' && pedido.pix_copia_cola && (
                   <>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>
@@ -490,7 +478,7 @@ export function CreditosCheckout() {
                           </span>
                           <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
                             <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>{copiedPix ? 'Código copiado' : 'Copiar código PIX'}</span>
-                            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Use no app do banco ou no checkout do Mercado Pago</span>
+                            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Use no app do banco ou escaneie o QR Code</span>
                           </span>
                         </span>
                         <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: copiedPix ? '#7ef3c5' : 'var(--accent)' }}>{copiedPix ? 'OK' : 'PIX'}</span>
@@ -504,10 +492,10 @@ export function CreditosCheckout() {
                             </span>
                             <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
                               <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>Concluir transação</span>
-                              <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>Abrir checkout do Mercado Pago</span>
+                              <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>Abrir checkout de pagamento</span>
                             </span>
                           </span>
-                          <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--text-dim)' }}>MP</span>
+                          <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--text-dim)' }}><ExternalLink size={12} /></span>
                         </a>
                       )}
                     </div>
@@ -546,10 +534,10 @@ export function CreditosCheckout() {
                             </span>
                             <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
                               <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>Concluir transação</span>
-                              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Abrir checkout do Mercado Pago</span>
+                              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Abrir checkout de pagamento</span>
                             </span>
                           </span>
-                          <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--accent)' }}>MP</span>
+                          <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--accent)' }}><ExternalLink size={12} /></span>
                         </a>
                       )}
 

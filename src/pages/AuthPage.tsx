@@ -18,7 +18,7 @@ import { authApi } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
 import { Spinner } from '@/components/ui'
 
-type Mode = 'login' | 'tipo' | 'form-pf' | 'form-pj' | 'aguardando-email' | 'esqueci-senha'
+type Mode = 'login' | 'tipo' | 'form-pf' | 'form-pj' | 'esqueci-senha'
 
 const S = {
   root: {
@@ -229,8 +229,6 @@ export function AuthPage() {
   const [mode, setMode] = useState<Mode>('login')
   const [loading, setLoading] = useState(false)
   const [showPass, setShowPass] = useState(false)
-  const [emailCadastrado, setEmailCadastrado] = useState('')
-  const [reenvioAt, setReenvioAt] = useState<number | null>(null)
   const [showAside, setShowAside] = useState(() => (typeof window === 'undefined' ? true : window.innerWidth >= 901))
   const { setTokens, setUsuario } = useAuthStore()
   const navigate = useNavigate()
@@ -326,8 +324,7 @@ export function AuthPage() {
         senha: pfForm.senha,
         confirmacao_senha: pfForm.confirmar,
       })
-      setEmailCadastrado(pfForm.email)
-      setMode('aguardando-email')
+      navigate(`/verificar-email?email=${encodeURIComponent(pfForm.email)}`)
     } catch (err: any) {
       toast.error(err?.response?.data?.detail ?? 'Erro ao criar conta')
     } finally {
@@ -349,27 +346,9 @@ export function AuthPage() {
         senha: pjForm.senha,
         confirmacao_senha: pjForm.confirmar,
       })
-      setEmailCadastrado(pjForm.email)
-      setMode('aguardando-email')
+      navigate(`/verificar-email?email=${encodeURIComponent(pjForm.email)}`)
     } catch (err: any) {
       toast.error(err?.response?.data?.detail ?? 'Erro ao criar conta')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function handleReenviarConfirmacao() {
-    if (reenvioAt && Date.now() - reenvioAt < 60_000) {
-      toast.error('Aguarde 1 minuto antes de reenviar.')
-      return
-    }
-    setLoading(true)
-    try {
-      await authApi.reenviarConfirmacao({ email: emailCadastrado })
-      setReenvioAt(Date.now())
-      toast.success('E-mail reenviado! Verifique sua caixa de entrada.')
-    } catch (err: any) {
-      toast.error(err?.response?.data?.detail ?? 'Erro ao reenviar e-mail')
     } finally {
       setLoading(false)
     }
@@ -477,7 +456,7 @@ export function AuthPage() {
 
           <div style={S.card}>
             <div style={S.form} className="auth-form">
-              {mode !== 'aguardando-email' && mode !== 'esqueci-senha' && (
+              {mode !== 'esqueci-senha' && (
                 <div style={S.tabBar}>
                   <button style={S.tab(mode === 'login')} onClick={switchToLogin}>
                     Entrar
@@ -512,24 +491,6 @@ export function AuthPage() {
                     Não tem conta? <span style={S.linkSpan} onClick={switchToCadastro}>Criar conta</span>
                   </p>
                 </form>
-              )}
-
-              {mode === 'aguardando-email' && (
-                <div style={{ textAlign: 'center', padding: '12px 0' }}>
-                  <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: 'var(--accent-dim)', border: '1px solid var(--accent-glow)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-                    <Mail size={22} color="var(--accent)" />
-                  </div>
-                  <h2 style={{ fontSize: '22px', fontWeight: 700, marginBottom: '8px', letterSpacing: '-0.02em' }}>Confirme seu e-mail</h2>
-                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '24px' }}>
-                    Enviamos um link de ativação para <strong style={{ color: 'var(--text)' }}>{emailCadastrado}</strong>. Clique no link para ativar sua conta.
-                  </p>
-                  <button type="button" disabled={loading} style={S.submitBtn(loading)} onClick={handleReenviarConfirmacao}>
-                    {loading ? <Spinner size={16} /> : <>Reenviar e-mail</>}
-                  </button>
-                  <p style={S.linkTxt}>
-                    <span style={S.linkSpan} onClick={switchToLogin}>Voltar para o login</span>
-                  </p>
-                </div>
               )}
 
               {mode === 'esqueci-senha' && (
