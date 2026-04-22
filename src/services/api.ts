@@ -156,13 +156,26 @@ function normalizeMetodo(value: unknown) {
 }
 
 function normalizePedidoBase(raw: Record<string, unknown>) {
+  const gatewayStatus = typeof raw.gateway_status === 'string'
+    ? raw.gateway_status
+    : typeof raw.mp_status === 'string'
+      ? raw.mp_status
+      : null
+  const gatewayStatusDetail = typeof raw.gateway_status_detail === 'string'
+    ? raw.gateway_status_detail
+    : typeof raw.mp_status_detail === 'string'
+      ? raw.mp_status_detail
+      : null
+
   return {
     id: String(raw.id ?? raw.pedido_id ?? ''),
     metodo: normalizeMetodo(raw.metodo ?? raw.metodo_pagamento),
     valor: String(raw.valor ?? '0.00'),
     status: String(raw.status ?? 'PENDENTE') as Pedido['status'],
-    mp_status: typeof raw.mp_status === 'string' ? raw.mp_status : null,
-    mp_status_detail: typeof raw.mp_status_detail === 'string' ? raw.mp_status_detail : null,
+    gateway_status: gatewayStatus,
+    gateway_status_detail: gatewayStatusDetail,
+    mp_status: gatewayStatus,
+    mp_status_detail: gatewayStatusDetail,
     descricao: typeof raw.descricao === 'string' ? raw.descricao : null,
     gateway_id: typeof raw.gateway_id === 'string' ? raw.gateway_id : raw.gateway_id == null ? null : String(raw.gateway_id),
     gateway_payload: (raw.gateway_payload ?? null) as Pedido['gateway_payload'],
@@ -175,6 +188,7 @@ function normalizePedidoBase(raw: Record<string, unknown>) {
     credito_expira_em: typeof raw.credito_expira_em === 'string' ? raw.credito_expira_em : null,
     confirmado_em: typeof raw.confirmado_em === 'string' ? raw.confirmado_em : null,
     criado_em: typeof raw.criado_em === 'string' ? raw.criado_em : new Date().toISOString(),
+    credito_lancado: typeof raw.credito_lancado === 'boolean' ? raw.credito_lancado : false,
   }
 }
 
@@ -190,13 +204,26 @@ function normalizePedidoDetalhe(payload: unknown): PedidoDetalhe {
 
 function normalizePedidoCriado(payload: unknown): IniciarPedidoResponse {
   const raw = unwrapPayload<Record<string, unknown>>(payload)
+  const gatewayStatus = typeof raw.gateway_status === 'string'
+    ? raw.gateway_status
+    : typeof raw.mp_status === 'string'
+      ? raw.mp_status
+      : null
+  const gatewayStatusDetail = typeof raw.gateway_status_detail === 'string'
+    ? raw.gateway_status_detail
+    : typeof raw.mp_status_detail === 'string'
+      ? raw.mp_status_detail
+      : null
+
   return {
     pedido_id: String(raw.pedido_id ?? raw.id ?? ''),
     metodo: normalizeMetodo(raw.metodo ?? raw.metodo_pagamento),
     valor: String(raw.valor ?? '0.00'),
     status: String(raw.status ?? 'PENDENTE') as IniciarPedidoResponse['status'],
-    mp_status: typeof raw.mp_status === 'string' ? raw.mp_status : null,
-    mp_status_detail: typeof raw.mp_status_detail === 'string' ? raw.mp_status_detail : null,
+    gateway_status: gatewayStatus,
+    gateway_status_detail: gatewayStatusDetail,
+    mp_status: gatewayStatus,
+    mp_status_detail: gatewayStatusDetail,
     gateway_id: typeof raw.gateway_id === 'string' ? raw.gateway_id : raw.gateway_id == null ? null : String(raw.gateway_id),
     gateway_payload: (raw.gateway_payload ?? null) as IniciarPedidoResponse['gateway_payload'],
     checkout_url: typeof raw.checkout_url === 'string' ? raw.checkout_url : null,

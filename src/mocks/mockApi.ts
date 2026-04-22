@@ -291,6 +291,8 @@ const DEFAULT_PEDIDOS: Pedido[] = [
     metodo: 'PIX',
     valor: '1000.00',
     status: 'PAGO',
+    gateway_status: 'approved',
+    gateway_status_detail: 'PAID',
     mp_status: null,
     mp_status_detail: null,
     confirmado_em: ago(5, 1, 40),
@@ -309,6 +311,8 @@ const DEFAULT_PEDIDOS: Pedido[] = [
     metodo: 'BOLETO',
     valor: '500.00',
     status: 'AGUARDANDO_PAGAMENTO',
+    gateway_status: 'pending',
+    gateway_status_detail: 'PENDING',
     mp_status: null,
     mp_status_detail: null,
     confirmado_em: null,
@@ -327,6 +331,8 @@ const DEFAULT_PEDIDOS: Pedido[] = [
     metodo: 'PIX',
     valor: '250.00',
     status: 'AGUARDANDO_PAGAMENTO',
+    gateway_status: 'pending',
+    gateway_status_detail: 'PENDING',
     mp_status: null,
     mp_status_detail: null,
     confirmado_em: null,
@@ -345,6 +351,8 @@ const DEFAULT_PEDIDOS: Pedido[] = [
     metodo: 'CARTAO',
     valor: '750.00',
     status: 'CANCELADO',
+    gateway_status: 'cancelled',
+    gateway_status_detail: 'CANCELLED',
     mp_status: null,
     mp_status_detail: null,
     confirmado_em: null,
@@ -363,6 +371,8 @@ const DEFAULT_PEDIDOS: Pedido[] = [
     metodo: 'BOLETO',
     valor: '300.00',
     status: 'EXPIRADO',
+    gateway_status: 'cancelled',
+    gateway_status_detail: 'EXPIRED',
     mp_status: null,
     mp_status_detail: null,
     confirmado_em: null,
@@ -683,9 +693,12 @@ export const mockPedidosApi = {
     const pedido = db.pedidos.find((item) => item.id === pedidoId)
     if (!pedido) fail('Pedido nao encontrado', 404)
     pedido.status = 'PAGO'
+    pedido.gateway_status = 'approved'
+    pedido.gateway_status_detail = 'PAID'
     pedido.mp_status = 'approved'
     pedido.mp_status_detail = 'accredited'
     pedido.confirmado_em = new Date().toISOString()
+    pedido.credito_lancado = true
     writeDb(db)
     return delay({ ok: true })
   },
@@ -699,6 +712,8 @@ export const mockPedidosApi = {
       metodo,
       valor: payload.valor.toFixed(2),
       status: 'AGUARDANDO_PAGAMENTO',
+      gateway_status: 'pending',
+      gateway_status_detail: 'PENDING',
       mp_status: null,
       mp_status_detail: metodo === 'PIX' ? 'pending_waiting_transfer' : 'pending_waiting_payment',
       confirmado_em: null,
@@ -715,6 +730,7 @@ export const mockPedidosApi = {
         : null,
       boleto_url: metodo === 'BOLETO' ? 'https://example.com/mock-boleto.pdf' : null,
       gateway_id: `mock_${now}`,
+      credito_lancado: false,
     }
 
     db.pedidos.unshift(novoPedido)
@@ -725,6 +741,8 @@ export const mockPedidosApi = {
       metodo,
       valor: novoPedido.valor,
       status: novoPedido.status,
+      gateway_status: novoPedido.gateway_status,
+      gateway_status_detail: novoPedido.gateway_status_detail,
       mp_status: novoPedido.mp_status,
       mp_status_detail: novoPedido.mp_status_detail,
       expira_em: novoPedido.expira_em,

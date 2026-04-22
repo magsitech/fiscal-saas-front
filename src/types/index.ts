@@ -175,6 +175,8 @@ export interface IniciarPedidoRequest extends Partial<PedidoBoletoPayerPayload>,
 }
 
 export interface PedidoStatusGatewayInfo {
+  gateway_status?: string | null
+  gateway_status_detail?: string | null
   mp_status?: string | null
   mp_status_detail?: string | null
   gateway_id?: string | null
@@ -198,6 +200,7 @@ export interface PedidoBase extends PedidoStatusGatewayInfo, PedidoPagamentoData
   credito_expira_em: string | null
   confirmado_em: string | null
   criado_em: string
+  credito_lancado?: boolean
 }
 
 export interface Pedido extends PedidoBase {}
