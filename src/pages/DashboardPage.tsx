@@ -7,7 +7,6 @@ import { dashboardApi, saldoApi } from '@/services/api'
 import type { AuditoriaItem, DashboardResumo, SaldoResumo } from '@/types'
 import {
   Badge,
-  Button,
   Card,
   CardHeader,
   CardTitle,
@@ -94,7 +93,7 @@ export function DashboardPage() {
     Promise.all([
       dashboardApi.resumo().catch(() => null),
       saldoApi.resumo().catch(() => null),
-      dashboardApi.auditoria({ limit: 6 }).catch(() => []),
+      dashboardApi.auditoria().catch(() => []),
     ]).then(([r, s, v]) => {
       setResumo(r)
       setSaldo(s)

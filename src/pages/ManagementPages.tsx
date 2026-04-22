@@ -349,8 +349,9 @@ export function ValidacoesPage() {
 
   useEffect(() => {
     setLoading(true)
-    dashboardApi.auditoria({ limit: 200 })
+    dashboardApi.auditoria()
       .then(setItems)
+      .catch(() => setItems([]))
       .finally(() => setLoading(false))
   }, [])
 
@@ -616,8 +617,9 @@ export function ConsumoPage() {
 
   useEffect(() => {
     setLoading(true)
-    dashboardApi.extrato({ limit: 200 })
+    dashboardApi.extrato()
       .then(setItems)
+      .catch(() => setItems([]))
       .finally(() => setLoading(false))
   }, [])
 
