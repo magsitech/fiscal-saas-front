@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type InputHTMLAttributes } from 'react'
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import {
@@ -22,6 +22,7 @@ import type { ApiKeyCreateResponse, ApiKeyInfo } from '@/types'
 import { apiKeyApi, authApi } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
 import { Skeleton, Spinner } from '@/components/ui'
+import { formatBrazilPhone, normalizeBrazilPhone } from '@/utils/phone'
 
 // ─── Botão inline reutilizável ────────────────────────────────
 type BtnVariant = 'primary' | 'ghost' | 'danger' | 'soft'
@@ -127,6 +128,9 @@ function Field({
   icon,
   error,
   readOnly,
+  helperText,
+  inputMode,
+  autoComplete,
 }: {
   label: string
   type?: string
@@ -136,6 +140,9 @@ function Field({
   icon?: React.ReactNode
   error?: string
   readOnly?: boolean
+  helperText?: string
+  inputMode?: InputHTMLAttributes<HTMLInputElement>['inputMode']
+  autoComplete?: string
 }) {
   const [focused, setFocused] = useState(false)
 
@@ -172,6 +179,8 @@ function Field({
           value={value}
           onChange={onChange}
           placeholder={placeholder}
+          inputMode={inputMode}
+          autoComplete={autoComplete}
           readOnly={readOnly}
           onFocus={e => {
             setFocused(true)
@@ -211,6 +220,11 @@ function Field({
       {error && (
         <span style={{ fontSize: '11px', color: 'var(--danger)', fontWeight: 600 }}>
           {error}
+        </span>
+      )}
+      {!error && helperText && (
+        <span style={{ fontSize: '11px', color: 'var(--text-dim)', fontWeight: 500 }}>
+          {helperText}
         </span>
       )}
     </div>
@@ -270,8 +284,9 @@ export function PerfilPage() {
     nome: usuario?.nome ?? '',
     nome_fantasia: usuario?.nome_fantasia ?? '',
     email: usuario?.email ?? '',
-    telefone: usuario?.telefone ?? '',
+    telefone: formatBrazilPhone(usuario?.telefone ?? ''),
   })
+  const [perfilErros, setPerfilErros] = useState<Record<string, string>>({})
   const [savingPerfil, setSavingPerfil] = useState(false)
 
   const [senha, setSenha] = useState({ atual: '', nova: '', confirmar: '' })
@@ -294,6 +309,15 @@ export function PerfilPage() {
   const nomeFantasiaDisponivel = usuario?.tipo === 'PJ'
 
   useEffect(() => {
+    setPerfil({
+      nome: usuario?.nome ?? '',
+      nome_fantasia: usuario?.nome_fantasia ?? '',
+      email: usuario?.email ?? '',
+      telefone: formatBrazilPhone(usuario?.telefone ?? ''),
+    })
+  }, [usuario])
+
+  useEffect(() => {
     let active = true
     apiKeyApi.obter()
       .then((result) => { if (active) setApiKey(result) })
@@ -304,15 +328,38 @@ export function PerfilPage() {
 
   async function salvarPerfil(e: React.FormEvent) {
     e.preventDefault()
-    if (!perfil.nome.trim()) return toast.error('Nome é obrigatório')
+    const erros: Record<string, string> = {}
+    const nome = perfil.nome.trim()
+    const nomeFantasia = perfil.nome_fantasia.trim()
+    const telefoneNormalizado = normalizeBrazilPhone(perfil.telefone)
+    const telefoneInformado = perfil.telefone.trim().length > 0
+
+    if (!nome) erros.nome = 'Informe o nome do responsável ou titular.'
+    if (telefoneInformado && !telefoneNormalizado) {
+      erros.telefone = 'Informe um telefone válido com DDD.'
+    }
+
+    setPerfilErros(erros)
+    if (Object.keys(erros).length > 0) {
+      toast.error(erros.telefone ?? erros.nome)
+      return
+    }
+
     setSavingPerfil(true)
     try {
       const atualizado = await authApi.atualizarPerfil({
-        nome: perfil.nome,
-        nome_fantasia: perfil.nome_fantasia || null,
-        telefone: perfil.telefone || null,
+        nome,
+        nome_fantasia: nomeFantasia || null,
+        telefone: telefoneNormalizado,
       })
       setUsuario(atualizado)
+      setPerfil({
+        nome: atualizado.nome ?? '',
+        nome_fantasia: atualizado.nome_fantasia ?? '',
+        email: atualizado.email ?? '',
+        telefone: formatBrazilPhone(atualizado.telefone ?? ''),
+      })
+      setPerfilErros({})
       toast.success('Perfil atualizado!')
     } catch { toast.error('Erro ao salvar perfil') }
     finally { setSavingPerfil(false) }
@@ -658,9 +705,13 @@ export function PerfilPage() {
             <Field
               label={usuario?.tipo === 'PJ' ? 'Responsável' : 'Nome completo'}
               value={perfil.nome}
-              onChange={(e) => setPerfil({ ...perfil, nome: e.target.value })}
+              onChange={(e) => {
+                setPerfil({ ...perfil, nome: e.target.value })
+                if (perfilErros.nome) setPerfilErros((current) => ({ ...current, nome: '' }))
+              }}
               icon={<User size={15} />}
               placeholder="Seu nome"
+              error={perfilErros.nome}
             />
             {nomeFantasiaDisponivel ? (
               <Field
@@ -674,9 +725,16 @@ export function PerfilPage() {
               <Field
                 label="Telefone"
                 value={perfil.telefone}
-                onChange={(e) => setPerfil({ ...perfil, telefone: e.target.value.replace(/\D/g, '').slice(0, 11) })}
+                onChange={(e) => {
+                  setPerfil({ ...perfil, telefone: formatBrazilPhone(e.target.value) })
+                  if (perfilErros.telefone) setPerfilErros((current) => ({ ...current, telefone: '' }))
+                }}
                 icon={<Phone size={15} />}
-                placeholder="11999999999"
+                placeholder="(11) 99999-8888"
+                helperText="Informe DDD + número."
+                error={perfilErros.telefone}
+                inputMode="tel"
+                autoComplete="tel-national"
               />
             )}
           </div>
@@ -695,9 +753,16 @@ export function PerfilPage() {
               <Field
                 label="Telefone"
                 value={perfil.telefone}
-                onChange={(e) => setPerfil({ ...perfil, telefone: e.target.value.replace(/\D/g, '').slice(0, 11) })}
+                onChange={(e) => {
+                  setPerfil({ ...perfil, telefone: formatBrazilPhone(e.target.value) })
+                  if (perfilErros.telefone) setPerfilErros((current) => ({ ...current, telefone: '' }))
+                }}
                 icon={<Phone size={15} />}
-                placeholder="11999999999"
+                placeholder="(11) 99999-8888"
+                helperText="Informe DDD + número."
+                error={perfilErros.telefone}
+                inputMode="tel"
+                autoComplete="tel-national"
               />
             ) : <div />}
           </div>

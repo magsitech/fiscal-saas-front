@@ -28,6 +28,7 @@ import type {
 import { API_BASE_URL, USE_MOCK_API } from '@/config/runtime'
 import { clearAuthTokens, getAccessToken, getRefreshToken, setAuthTokens } from '@/utils/authStorage'
 import { useAuthStore } from '@/store/auth'
+import { normalizeBrazilPhone } from '@/utils/phone'
 
 const apiBaseUrl = API_BASE_URL
 
@@ -307,9 +308,11 @@ export const authApi = {
       const { mockAuthApi } = await loadMockApi()
       return mockAuthApi.register(payload)
     }
+    const telefone = payload.telefone === undefined ? undefined : normalizeBrazilPhone(payload.telefone)
     const { data } = await http.post<Cliente>('/clientes', {
       ...payload,
       tipo_cliente: payload.tipo_cliente,
+      telefone,
     })
     return data
   },
@@ -350,7 +353,11 @@ export const authApi = {
       const { mockAuthApi } = await loadMockApi()
       return mockAuthApi.atualizarPerfil(payload)
     }
-    const { data } = await http.patch<Cliente>('/clientes/me', payload)
+    const telefone = payload.telefone === undefined ? undefined : normalizeBrazilPhone(payload.telefone)
+    const { data } = await http.patch<Cliente>('/clientes/me', {
+      ...payload,
+      telefone,
+    })
     return data
   },
 }
