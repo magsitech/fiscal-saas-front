@@ -16,6 +16,7 @@ import { DocumentacaoPage } from '@/pages/DocumentacaoPage'
 import { ConfirmarEmailPage } from '@/pages/ConfirmarEmailPage'
 import { RedefinirSenhaPage } from '@/pages/RedefinirSenhaPage'
 import { VerificarEmailPage } from '@/pages/VerificarEmailPage'
+import { PrivacyPolicyPage, TermsOfServicePage } from '@/pages/LegalPages'
 import { authApi } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
 import { resetWindowScroll } from '@/utils/scroll'
@@ -133,6 +134,8 @@ export default function App() {
       <Routes>
         <Route path="/" element={<HomeRoute />} />
         <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/termos-de-uso" element={<TermsOfServicePage />} />
+        <Route path="/politica-de-privacidade" element={<PrivacyPolicyPage />} />
         <Route element={<PublicOnlyRoute />}>
           <Route path="/login" element={<AuthPage />} />
         </Route>

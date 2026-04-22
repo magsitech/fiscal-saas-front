@@ -149,6 +149,34 @@ const S = {
     marginBottom: '6px',
   },
   err: { fontSize: '11px', color: 'var(--danger)', marginTop: '4px', display: 'block' },
+  consentBox: (err?: boolean): React.CSSProperties => ({
+    marginBottom: '14px',
+    padding: '14px 14px 14px 12px',
+    borderRadius: '14px',
+    border: `1px solid ${err ? 'var(--danger)' : 'var(--border)'}`,
+    background: 'color-mix(in srgb, var(--surface-2) 90%, transparent)',
+    display: 'flex',
+    gap: '10px',
+    alignItems: 'flex-start',
+  }),
+  consentCheck: {
+    marginTop: '2px',
+    width: '16px',
+    height: '16px',
+    accentColor: 'var(--accent)',
+    cursor: 'pointer',
+    flexShrink: 0,
+  },
+  consentText: {
+    fontSize: '12px',
+    color: 'var(--text-muted)',
+    lineHeight: 1.65,
+  },
+  consentLink: {
+    color: 'var(--accent)',
+    fontWeight: 700,
+    textDecoration: 'none',
+  },
   icWrap: { position: 'relative' as const },
   ic: {
     position: 'absolute' as const,
@@ -238,9 +266,11 @@ export function AuthPage() {
 
   const [pfForm, setPfForm] = useState({ nome: '', email: '', cpf: '', senha: '', confirmar: '' })
   const [pfErros, setPfErros] = useState<Record<string, string>>({})
+  const [pfAcceptedLegal, setPfAcceptedLegal] = useState(false)
 
   const [pjForm, setPjForm] = useState({ razao_social: '', cnpj: '', responsavel: '', email: '', senha: '', confirmar: '' })
   const [pjErros, setPjErros] = useState<Record<string, string>>({})
+  const [pjAcceptedLegal, setPjAcceptedLegal] = useState(false)
 
   function switchToLogin() {
     setMode('login')
@@ -276,6 +306,7 @@ export function AuthPage() {
     const senhaErro = validarSenhaForca(pfForm.senha)
     if (senhaErro) e.senha = senhaErro
     if (pfForm.senha !== pfForm.confirmar) e.confirmar = 'As senhas não coincidem'
+    if (!pfAcceptedLegal) e.aceite_legal = 'Voc\u00ea precisa aceitar os Termos de Uso e a Pol\u00edtica de Privacidade'
     setPfErros(e)
     return !Object.keys(e).length
   }
@@ -289,6 +320,7 @@ export function AuthPage() {
     const senhaErro = validarSenhaForca(pjForm.senha)
     if (senhaErro) e.senha = senhaErro
     if (pjForm.senha !== pjForm.confirmar) e.confirmar = 'As senhas não coincidem'
+    if (!pjAcceptedLegal) e.aceite_legal = 'Voc\u00ea precisa aceitar os Termos de Uso e a Pol\u00edtica de Privacidade'
     setPjErros(e)
     return !Object.keys(e).length
   }
@@ -379,6 +411,44 @@ export function AuthPage() {
       {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
     </button>
   )
+
+  function LegalConsent({
+    checked,
+    onChange,
+    error,
+    inputId,
+  }: {
+    checked: boolean
+    onChange: (checked: boolean) => void
+    error?: string
+    inputId: string
+  }) {
+    return (
+      <div>
+        <div style={S.consentBox(!!error)}>
+          <input
+            id={inputId}
+            type="checkbox"
+            checked={checked}
+            onChange={(e) => onChange(e.target.checked)}
+            style={S.consentCheck}
+          />
+          <label htmlFor={inputId} style={S.consentText}>
+            Li e concordo com os{' '}
+            <a href="/termos-de-uso" target="_blank" rel="noopener noreferrer" style={S.consentLink}>
+              Termos de Uso
+            </a>{' '}
+            e com a{' '}
+            <a href="/politica-de-privacidade" target="_blank" rel="noopener noreferrer" style={S.consentLink}>
+              Política de Privacidade
+            </a>
+            .
+          </label>
+        </div>
+        {error && <span style={S.err}>{error}</span>}
+      </div>
+    )
+  }
 
   return (
     <div style={S.root} className={`auth-root${showAside ? '' : ' auth-root-collapsed'}`}>
@@ -621,6 +691,12 @@ export function AuthPage() {
                       <input type={showPass ? 'text' : 'password'} placeholder="Repita a senha" value={pfForm.confirmar} onChange={(e) => setPfForm({ ...pfForm, confirmar: e.target.value })} style={S.inp(!!pfErros.confirmar)} />
                     </IcInput>
                   </Field>
+                  <LegalConsent
+                    checked={pfAcceptedLegal}
+                    onChange={setPfAcceptedLegal}
+                    error={pfErros.aceite_legal}
+                    inputId="pf-legal-consent"
+                  />
                   <button type="submit" disabled={loading} style={S.submitBtn(loading)}>
                     {loading ? <Spinner size={16} /> : <>Criar conta <ArrowRight size={16} /></>}
                   </button>
@@ -669,6 +745,12 @@ export function AuthPage() {
                       <input type={showPass ? 'text' : 'password'} placeholder="Repita a senha" value={pjForm.confirmar} onChange={(e) => setPjForm({ ...pjForm, confirmar: e.target.value })} style={S.inp(!!pjErros.confirmar)} />
                     </IcInput>
                   </Field>
+                  <LegalConsent
+                    checked={pjAcceptedLegal}
+                    onChange={setPjAcceptedLegal}
+                    error={pjErros.aceite_legal}
+                    inputId="pj-legal-consent"
+                  />
                   <button type="submit" disabled={loading} style={S.submitBtn(loading)}>
                     {loading ? <Spinner size={16} /> : <>Criar conta <ArrowRight size={16} /></>}
                   </button>
