@@ -496,40 +496,38 @@ export function ValidacoesPage() {
 
         {/* Tabela desktop */}
         <div className="app-data-desktop app-table-shell">
-          <Table>
+          <Table fixed>
             <colgroup>
-              <col style={{ width: '20%' }} />
-              <col style={{ width: '10%' }} />
-              <col style={{ width: '16%' }} />
-              <col style={{ width: '12%' }} />
-              <col style={{ width: '11%' }} />
+              <col style={{ width: '22%' }} />
               <col style={{ width: '9%' }} />
-              <col style={{ width: '11%' }} />
-              <col style={{ width: '11%' }} />
+              <col style={{ width: '16%' }} />
+              <col style={{ width: '13%' }} />
+              <col style={{ width: '12%' }} />
+              <col style={{ width: '8%' }} />
+              <col style={{ width: '20%' }} />
             </colgroup>
-                  <thead>
-                    <tr>
-                      <Th>Chave NF-e</Th>
-                      <Th><div style={{ textAlign: 'right' }}>Modelo</div></Th>
-                      <Th><div style={{ textAlign: 'right' }}>CNPJ emitente</div></Th>
-                      <Th>Status</Th>
-                      <Th><div style={{ textAlign: 'right' }}>Custo</div></Th>
-                      <Th><div style={{ textAlign: 'right' }}>Cache</div></Th>
-                      <Th><div style={{ textAlign: 'right' }}>Data</div></Th>
-                      <Th><div style={{ textAlign: 'right' }}>Processado</div></Th>
-                    </tr>
-                  </thead>
+            <thead>
+              <tr>
+                <Th>Chave NF-e</Th>
+                <Th><div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>Modelo</div></Th>
+                <Th><div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>CNPJ emitente</div></Th>
+                <Th>Status</Th>
+                <Th><div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>Custo</div></Th>
+                <Th><div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>Cache</div></Th>
+                <Th><div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>Criado / Processado</div></Th>
+              </tr>
+            </thead>
             <tbody>
               {loading ? (
                 Array.from({ length: 6 }).map((_, i) => (
                   <TrHover key={i}>
-                    {Array.from({ length: 8 }).map((__, j) => (
+                    {Array.from({ length: 7 }).map((__, j) => (
                       <Td key={j}><Skeleton className="h-4 w-full" /></Td>
                     ))}
                   </TrHover>
                 ))
               ) : filteredItems.length === 0 ? (
-                <tr><td colSpan={8}><Empty message="Nenhuma auditoria encontrada para os filtros selecionados" /></td></tr>
+                <tr><td colSpan={7}><Empty message="Nenhuma auditoria encontrada para os filtros selecionados" /></td></tr>
               ) : (
                 pageItems.map((v) => (
                   <TrHover key={v.id}>
@@ -537,19 +535,45 @@ export function ValidacoesPage() {
                     <Td>
                       <div style={{ textAlign: 'right' }}>
                         <span style={{
-                        fontFamily: 'var(--mono)', fontSize: '12px', fontWeight: 700,
-                        color: v.modelo === '55' ? 'var(--info)' : 'var(--accent)',
-                      }}>
-                        NF-{v.modelo === '55' ? 'e' : 'Ce'}
+                          fontFamily: 'var(--mono)', fontSize: '11px', fontWeight: 700,
+                          color: v.modelo === '55' ? 'var(--info)' : 'var(--accent)',
+                          padding: '3px 7px', borderRadius: '6px',
+                          background: v.modelo === '55' ? 'var(--info-dim)' : 'var(--accent-dim)',
+                        }}>
+                          NF-{v.modelo === '55' ? 'e' : 'Ce'}
                         </span>
                       </div>
                     </Td>
-                    <Td mono><div style={{ textAlign: 'right' }}>{v.cnpj_emitente}</div></Td>
+                    <Td mono><div style={{ textAlign: 'right', fontSize: '11px', color: 'var(--text-muted)' }}>{v.cnpj_emitente || <span style={{ color: 'var(--text-dim)' }}>—</span>}</div></Td>
                     <Td><Badge status={v.status} /></Td>
-                    <Td><div style={{ textAlign: 'right' }}><span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>{getAuditoriaCost(v) ? `R$ ${Number(getAuditoriaCost(v)).toFixed(4)}` : '-'}</span></div></Td>
-                    <Td><div style={{ display: 'flex', justifyContent: 'flex-end' }}>{v.cache_hit ? <Badge status="CACHE_HIT" label="Sim" /> : <span style={{ color: 'var(--text-dim)', fontSize: '12px' }}>-</span>}</div></Td>
-                    <Td><div style={{ textAlign: 'right' }}><span style={{ fontSize: '12px' }}>{fmtAgo(v.criado_em)}</span></div></Td>
-                    <Td><div style={{ textAlign: 'right' }}><span style={{ fontSize: '12px' }}>{fmtDate(v.processado_em)}</span></div></Td>
+                    <Td>
+                      <div style={{ textAlign: 'right' }}>
+                        {getAuditoriaCost(v) ? (
+                          <span style={{ fontFamily: 'var(--mono)', fontSize: '12px', fontWeight: 600, color: 'var(--danger)' }}>
+                            − R$ {Number(getAuditoriaCost(v)).toFixed(4)}
+                          </span>
+                        ) : (
+                          <span style={{ color: 'var(--text-dim)', fontSize: '12px' }}>—</span>
+                        )}
+                      </div>
+                    </Td>
+                    <Td>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        {v.cache_hit
+                          ? <Badge status="CACHE_HIT" label="Sim" />
+                          : <span style={{ color: 'var(--text-dim)', fontSize: '12px' }}>—</span>}
+                      </div>
+                    </Td>
+                    <Td>
+                      <div style={{ textAlign: 'right', lineHeight: 1.6 }}>
+                        <div style={{ fontSize: '12px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{fmtAgo(v.criado_em)}</div>
+                        {v.processado_em && (
+                          <div style={{ fontSize: '10px', color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>
+                            proc. {fmtDate(v.processado_em)}
+                          </div>
+                        )}
+                      </div>
+                    </Td>
                   </TrHover>
                 ))
               )}
@@ -765,66 +789,107 @@ export function ConsumoPage() {
 
         {/* Tabela desktop */}
         <div className="app-data-desktop app-table-shell">
-          <Table>
+          <Table fixed>
             <colgroup>
-              <col style={{ width: '12%' }} />
-              <col style={{ width: '12%' }} />
               <col style={{ width: '11%' }} />
-              <col style={{ width: '11%' }} />
-              <col style={{ width: '11%' }} />
-              <col style={{ width: '20%' }} />
+              <col style={{ width: '14%' }} />
+              <col style={{ width: '22%' }} />
+              <col style={{ width: '31%' }} />
+              <col style={{ width: '13%' }} />
               <col style={{ width: '9%' }} />
-              <col style={{ width: '9%' }} />
-              <col style={{ width: '8%' }} />
-              <col style={{ width: '8%' }} />
             </colgroup>
-                  <thead>
-                    <tr>
-                      <Th>Tipo</Th>
-                      <Th><div style={{ textAlign: 'right' }}>Valor</div></Th>
-                      <Th><div style={{ textAlign: 'right' }}>Custo</div></Th>
-                      <Th><div style={{ textAlign: 'right' }}>Saldo antes</div></Th>
-                      <Th><div style={{ textAlign: 'right' }}>Saldo depois</div></Th>
-                      <Th>Descrição</Th>
-                      <Th><div style={{ textAlign: 'right' }}>Pedido</div></Th>
-                      <Th><div style={{ textAlign: 'right' }}>Auditoria</div></Th>
-                      <Th><div style={{ textAlign: 'right' }}>Expira em</div></Th>
-                      <Th><div style={{ textAlign: 'right' }}>Data</div></Th>
-                    </tr>
-                  </thead>
+            <thead>
+              <tr>
+                <Th>Tipo</Th>
+                <Th><div style={{ textAlign: 'right' }}>Valor</div></Th>
+                <Th><div style={{ textAlign: 'right' }}>Saldo antes → depois</div></Th>
+                <Th>Descrição</Th>
+                <Th><div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>Referência</div></Th>
+                <Th><div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>Data</div></Th>
+              </tr>
+            </thead>
             <tbody>
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TrHover key={i}>
-                    {Array.from({ length: 10 }).map((__, j) => <Td key={j}><Skeleton className="h-4 w-full" /></Td>)}
+                    {Array.from({ length: 6 }).map((__, j) => <Td key={j}><Skeleton className="h-4 w-full" /></Td>)}
                   </TrHover>
                 ))
               ) : filteredItems.length === 0 ? (
-                <tr><td colSpan={10}><Empty message="Nenhum lançamento encontrado para os filtros selecionados" /></td></tr>
+                <tr><td colSpan={6}><Empty message="Nenhum lançamento encontrado para os filtros selecionados" /></td></tr>
               ) : (
-                pageItems.map((c) => (
-                  <TrHover key={c.id}>
-                    <Td><Badge status={c.tipo} /></Td>
-                    <Td>
-                      <div style={{ textAlign: 'right' }}>
-                        <span style={{
-                        fontFamily: 'var(--mono)', fontSize: '12px', fontWeight: 700,
-                        color: c.tipo === 'DEBITO' ? 'var(--danger)' : 'var(--accent)',
-                      }}>
-                        {c.tipo === 'DEBITO' ? '-' : '+'} R$ {Number(c.valor).toFixed(4)}
-                        </span>
-                      </div>
-                    </Td>
-                    <Td mono><div style={{ textAlign: 'right' }}>{getExtratoCost(c) ? `R$ ${Number(getExtratoCost(c)).toFixed(4)}` : '-'}</div></Td>
-                    <Td mono><div style={{ textAlign: 'right' }}>{getExtratoSaldoAntes(c) ? `R$ ${Number(getExtratoSaldoAntes(c)).toFixed(2)}` : '-'}</div></Td>
-                    <Td mono><div style={{ textAlign: 'right' }}>{getExtratoSaldoDepois(c) ? `R$ ${Number(getExtratoSaldoDepois(c)).toFixed(2)}` : '-'}</div></Td>
-                    <Td>{c.descricao ?? '-'}</Td>
-                    <Td mono><div style={{ textAlign: 'right' }}>{c.pedido_id ? `${c.pedido_id.slice(0, 8)}…` : '-'}</div></Td>
-                    <Td mono><div style={{ textAlign: 'right' }}>{c.log_auditoria_id ? `${c.log_auditoria_id.slice(0, 8)}…` : '-'}</div></Td>
-                    <Td><div style={{ textAlign: 'right' }}><span style={{ fontSize: '12px' }}>{fmtDate(c.expira_em)}</span></div></Td>
-                    <Td><div style={{ textAlign: 'right' }}><span style={{ fontSize: '12px' }}>{fmtAgo(c.criado_em)}</span></div></Td>
-                  </TrHover>
-                ))
+                pageItems.map((c) => {
+                  const saldoAntes = getExtratoSaldoAntes(c)
+                  const saldoDepois = getExtratoSaldoDepois(c)
+                  const ref = c.pedido_id ?? c.log_auditoria_id
+                  const refTipo = c.pedido_id ? 'P' : c.log_auditoria_id ? 'A' : null
+                  const isNegativo = c.tipo === 'DEBITO' || c.tipo === 'EXPIRACAO'
+
+                  return (
+                    <TrHover key={c.id}>
+                      <Td><Badge status={c.tipo} /></Td>
+                      <Td>
+                        <div style={{ textAlign: 'right' }}>
+                          <span style={{
+                            fontFamily: 'var(--mono)', fontSize: '13px', fontWeight: 700,
+                            color: isNegativo ? 'var(--danger)' : 'var(--accent)',
+                            letterSpacing: '-0.01em',
+                          }}>
+                            {isNegativo ? '−' : '+'}&nbsp;R$&nbsp;{Number(c.valor).toFixed(4)}
+                          </span>
+                        </div>
+                      </Td>
+                      <Td>
+                        <div style={{ textAlign: 'right', fontFamily: 'var(--mono)', fontSize: '11px', lineHeight: 1.5 }}>
+                          {saldoAntes && saldoDepois ? (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                              <span style={{ color: 'var(--text-dim)' }}>R$ {Number(saldoAntes).toFixed(2)}</span>
+                              <span style={{ color: 'var(--border-bright)', fontSize: '10px' }}>→</span>
+                              <span style={{ color: 'var(--text)', fontWeight: 600 }}>R$ {Number(saldoDepois).toFixed(2)}</span>
+                            </span>
+                          ) : saldoDepois ? (
+                            <span style={{ color: 'var(--text)', fontWeight: 600 }}>R$ {Number(saldoDepois).toFixed(2)}</span>
+                          ) : (
+                            <span style={{ color: 'var(--text-dim)' }}>—</span>
+                          )}
+                        </div>
+                      </Td>
+                      <Td>
+                        <div
+                          style={{
+                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                            fontSize: '13px', color: 'var(--text-muted)',
+                          }}
+                          title={c.descricao ?? ''}
+                        >
+                          {c.descricao ?? <span style={{ color: 'var(--text-dim)' }}>—</span>}
+                        </div>
+                      </Td>
+                      <Td>
+                        <div style={{ textAlign: 'right' }}>
+                          {ref ? (
+                            <span style={{ fontFamily: 'var(--mono)', fontSize: '11px', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              <span style={{ fontSize: '9px', fontWeight: 800, color: 'var(--text-dim)', letterSpacing: '0.1em', padding: '1px 4px', borderRadius: '4px', background: 'var(--surface-2)', border: '1px solid var(--border)' }}>{refTipo}</span>
+                              {ref.slice(0, 8)}…
+                            </span>
+                          ) : (
+                            <span style={{ color: 'var(--text-dim)', fontSize: '12px' }}>—</span>
+                          )}
+                        </div>
+                      </Td>
+                      <Td>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: '12px', whiteSpace: 'nowrap', color: 'var(--text-muted)' }}>{fmtAgo(c.criado_em)}</div>
+                          {c.expira_em && (
+                            <div style={{ fontSize: '10px', whiteSpace: 'nowrap', color: 'var(--warn)', marginTop: '2px' }}>
+                              exp. {fmtDate(c.expira_em)}
+                            </div>
+                          )}
+                        </div>
+                      </Td>
+                    </TrHover>
+                  )
+                })
               )}
             </tbody>
           </Table>
@@ -845,35 +910,48 @@ export function ConsumoPage() {
             ) : filteredItems.length === 0 ? (
               <Empty message="Nenhum lançamento encontrado para os filtros selecionados" />
             ) : (
-              pageItems.map((c) => (
-                <div key={c.id} style={{
-                  background: 'var(--surface)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '16px',
-                  padding: '18px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '12px',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-                    <Badge status={c.tipo} />
-                    <span style={{
-                      fontFamily: 'var(--mono)', fontSize: '12px', fontWeight: 700,
-                      color: c.tipo === 'DEBITO' ? 'var(--danger)' : 'var(--accent)',
-                    }}>
-                      {c.tipo === 'DEBITO' ? '-' : '+'} R$ {Number(c.valor).toFixed(4)}
-                    </span>
+              pageItems.map((c) => {
+                const saldoAntes = getExtratoSaldoAntes(c)
+                const saldoDepois = getExtratoSaldoDepois(c)
+                const ref = c.pedido_id ?? c.log_auditoria_id
+                const refTipo = c.pedido_id ? 'Pedido' : 'Auditoria'
+                const isNegativo = c.tipo === 'DEBITO' || c.tipo === 'EXPIRACAO'
+
+                return (
+                  <div key={c.id} style={{
+                    background: 'var(--surface)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '16px',
+                    padding: '18px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                      <Badge status={c.tipo} />
+                      <span style={{
+                        fontFamily: 'var(--mono)', fontSize: '13px', fontWeight: 700,
+                        color: isNegativo ? 'var(--danger)' : 'var(--accent)',
+                      }}>
+                        {isNegativo ? '−' : '+'} R$ {Number(c.valor).toFixed(4)}
+                      </span>
+                    </div>
+                    {(saldoAntes || saldoDepois) && (
+                      <MobileField label="Saldo" value={
+                        <span style={{ fontFamily: 'var(--mono)', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          {saldoAntes && <span style={{ color: 'var(--text-dim)' }}>R$ {Number(saldoAntes).toFixed(2)}</span>}
+                          {saldoAntes && saldoDepois && <span style={{ color: 'var(--text-dim)', fontSize: '10px' }}>→</span>}
+                          {saldoDepois && <span style={{ color: 'var(--text)', fontWeight: 600 }}>R$ {Number(saldoDepois).toFixed(2)}</span>}
+                        </span>
+                      } />
+                    )}
+                    {c.descricao && <MobileField label="Descrição" value={<span style={{ fontSize: '12px' }}>{c.descricao}</span>} />}
+                    {ref && <MobileField label={refTipo} value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>{ref.slice(0, 12)}…</span>} />}
+                    {c.expira_em && <MobileField label="Expira em" value={<span style={{ fontSize: '12px', color: 'var(--warn)' }}>{fmtDate(c.expira_em)}</span>} />}
+                    <MobileField label="Data" value={<span style={{ fontSize: '12px' }}>{fmtAgo(c.criado_em)}</span>} />
                   </div>
-                  <MobileField label="Custo" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>{getExtratoCost(c) ? `R$ ${Number(getExtratoCost(c)).toFixed(4)}` : '-'}</span>} />
-                  <MobileField label="Saldo antes" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>{getExtratoSaldoAntes(c) ? `R$ ${Number(getExtratoSaldoAntes(c)).toFixed(2)}` : '-'}</span>} />
-                  <MobileField label="Saldo depois" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>{getExtratoSaldoDepois(c) ? `R$ ${Number(getExtratoSaldoDepois(c)).toFixed(2)}` : '-'}</span>} />
-                  <MobileField label="Descrição" value={c.descricao ?? '-'} />
-                  <MobileField label="Pedido" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>{c.pedido_id ? `${c.pedido_id.slice(0, 8)}…` : '-'}</span>} />
-                  <MobileField label="Auditoria" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>{c.log_auditoria_id ? `${c.log_auditoria_id.slice(0, 8)}…` : '-'}</span>} />
-                  <MobileField label="Expira em" value={<span style={{ fontSize: '12px' }}>{fmtDate(c.expira_em)}</span>} />
-                  <MobileField label="Data" value={<span style={{ fontSize: '12px' }}>{fmtAgo(c.criado_em)}</span>} />
-                </div>
-              ))
+                )
+              })
             )}
           </div>
           <Pagination page={safePage} totalPages={totalPages} totalItems={filteredItems.length} label="Extrato" onPageChange={setPage} />
@@ -1179,24 +1257,25 @@ export function PagamentosPage() {
         </div>
 
         <div className="app-data-desktop app-table-shell">
-          <Table>
+          <Table fixed>
             <colgroup>
-              <col style={{ width: '18%' }} />
-              <col style={{ width: '20%' }} />
-              <col style={{ width: '14%' }} />
-              <col style={{ width: '14%' }} />
-              <col style={{ width: '14%' }} />
-              <col style={{ width: '18%' }} />
+              <col style={{ width: '13%' }} />
               <col style={{ width: '16%' }} />
+              <col style={{ width: '12%' }} />
+              <col style={{ width: '12%' }} />
+              <col style={{ width: '14%' }} />
+              <col style={{ width: '14%' }} />
+              <col style={{ width: '19%' }} />
             </colgroup>
             <thead>
               <tr>
                 <Th>Pedido</Th>
                 <Th>Método</Th>
-                <Th><div style={{ textAlign: 'right', paddingRight: '10px' }}>Valor</div></Th>
-                <Th><div style={{ paddingLeft: '10px' }}>Status</div></Th>
-                <Th><div style={{ textAlign: 'right' }}>Confirmado em</div></Th>
-                <Th><div style={{ textAlign: 'right' }}>Crédito expira</div></Th>
+                <Th><div style={{ textAlign: 'right' }}>Valor</div></Th>
+                <Th>Status</Th>
+                <Th><div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>Confirmado em</div></Th>
+                <Th><div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>Crédito expira</div></Th>
+                <Th><div style={{ textAlign: 'right' }}>Ações</div></Th>
               </tr>
             </thead>
             <tbody>
@@ -1211,22 +1290,19 @@ export function PagamentosPage() {
               ) : (
                 pageItems.map((p) => (
                   <TrHover key={p.id}>
-                    <Td mono><div style={{ textAlign: 'left' }}>{`${p.id.slice(0, 8)}…`}</div></Td>
+                    <Td mono>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{`${p.id.slice(0, 8)}…`}</span>
+                    </Td>
                     <Td>
                       {(() => {
                         const tone = paymentTone(p.metodo)
                         return (
                           <span style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            padding: '8px 12px',
-                            borderRadius: '999px',
-                            background: tone.bg,
-                            color: tone.color,
-                            fontSize: '11px',
-                            fontWeight: 700,
-                            letterSpacing: '0.08em',
+                            display: 'inline-flex', alignItems: 'center', gap: '6px',
+                            padding: '5px 10px', borderRadius: '999px',
+                            background: tone.bg, color: tone.color,
+                            fontSize: '11px', fontWeight: 700, letterSpacing: '0.06em',
+                            whiteSpace: 'nowrap',
                           }}>
                             {tone.icon}
                             {p.metodo}
@@ -1235,20 +1311,32 @@ export function PagamentosPage() {
                       })()}
                     </Td>
                     <Td>
-                      <div style={{ textAlign: 'right', paddingRight: '10px' }}>
+                      <div style={{ textAlign: 'right' }}>
                         <span style={{
-                        fontFamily: 'var(--mono)', fontSize: '12px', fontWeight: 700,
-                        color: p.status === 'PAGO' ? 'var(--accent)' : 'var(--warn)',
-                      }}>
-                        R$ {Number(p.valor).toFixed(2)}
+                          fontFamily: 'var(--mono)', fontSize: '13px', fontWeight: 700,
+                          color: p.status === 'PAGO' ? 'var(--accent)' : 'var(--warn)',
+                        }}>
+                          R$ {Number(p.valor).toFixed(2)}
                         </span>
                       </div>
                     </Td>
-                    <Td><div style={{ paddingLeft: '10px' }}><Badge status={p.status} /></div></Td>
-                    <Td><div style={{ textAlign: 'right' }}><span style={{ fontSize: '12px' }}>{fmtDate(p.confirmado_em)}</span></div></Td>
-                    <Td><div style={{ textAlign: 'right' }}><span style={{ fontSize: '12px' }}>{fmtDate(p.credito_expira_em)}</span></div></Td>
+                    <Td><Badge status={p.status} /></Td>
                     <Td>
-                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: '12px', whiteSpace: 'nowrap', color: p.confirmado_em ? 'var(--text-muted)' : 'var(--text-dim)' }}>
+                          {fmtDate(p.confirmado_em)}
+                        </span>
+                      </div>
+                    </Td>
+                    <Td>
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: '12px', whiteSpace: 'nowrap', color: p.credito_expira_em ? 'var(--warn)' : 'var(--text-dim)' }}>
+                          {fmtDate(p.credito_expira_em)}
+                        </span>
+                      </div>
+                    </Td>
+                    <Td>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                         <Button type="button" variant="ghost" size="sm" onClick={() => carregarDetalhe(p.id)}>
                           Detalhes
                         </Button>
@@ -1258,17 +1346,11 @@ export function PagamentosPage() {
                             target="_blank"
                             rel="noopener noreferrer"
                             style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                              padding: '8px 12px',
-                              borderRadius: '999px',
+                              display: 'inline-flex', alignItems: 'center', gap: '6px',
+                              padding: '8px 12px', borderRadius: '999px',
                               border: '1px solid var(--accent-glow)',
-                              background: 'var(--accent-dim)',
-                              color: 'var(--accent)',
-                              textDecoration: 'none',
-                              fontSize: '11px',
-                              fontWeight: 700,
+                              background: 'var(--accent-dim)', color: 'var(--accent)',
+                              textDecoration: 'none', fontSize: '11px', fontWeight: 700,
                               opacity: pedidoPodeContinuar(p.status) ? 1 : 0.55,
                               pointerEvents: pedidoPodeContinuar(p.status) ? 'auto' : 'none',
                             }}
@@ -1617,10 +1699,10 @@ export function SimuladorPage() {
                 </div>
               </CardHeader>
               <div className="app-data-desktop app-table-shell">
-                <Table>
+                <Table fixed>
                   <colgroup>
-                    <col style={{ width: '24%' }} />
-                    <col style={{ width: '16%' }} />
+                    <col style={{ width: '22%' }} />
+                    <col style={{ width: '18%' }} />
                     <col style={{ width: '18%' }} />
                     <col style={{ width: '18%' }} />
                     <col style={{ width: '24%' }} />
@@ -1628,10 +1710,10 @@ export function SimuladorPage() {
                   <thead>
                     <tr>
                       <Th>Faixa</Th>
-                      <Th><div style={{ textAlign: 'right' }}>Consultas</div></Th>
-                      <Th><div style={{ textAlign: 'right' }}>Preço unitário</div></Th>
-                      <Th><div style={{ textAlign: 'right' }}>Subtotal</div></Th>
-                      <Th><div style={{ textAlign: 'right' }}>% do total</div></Th>
+                      <Th><div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>Consultas</div></Th>
+                      <Th><div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>Preço unitário</div></Th>
+                      <Th><div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>Subtotal</div></Th>
+                      <Th><div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>% do total</div></Th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1639,15 +1721,31 @@ export function SimuladorPage() {
                       const pct = ((Number(d.custo_faixa) / Number(resultado.custo_total)) * 100).toFixed(1)
                       return (
                         <TrHover key={d.faixa}>
-                          <Td><Badge status="PROCESSANDO" label={d.faixa} /></Td>
+                          <Td>
+                            <span style={{
+                              display: 'inline-flex', alignItems: 'center',
+                              padding: '4px 10px', borderRadius: '8px',
+                              border: '1px solid var(--border)', background: 'var(--surface-2)',
+                              fontFamily: 'var(--mono)', fontSize: '11px', fontWeight: 700,
+                              color: 'var(--text-muted)', letterSpacing: '0.04em',
+                            }}>
+                              {d.faixa}
+                            </span>
+                          </Td>
                           <Td mono><div style={{ textAlign: 'right' }}>{d.consultas.toLocaleString('pt-BR')}</div></Td>
                           <Td mono><div style={{ textAlign: 'right' }}>R$ {d.preco_unitario}</div></Td>
-                          <Td><div style={{ textAlign: 'right' }}><span className="font-mono text-xs font-semibold text-[var(--accent)]">R$ {d.custo_faixa}</span></div></Td>
                           <Td>
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
-                              <span className="font-mono text-xs text-[var(--text-muted)]">{pct}%</span>
-                              <div style={{ width: '120px', height: '6px', background: 'var(--surface-2)', borderRadius: '999px', overflow: 'hidden' }}>
-                                <div className="h-full bg-[var(--accent)] rounded-full" style={{ width: `${pct}%` }} />
+                            <div style={{ textAlign: 'right' }}>
+                              <span style={{ fontFamily: 'var(--mono)', fontSize: '12px', fontWeight: 700, color: 'var(--accent)' }}>
+                                R$ {d.custo_faixa}
+                              </span>
+                            </div>
+                          </Td>
+                          <Td>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+                              <span style={{ fontFamily: 'var(--mono)', fontSize: '11px', color: 'var(--text-muted)' }}>{pct}%</span>
+                              <div style={{ width: '100px', height: '5px', background: 'var(--surface-2)', borderRadius: '999px', overflow: 'hidden' }}>
+                                <div style={{ height: '100%', width: `${pct}%`, background: 'var(--accent)', borderRadius: '999px' }} />
                               </div>
                             </div>
                           </Td>
@@ -1672,8 +1770,16 @@ export function SimuladorPage() {
                         gap: '12px',
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-                          <Badge status="PROCESSANDO" label={d.faixa} />
-                          <span className="font-mono text-xs font-semibold text-[var(--accent)]">R$ {d.custo_faixa}</span>
+                          <span style={{
+                            display: 'inline-flex', alignItems: 'center',
+                            padding: '4px 10px', borderRadius: '8px',
+                            border: '1px solid var(--border)', background: 'var(--surface-2)',
+                            fontFamily: 'var(--mono)', fontSize: '11px', fontWeight: 700,
+                            color: 'var(--text-muted)',
+                          }}>
+                            {d.faixa}
+                          </span>
+                          <span style={{ fontFamily: 'var(--mono)', fontSize: '12px', fontWeight: 700, color: 'var(--accent)' }}>R$ {d.custo_faixa}</span>
                         </div>
                         <MobileField label="Consultas" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>{d.consultas.toLocaleString('pt-BR')}</span>} />
                         <MobileField label="Preço unitário" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>R$ {d.preco_unitario}</span>} />

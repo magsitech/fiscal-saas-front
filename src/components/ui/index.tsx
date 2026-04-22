@@ -198,10 +198,10 @@ export function Skeleton({ className = '' }: { className?: string }) {
 }
 
 // ─── Table ───────────────────────────────────────────────────
-export function Table({ children }: { children: React.ReactNode }) {
+export function Table({ children, fixed }: { children: React.ReactNode; fixed?: boolean }) {
   return (
     <div className="overflow-x-auto rounded-lg border border-[var(--border)] bg-[var(--surface)]">
-      <table className="w-full text-sm border-collapse">{children}</table>
+      <table className="w-full text-sm border-collapse" style={fixed ? { tableLayout: 'fixed' } : undefined}>{children}</table>
     </div>
   )
 }

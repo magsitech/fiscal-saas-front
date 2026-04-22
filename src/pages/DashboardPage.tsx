@@ -369,13 +369,19 @@ export function DashboardPage() {
           </CardHeader>
 
           <div className="app-data-desktop app-table-shell">
-            <Table>
+            <Table fixed>
+              <colgroup>
+                <col style={{ width: '42%' }} />
+                <col style={{ width: '13%' }} />
+                <col style={{ width: '22%' }} />
+                <col style={{ width: '23%' }} />
+              </colgroup>
               <thead>
                 <tr>
-                  <Th>Chave NF</Th>
-                  <Th>Modelo</Th>
+                  <Th>Chave NF-e</Th>
+                  <Th><div style={{ whiteSpace: 'nowrap' }}>Modelo</div></Th>
                   <Th>Status</Th>
-                  <Th>Data</Th>
+                  <Th><div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>Data</div></Th>
                 </tr>
               </thead>
               <tbody>
@@ -396,17 +402,21 @@ export function DashboardPage() {
                       <Td><ChaveNF chave={v.chave_nf} /></Td>
                       <Td>
                         <span style={{
-                          fontSize: '11px', fontFamily: 'var(--mono)', fontWeight: 600,
+                          fontFamily: 'var(--mono)', fontSize: '11px', fontWeight: 700,
                           color: v.modelo === '55' ? 'var(--info)' : 'var(--accent)',
+                          padding: '3px 7px', borderRadius: '6px',
+                          background: v.modelo === '55' ? 'var(--info-dim)' : 'var(--accent-dim)',
                         }}>
                           NF-{v.modelo === '55' ? 'e' : 'Ce'}
                         </span>
                       </Td>
                       <Td><Badge status={v.status} /></Td>
                       <Td>
-                        <span style={{ fontSize: '12px', fontFamily: 'var(--mono)', color: 'var(--text-muted)' }}>
-                          {format(parseISO(v.criado_em), 'dd/MM/yyyy', { locale: ptBR })}
-                        </span>
+                        <div style={{ textAlign: 'right' }}>
+                          <span style={{ fontSize: '12px', fontFamily: 'var(--mono)', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                            {format(parseISO(v.criado_em), 'dd/MM/yyyy', { locale: ptBR })}
+                          </span>
+                        </div>
                       </Td>
                     </TrHover>
                   ))
