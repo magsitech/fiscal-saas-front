@@ -121,6 +121,14 @@ function resolveQrCodeSource(value?: string | null) {
   return `data:image/png;base64,${value}`
 }
 
+function hasPixInlineData(pedido: PedidoDetalhe) {
+  return Boolean(pedido.pix_copia_cola || pedido.pix_qr_code_url)
+}
+
+function hasBoletoInlineData(pedido: PedidoDetalhe) {
+  return Boolean(pedido.boleto_linha_digitavel || pedido.boleto_url)
+}
+
 function buildCheckoutError(error: unknown, fallback: string): CheckoutError {
   if (!axios.isAxiosError(error)) {
     return {
@@ -415,6 +423,8 @@ export function CreditosCheckout() {
 
   const gatewayStatus = pedido ? getGatewayStatus(pedido) : null
   const gatewayStatusDetail = pedido ? getGatewayStatusDetail(pedido) : null
+  const pixInlineReady = pedido?.metodo === 'PIX' ? hasPixInlineData(pedido) : false
+  const boletoInlineReady = pedido?.metodo === 'BOLETO' ? hasBoletoInlineData(pedido) : false
 
   return (
     <div style={{ maxWidth: '860px', display: 'flex', flexDirection: 'column', gap: '28px' }}>
@@ -604,6 +614,12 @@ export function CreditosCheckout() {
 
                 {pedido.metodo === 'PIX' && (
                   <>
+                    {!pixInlineReady && pedido.checkout_url && (
+                      <div style={{ padding: '14px 16px', borderRadius: '14px', border: '1px solid color-mix(in srgb, var(--warn) 35%, var(--border))', background: 'color-mix(in srgb, var(--warn-dim) 82%, transparent)', color: 'var(--text-muted)', fontSize: '13px', lineHeight: 1.7 }}>
+                        Este pedido PIX chegou do backend apenas com <strong style={{ color: 'var(--text)' }}>checkout_url</strong>. Sem os campos <strong style={{ color: 'var(--text)' }}>pix_copia_cola</strong> e <strong style={{ color: 'var(--text)' }}>pix_qr_code_url</strong>, o frontend nÃ£o consegue exibir o cÃ³digo PIX e o QR Code diretamente na plataforma.
+                      </div>
+                    )}
+
                     {pedido.pix_copia_cola ? (
                       <>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>
@@ -646,12 +662,33 @@ export function CreditosCheckout() {
                           <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: copiedPix ? '#7ef3c5' : 'var(--accent)' }}>{copiedPix ? 'OK' : 'PIX'}</span>
                         </button>
                       )}
+
+                      {pedido.checkout_url && (
+                        <a href={pedido.checkout_url} target="_blank" rel="noopener noreferrer" style={actionButtonStyle('neutral')}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <span style={{ width: '34px', height: '34px', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'color-mix(in srgb, var(--surface-2) 80%, transparent)', color: 'var(--text)', border: '1px solid var(--border)' }}>
+                              <ExternalLink size={15} />
+                            </span>
+                            <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
+                              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>Abrir checkout do PIX</span>
+                              <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>Use este link quando o backend nÃ£o retornar os dados inline do PIX</span>
+                            </span>
+                          </span>
+                          <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--text-dim)' }}><ExternalLink size={12} /></span>
+                        </a>
+                      )}
                     </div>
                   </>
                 )}
 
                 {pedido.metodo === 'BOLETO' && (
                   <>
+                    {!boletoInlineReady && pedido.checkout_url && (
+                      <div style={{ padding: '14px 16px', borderRadius: '14px', border: '1px solid color-mix(in srgb, var(--warn) 35%, var(--border))', background: 'color-mix(in srgb, var(--warn-dim) 82%, transparent)', color: 'var(--text-muted)', fontSize: '13px', lineHeight: 1.7 }}>
+                        Este pedido de boleto chegou do backend apenas com <strong style={{ color: 'var(--text)' }}>checkout_url</strong>. Sem <strong style={{ color: 'var(--text)' }}>boleto_linha_digitavel</strong> e <strong style={{ color: 'var(--text)' }}>boleto_url</strong>, a plataforma nÃ£o consegue mostrar os dados do boleto diretamente.
+                      </div>
+                    )}
+
                     {pedido.boleto_linha_digitavel ? (
                       <>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>
@@ -696,6 +733,21 @@ export function CreditosCheckout() {
                             </span>
                           </span>
                           <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--accent)' }}><ExternalLink size={12} /></span>
+                        </a>
+                      )}
+
+                      {pedido.checkout_url && (
+                        <a href={pedido.checkout_url} target="_blank" rel="noopener noreferrer" style={actionButtonStyle('neutral')}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <span style={{ width: '34px', height: '34px', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'color-mix(in srgb, var(--surface-2) 80%, transparent)', color: 'var(--text)', border: '1px solid var(--border)' }}>
+                              <ExternalLink size={15} />
+                            </span>
+                            <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
+                              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>Abrir checkout do boleto</span>
+                              <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>Use este link quando o backend nÃ£o retornar os dados inline do boleto</span>
+                            </span>
+                          </span>
+                          <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--text-dim)' }}><ExternalLink size={12} /></span>
                         </a>
                       )}
                     </div>
