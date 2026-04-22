@@ -691,7 +691,7 @@ export const mockPedidosApi = {
   async simularPagamento(pedidoId: string) {
     const db = readDb()
     const pedido = db.pedidos.find((item) => item.id === pedidoId)
-    if (!pedido) fail('Pedido nao encontrado', 404)
+    if (!pedido) fail('Pedido não encontrado', 404)
     pedido.status = 'PAGO'
     pedido.gateway_status = 'approved'
     pedido.gateway_status_detail = 'PAID'
@@ -770,7 +770,7 @@ export const mockPedidosApi = {
 
   async detalhar(pedidoId: string) {
     const pedido = readDb().pedidos.find((item) => item.id === pedidoId)
-    if (!pedido) fail('Pedido nao encontrado', 404)
+    if (!pedido) fail('Pedido não encontrado', 404)
 
     const response: PedidoDetalhe = {
       ...pedido,

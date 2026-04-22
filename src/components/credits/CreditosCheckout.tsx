@@ -32,7 +32,7 @@ type CheckoutError = {
 
 const PAYMENT_OPTIONS: Array<{ id: MetodoAtivo; label: string; note: string; icon: ReactNode }> = [
   { id: 'PIX', label: 'PIX', note: 'Copia e cola imediato com QR Code gerado pelo backend.', icon: <Sparkles size={16} /> },
-  { id: 'BOLETO', label: 'Boleto bancÃ¡rio', note: 'Linha digitÃ¡vel e link do boleto vindos do backend.', icon: <Landmark size={16} /> },
+  { id: 'BOLETO', label: 'Boleto bancário', note: 'Linha digitável e link do boleto vindos do backend.', icon: <Landmark size={16} /> },
 ]
 
 function fmtMoney(value: string | number) {
@@ -96,19 +96,19 @@ function getVisualState(pedido: PedidoDetalhe | null, pedidoError: string | null
 function getStatusMessage(pedido: PedidoDetalhe) {
   if (pedido.status === 'PAGO') {
     return pedido.credito_lancado
-      ? 'Pagamento confirmado pelo backend e crÃ©dito jÃ¡ lanÃ§ado. VocÃª pode seguir com seguranÃ§a.'
-      : 'Pagamento confirmado pelo backend. Aguarde apenas a conciliaÃ§Ã£o final do crÃ©dito, se necessÃ¡rio.'
+      ? 'Pagamento confirmado pelo backend e crédito já lançado. Você pode seguir com segurança.'
+      : 'Pagamento confirmado pelo backend. Aguarde apenas a conciliação final do crédito, se necessário.'
   }
   if (pedido.status === 'AGUARDANDO_PAGAMENTO') {
-    return 'Pedido aguardando pagamento. Assim que a confirmaÃ§Ã£o chegar, continuaremos por aqui.'
+    return 'Pedido aguardando pagamento. Assim que a confirmação chegar, continuaremos por aqui.'
   }
   if (pedido.status === 'CANCELADO') {
-    return 'Pagamento cancelado. Gere um novo pedido para continuar a compra de crÃ©ditos.'
+    return 'Pagamento cancelado. Gere um novo pedido para continuar a compra de créditos.'
   }
   if (pedido.status === 'EXPIRADO') {
-    return 'Pagamento expirado. Gere um novo pedido para receber novos dados de cobranÃ§a.'
+    return 'Pagamento expirado. Gere um novo pedido para receber novos dados de cobrança.'
   }
-  return 'Pedido criado. Aguardando atualizaÃ§Ã£o oficial do backend.'
+  return 'Pedido criado. Aguardando atualização oficial do backend.'
 }
 
 function isQrImageSource(value?: string | null) {
@@ -117,12 +117,15 @@ function isQrImageSource(value?: string | null) {
 
 function resolveQrCodeSource(value?: string | null) {
   if (!value) return null
-  if (isQrImageSource(value)) return value
-  return `data:image/png;base64,${value}`
+  const normalized = value.trim()
+  if (!normalized) return null
+  if (isQrImageSource(normalized)) return normalized
+  if (normalized.startsWith('<svg')) return `data:image/svg+xml;utf8,${encodeURIComponent(normalized)}`
+  return `data:image/png;base64,${normalized}`
 }
 
 function hasPixInlineData(pedido: PedidoDetalhe) {
-  return Boolean(pedido.pix_copia_cola && pedido.pix_qr_code_url)
+  return Boolean(pedido.pix_copia_cola?.trim() && resolveQrCodeSource(pedido.pix_qr_code_url))
 }
 
 function hasBoletoInlineData(pedido: PedidoDetalhe) {
@@ -132,7 +135,7 @@ function hasBoletoInlineData(pedido: PedidoDetalhe) {
 function buildCheckoutError(error: unknown, fallback: string): CheckoutError {
   if (!axios.isAxiosError(error)) {
     return {
-      title: 'Erro ao gerar cobranÃ§a',
+      title: 'Erro ao gerar cobrança',
       message: fallback,
       statusCode: null,
     }
@@ -164,7 +167,7 @@ function buildCheckoutError(error: unknown, fallback: string): CheckoutError {
     if (Array.isArray(record.detail)) {
       const firstIssue = record.detail.find((item) => item && typeof item === 'object') as Record<string, unknown> | undefined
       if (firstIssue && typeof firstIssue.msg === 'string' && firstIssue.msg.trim()) {
-        return { title: 'Dados invÃ¡lidos para cobranÃ§a', message: firstIssue.msg, statusCode }
+        return { title: 'Dados inválidos para cobrança', message: firstIssue.msg, statusCode }
       }
     }
 
@@ -178,35 +181,35 @@ function buildCheckoutError(error: unknown, fallback: string): CheckoutError {
 
   if (statusCode === 401) {
     return {
-      title: 'SessÃ£o expirada',
-      message: 'Sua sessÃ£o expirou ou o usuÃ¡rio nÃ£o estÃ¡ autenticado. FaÃ§a login novamente e tente outra vez.',
+      title: 'Sessão expirada',
+      message: 'Sua sessão expirou ou o usuário não está autenticado. Faça login novamente e tente outra vez.',
       statusCode,
     }
   }
   if (statusCode === 403) {
     return {
       title: 'Acesso negado',
-      message: 'VocÃª nÃ£o tem permissÃ£o para criar este pedido.',
+      message: 'Você não tem permissão para criar este pedido.',
       statusCode,
     }
   }
   if (statusCode === 422) {
     return {
       title: 'Dados rejeitados pelo backend',
-      message: 'O backend rejeitou os dados enviados para gerar a cobranÃ§a.',
+      message: 'O backend rejeitou os dados enviados para gerar a cobrança.',
       statusCode,
     }
   }
   if (statusCode && statusCode >= 500) {
     return {
       title: 'Falha interna no backend',
-      message: 'O servidor nÃ£o conseguiu gerar a cobranÃ§a neste momento.',
+      message: 'O servidor não conseguiu gerar a cobrança neste momento.',
       statusCode,
     }
   }
 
   return {
-    title: 'Erro ao gerar cobranÃ§a',
+    title: 'Erro ao gerar cobrança',
     message: fallback,
     statusCode,
   }
@@ -332,7 +335,7 @@ export function CreditosCheckout() {
   function buildRequestPayload(): IniciarPedidoRequest | null {
     const numericValue = parseFloat(valor)
     if (Number.isNaN(numericValue) || numericValue < 50) {
-      toast.error('Valor mÃ­nimo: R$ 50,00')
+      toast.error('Valor mínimo: R$ 50,00')
       return null
     }
 
@@ -424,7 +427,9 @@ export function CreditosCheckout() {
 
   const gatewayStatus = pedido ? getGatewayStatus(pedido) : null
   const gatewayStatusDetail = pedido ? getGatewayStatusDetail(pedido) : null
+  const pixQrSource = pedido?.metodo === 'PIX' ? resolveQrCodeSource(pedido.pix_qr_code_url) : null
   const pixInlineReady = pedido?.metodo === 'PIX' ? hasPixInlineData(pedido) : false
+  const pixCodeAvailable = Boolean(pedido?.metodo === 'PIX' && pedido.pix_copia_cola?.trim())
   const boletoInlineReady = pedido?.metodo === 'BOLETO' ? hasBoletoInlineData(pedido) : false
 
   return (
@@ -621,7 +626,7 @@ export function CreditosCheckout() {
                       </div>
                     )}
 
-                    {pixInlineReady ? (
+                    {pixCodeAvailable ? (
                       <>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>
                           <QrCode size={16} />
@@ -633,23 +638,27 @@ export function CreditosCheckout() {
                       </>
                     ) : (
                       <div style={{ padding: '14px 16px', borderRadius: '14px', border: '1px solid color-mix(in srgb, var(--warn) 35%, var(--border))', background: 'color-mix(in srgb, var(--warn-dim) 82%, transparent)', color: 'var(--text-muted)', fontSize: '13px' }}>
-                        O backend ainda não retornou os dados completos do PIX para este pedido.
+                        O backend ainda não retornou a chave PIX copia e cola para este pedido.
                       </div>
                     )}
 
-                    {pixInlineReady && resolveQrCodeSource(pedido.pix_qr_code_url) && (
+                    {pixQrSource ? (
                       <div style={{ display: 'grid', placeItems: 'center', gap: '12px', padding: '20px', borderRadius: '22px', border: '1px solid color-mix(in srgb, var(--accent-glow) 55%, var(--border))', background: 'radial-gradient(circle at top, color-mix(in srgb, var(--accent-dim) 46%, transparent), transparent 56%), linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, transparent), color-mix(in srgb, var(--surface-2) 99%, transparent))', boxShadow: '0 20px 40px rgba(15,23,42,0.10)' }}>
                         <div style={{ width: '100%', maxWidth: '252px', padding: '16px', borderRadius: '24px', background: '#ffffff', boxShadow: '0 18px 36px rgba(15,23,42,0.18)' }}>
-                          <img src={resolveQrCodeSource(pedido.pix_qr_code_url) ?? undefined} alt="QR Code PIX" style={{ width: '100%', aspectRatio: '1 / 1', objectFit: 'contain', borderRadius: '14px', display: 'block' }} />
+                          <img src={pixQrSource} alt="QR Code PIX" style={{ width: '100%', aspectRatio: '1 / 1', objectFit: 'contain', borderRadius: '14px', display: 'block' }} />
                         </div>
                         <div style={{ fontSize: '11px', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 700 }}>
                           Escaneie com o app do banco
                         </div>
                       </div>
+                    ) : (
+                      <div style={{ padding: '14px 16px', borderRadius: '14px', border: '1px solid color-mix(in srgb, var(--warn) 35%, var(--border))', background: 'color-mix(in srgb, var(--warn-dim) 82%, transparent)', color: 'var(--text-muted)', fontSize: '13px' }}>
+                        O backend ainda não retornou um QR Code válido para este pedido.
+                      </div>
                     )}
 
                     <div style={{ display: 'flex', gap: '12px' }} className="credit-result-actions">
-                      {pixInlineReady && pedido.pix_copia_cola && (
+                      {pixCodeAvailable && pedido.pix_copia_cola && (
                         <button type="button" onClick={() => void copiarPix(pedido.pix_copia_cola!)} style={actionButtonStyle('accent')}>
                           <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                             <span style={{ width: '34px', height: '34px', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: copiedPix ? 'rgba(16,185,129,0.18)' : 'rgba(0,212,170,0.14)', color: copiedPix ? '#7ef3c5' : 'var(--accent)', border: '1px solid color-mix(in srgb, var(--accent-glow) 70%, transparent)' }}>
@@ -694,7 +703,7 @@ export function CreditosCheckout() {
                       <>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>
                           <Landmark size={16} />
-                          Linha digitÃ¡vel
+                          Linha digitável
                         </div>
                         <div style={{ fontFamily: 'var(--mono)', fontSize: '12px', wordBreak: 'break-all', color: 'var(--text-muted)', background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 95%, transparent), color-mix(in srgb, var(--surface-2) 98%, transparent))', border: '1px solid color-mix(in srgb, var(--info) 16%, var(--border))', borderRadius: '18px', padding: '20px', lineHeight: 1.8, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03), 0 18px 42px rgba(0,0,0,0.12)' }}>
                           {pedido.boleto_linha_digitavel}
