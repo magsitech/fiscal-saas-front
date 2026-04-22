@@ -97,7 +97,7 @@ export function DashboardPage() {
     ]).then(([r, s, v]) => {
       setResumo(r)
       setSaldo(s)
-      setUltimas(v)
+      setUltimas(v.slice(0, 5))
       setLoading(false)
     })
   }, [])
