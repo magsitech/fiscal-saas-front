@@ -1,37 +1,21 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { Banknote, Check, Copy, ExternalLink, Landmark, MapPinHouse, QrCode, RefreshCw, Sparkles } from 'lucide-react'
+import { Banknote, Check, Copy, ExternalLink, Landmark, QrCode, RefreshCw, Sparkles } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { pedidosApi } from '@/services/api'
 import type { IniciarPedidoRequest, MetodoPagamento, PedidoDetalhe } from '@/types'
-import { Badge, Card, CardHeader, CardTitle, Input, Spinner } from '@/components/ui'
+import { Badge, Card, CardHeader, CardTitle, Spinner } from '@/components/ui'
 const POLLING_INTERVAL_MS = 5000
 
 type MetodoAtivo = Extract<MetodoPagamento, 'PIX' | 'BOLETO'>
 
-type BoletoFormState = {
-  payer_zip_code: string
-  payer_street_name: string
-  payer_street_number: string
-  payer_neighborhood: string
-  payer_city: string
-  payer_federal_unit: string
-}
 
 const PAYMENT_OPTIONS: Array<{ id: MetodoAtivo; label: string; note: string; icon: React.ReactNode }> = [
   { id: 'PIX', label: 'PIX', note: 'Geração imediata com copia e cola e QR Code.', icon: <Sparkles size={16} /> },
   { id: 'BOLETO', label: 'Boleto bancário', note: 'Gere o pedido com os dados do pagador.', icon: <Landmark size={16} /> },
 ]
 
-const EMPTY_BOLETO_FORM: BoletoFormState = {
-  payer_zip_code: '',
-  payer_street_name: '',
-  payer_street_number: '',
-  payer_neighborhood: '',
-  payer_city: '',
-  payer_federal_unit: '',
-}
 
 function fmtMoney(value: string | number) {
   const numeric = typeof value === 'number' ? value : Number(value)
@@ -140,7 +124,6 @@ function refreshButtonStyle(loading = false): React.CSSProperties {
 export function CreditosCheckout() {
   const [metodo, setMetodo] = useState<MetodoAtivo>('PIX')
   const [valor, setValor] = useState('100')
-  const [boletoForm, setBoletoForm] = useState<BoletoFormState>(EMPTY_BOLETO_FORM)
   const [loading, setLoading] = useState(false)
   const [loadingPedido, setLoadingPedido] = useState(false)
   const [pedido, setPedido] = useState<PedidoDetalhe | null>(null)
@@ -148,21 +131,7 @@ export function CreditosCheckout() {
   const [copiedPix, setCopiedPix] = useState(false)
   const [copiedBoleto, setCopiedBoleto] = useState(false)
 
-  const shouldShowBoletoForm = metodo === 'BOLETO'
   const canContinue = Boolean(pedido?.checkout_url) && Boolean(pedido && isContinuable(pedido.status))
-  const boletoMissingFields = useMemo(() => {
-    if (!shouldShowBoletoForm) return []
-    return Object.entries(boletoForm)
-      .filter(([, fieldValue]) => !fieldValue.trim())
-      .map(([key]) => key)
-  }, [boletoForm, shouldShowBoletoForm])
-
-  function updateBoletoField(field: keyof BoletoFormState, fieldValue: string) {
-    setBoletoForm((current) => ({
-      ...current,
-      [field]: field === 'payer_federal_unit' ? fieldValue.toUpperCase().slice(0, 2) : fieldValue,
-    }))
-  }
 
   async function carregarPedido(pedidoId: string, silent = false) {
     if (!silent) setLoadingPedido(true)
@@ -186,15 +155,9 @@ export function CreditosCheckout() {
       return null
     }
 
-    if (metodo === 'BOLETO' && boletoMissingFields.length > 0) {
-      toast.error('Preencha os dados do pagador para gerar o boleto.')
-      return null
-    }
-
     return {
       metodo,
       valor: numericValue,
-      ...(metodo === 'BOLETO' ? boletoForm : {}),
     }
   }
 
@@ -352,23 +315,6 @@ export function CreditosCheckout() {
             </div>
             <p style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '-4px' }}>Valor mínimo: R$ 50,00</p>
           </div>
-
-          {shouldShowBoletoForm && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--text-dim)' }}>
-                <MapPinHouse size={14} />
-                Dados do pagador para boleto
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
-                <Input label="CEP" value={boletoForm.payer_zip_code} onChange={(event) => updateBoletoField('payer_zip_code', event.target.value)} />
-                <Input label="Rua" value={boletoForm.payer_street_name} onChange={(event) => updateBoletoField('payer_street_name', event.target.value)} />
-                <Input label="Número" value={boletoForm.payer_street_number} onChange={(event) => updateBoletoField('payer_street_number', event.target.value)} />
-                <Input label="Bairro" value={boletoForm.payer_neighborhood} onChange={(event) => updateBoletoField('payer_neighborhood', event.target.value)} />
-                <Input label="Cidade" value={boletoForm.payer_city} onChange={(event) => updateBoletoField('payer_city', event.target.value)} />
-                <Input label="UF" maxLength={2} value={boletoForm.payer_federal_unit} onChange={(event) => updateBoletoField('payer_federal_unit', event.target.value)} />
-              </div>
-            </div>
-          )}
 
           <button
             type="button"
