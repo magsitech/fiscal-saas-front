@@ -208,16 +208,16 @@ export function Table({ children, fixed }: { children: React.ReactNode; fixed?: 
 
 export function Th({ children }: { children: React.ReactNode }) {
   return (
-    <th className="align-middle text-left px-5 py-2.5 text-xs font-semibold tracking-wider uppercase text-[var(--text-dim)] bg-[var(--surface-2)] border-b border-[var(--border)]">
-      {children}
+    <th className="align-middle text-left px-4 py-2.5 text-xs font-semibold tracking-wider uppercase text-[var(--text-dim)] bg-[var(--surface-2)] border-b border-[var(--border)]">
+      <div style={{ paddingLeft: '6px', paddingRight: '6px' }}>{children}</div>
     </th>
   )
 }
 
 export function Td({ children, mono }: { children: React.ReactNode; mono?: boolean }) {
   return (
-    <td className={`align-middle px-5 py-3 border-b border-[var(--border)] text-[var(--text)] last:border-b-0 ${mono ? 'font-mono text-xs tabular-nums' : ''}`}>
-      {children}
+    <td className={`align-middle px-4 py-3 border-b border-[var(--border)] text-[var(--text)] last:border-b-0 ${mono ? 'font-mono text-xs tabular-nums' : ''}`}>
+      <div style={{ paddingLeft: '6px', paddingRight: '6px', overflow: 'hidden' }}>{children}</div>
     </td>
   )
 }

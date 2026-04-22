@@ -377,16 +377,11 @@ export function ValidacoesPage() {
       'auditoria.csv',
       ['ID', 'Chave NF-e', 'Modelo', 'CNPJ emitente', 'Status', 'Status SEFAZ', 'Cache', 'Custo', 'Criado em', 'Processado em'],
       filteredItems.map((item) => [
-        item.id,
-        item.chave_nf,
-        item.modelo,
-        item.cnpj_emitente,
-        item.status,
-        item.status_sefaz,
+        item.id, item.chave_nf, item.modelo, item.cnpj_emitente,
+        item.status, item.status_sefaz,
         item.cache_hit ? 'Sim' : 'Não',
         getAuditoriaCost(item) ?? '',
-        item.criado_em,
-        item.processado_em ?? '',
+        item.criado_em, item.processado_em ?? '',
       ])
     )
     toast.success('CSV de auditoria exportado.')
@@ -498,19 +493,17 @@ export function ValidacoesPage() {
         <div className="app-data-desktop app-table-shell">
           <Table fixed>
             <colgroup>
-              <col style={{ width: '22%' }} />
-              <col style={{ width: '9%' }} />
-              <col style={{ width: '16%' }} />
-              <col style={{ width: '13%' }} />
-              <col style={{ width: '12%' }} />
-              <col style={{ width: '8%' }} />
-              <col style={{ width: '20%' }} />
+              <col style={{ width: '30%' }} />
+              <col style={{ width: '11%' }} />
+              <col style={{ width: '17%' }} />
+              <col style={{ width: '14%' }} />
+              <col style={{ width: '10%' }} />
+              <col style={{ width: '18%' }} />
             </colgroup>
             <thead>
               <tr>
                 <Th>Chave NF-e</Th>
                 <Th><div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>Modelo</div></Th>
-                <Th><div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>CNPJ emitente</div></Th>
                 <Th>Status</Th>
                 <Th><div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>Custo</div></Th>
                 <Th><div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>Cache</div></Th>
@@ -521,13 +514,13 @@ export function ValidacoesPage() {
               {loading ? (
                 Array.from({ length: 6 }).map((_, i) => (
                   <TrHover key={i}>
-                    {Array.from({ length: 7 }).map((__, j) => (
+                    {Array.from({ length: 6 }).map((__, j) => (
                       <Td key={j}><Skeleton className="h-4 w-full" /></Td>
                     ))}
                   </TrHover>
                 ))
               ) : filteredItems.length === 0 ? (
-                <tr><td colSpan={7}><Empty message="Nenhuma auditoria encontrada para os filtros selecionados" /></td></tr>
+                <tr><td colSpan={6}><Empty message="Nenhuma auditoria encontrada para os filtros selecionados" /></td></tr>
               ) : (
                 pageItems.map((v) => (
                   <TrHover key={v.id}>
@@ -544,7 +537,6 @@ export function ValidacoesPage() {
                         </span>
                       </div>
                     </Td>
-                    <Td mono><div style={{ textAlign: 'right', fontSize: '11px', color: 'var(--text-muted)' }}>{v.cnpj_emitente || <span style={{ color: 'var(--text-dim)' }}>—</span>}</div></Td>
                     <Td><Badge status={v.status} /></Td>
                     <Td>
                       <div style={{ textAlign: 'right' }}>
@@ -614,8 +606,7 @@ export function ValidacoesPage() {
                     <Badge status={v.status} />
                   </div>
                   <MobileField label="Modelo" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px', fontWeight: 700, color: v.modelo === '55' ? 'var(--info)' : 'var(--accent)' }}>NF-{v.modelo === '55' ? 'e' : 'Ce'}</span>} />
-                  <MobileField label="CNPJ emitente" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>{v.cnpj_emitente}</span>} />
-                  <MobileField label="Custo" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>{getAuditoriaCost(v) ? `R$ ${Number(getAuditoriaCost(v)).toFixed(4)}` : '-'}</span>} />
+                  <MobileField label="Custo" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>{getAuditoriaCost(v) ? `R$ ${Number(getAuditoriaCost(v)).toFixed(4)}` : '—'}</span>} />
                   <MobileField label="Cache" value={v.cache_hit ? <Badge status="CACHE_HIT" label="Sim" /> : <span style={{ fontSize: '12px', color: 'var(--text-dim)' }}>Não</span>} />
                   <MobileField label="Criado" value={<span style={{ fontSize: '12px' }}>{fmtAgo(v.criado_em)}</span>} />
                   <MobileField label="Processado" value={<span style={{ fontSize: '12px' }}>{fmtDate(v.processado_em)}</span>} />
