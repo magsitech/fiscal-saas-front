@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import axios from 'axios'
 import {
   Banknote,
   Check,
@@ -23,10 +24,15 @@ const POLLING_INTERVAL_MS = 5000
 
 type MetodoAtivo = Extract<MetodoPagamento, 'PIX' | 'BOLETO'>
 type CheckoutVisualState = 'idle' | 'loading' | 'awaiting' | 'paid' | 'cancelled' | 'error'
+type CheckoutError = {
+  title: string
+  message: string
+  statusCode?: number | null
+}
 
 const PAYMENT_OPTIONS: Array<{ id: MetodoAtivo; label: string; note: string; icon: ReactNode }> = [
   { id: 'PIX', label: 'PIX', note: 'Copia e cola imediato com QR Code gerado pelo backend.', icon: <Sparkles size={16} /> },
-  { id: 'BOLETO', label: 'Boleto bancario', note: 'Linha digitavel e link do boleto vindos do backend.', icon: <Landmark size={16} /> },
+  { id: 'BOLETO', label: 'Boleto bancário', note: 'Linha digitável e link do boleto vindos do backend.', icon: <Landmark size={16} /> },
 ]
 
 function fmtMoney(value: string | number) {
@@ -90,19 +96,19 @@ function getVisualState(pedido: PedidoDetalhe | null, pedidoError: string | null
 function getStatusMessage(pedido: PedidoDetalhe) {
   if (pedido.status === 'PAGO') {
     return pedido.credito_lancado
-      ? 'Pagamento confirmado pelo backend e credito ja lancado. Voce pode seguir com seguranca.'
-      : 'Pagamento confirmado pelo backend. Aguarde apenas a conciliacao final do credito, se necessario.'
+      ? 'Pagamento confirmado pelo backend e crédito já lançado. Você pode seguir com segurança.'
+      : 'Pagamento confirmado pelo backend. Aguarde apenas a conciliação final do crédito, se necessário.'
   }
   if (pedido.status === 'AGUARDANDO_PAGAMENTO') {
-    return 'Pedido aguardando pagamento. O fluxo so avanca quando o backend receber a confirmacao oficial do webhook.'
+    return 'Pedido aguardando pagamento. O fluxo só avança quando o backend receber a confirmação oficial do webhook.'
   }
   if (pedido.status === 'CANCELADO') {
-    return 'Pagamento cancelado. Gere um novo pedido para continuar a compra de creditos.'
+    return 'Pagamento cancelado. Gere um novo pedido para continuar a compra de créditos.'
   }
   if (pedido.status === 'EXPIRADO') {
-    return 'Pagamento expirado. Gere um novo pedido para receber novos dados de cobranca.'
+    return 'Pagamento expirado. Gere um novo pedido para receber novos dados de cobrança.'
   }
-  return 'Pedido criado. Aguardando atualizacao oficial do backend.'
+  return 'Pedido criado. Aguardando atualização oficial do backend.'
 }
 
 function isQrImageSource(value?: string | null) {
@@ -113,6 +119,89 @@ function resolveQrCodeSource(value?: string | null) {
   if (!value) return null
   if (isQrImageSource(value)) return value
   return `data:image/png;base64,${value}`
+}
+
+function buildCheckoutError(error: unknown, fallback: string): CheckoutError {
+  if (!axios.isAxiosError(error)) {
+    return {
+      title: 'Erro ao gerar cobrança',
+      message: fallback,
+      statusCode: null,
+    }
+  }
+
+  const statusCode = error.response?.status ?? null
+  const payload = error.response?.data
+  if (typeof payload === 'string' && payload.trim()) {
+    return {
+      title: 'Falha ao criar o pedido',
+      message: payload,
+      statusCode,
+    }
+  }
+
+  if (payload && typeof payload === 'object') {
+    const record = payload as Record<string, unknown>
+
+    if (typeof record.detail === 'string' && record.detail.trim()) {
+      return { title: 'Falha ao criar o pedido', message: record.detail, statusCode }
+    }
+    if (typeof record.message === 'string' && record.message.trim()) {
+      return { title: 'Falha ao criar o pedido', message: record.message, statusCode }
+    }
+    if (typeof record.mensagem === 'string' && record.mensagem.trim()) {
+      return { title: 'Falha ao criar o pedido', message: record.mensagem, statusCode }
+    }
+
+    if (Array.isArray(record.detail)) {
+      const firstIssue = record.detail.find((item) => item && typeof item === 'object') as Record<string, unknown> | undefined
+      if (firstIssue && typeof firstIssue.msg === 'string' && firstIssue.msg.trim()) {
+        return { title: 'Dados inválidos para cobrança', message: firstIssue.msg, statusCode }
+      }
+    }
+
+    if (Array.isArray(record.errors)) {
+      const firstError = record.errors.find((item) => typeof item === 'string')
+      if (typeof firstError === 'string' && firstError.trim()) {
+        return { title: 'Falha ao criar o pedido', message: firstError, statusCode }
+      }
+    }
+  }
+
+  if (statusCode === 401) {
+    return {
+      title: 'Sessão expirada',
+      message: 'Sua sessão expirou ou o usuário não está autenticado. Faça login novamente e tente outra vez.',
+      statusCode,
+    }
+  }
+  if (statusCode === 403) {
+    return {
+      title: 'Acesso negado',
+      message: 'Você não tem permissão para criar este pedido.',
+      statusCode,
+    }
+  }
+  if (statusCode === 422) {
+    return {
+      title: 'Dados rejeitados pelo backend',
+      message: 'O backend rejeitou os dados enviados para gerar a cobrança.',
+      statusCode,
+    }
+  }
+  if (statusCode && statusCode >= 500) {
+    return {
+      title: 'Falha interna no backend',
+      message: 'O servidor não conseguiu gerar a cobrança neste momento.',
+      statusCode,
+    }
+  }
+
+  return {
+    title: 'Erro ao gerar cobrança',
+    message: fallback,
+    statusCode,
+  }
 }
 
 function actionButtonStyle(tone: 'accent' | 'neutral' = 'accent', disabled = false): CSSProperties {
@@ -202,12 +291,12 @@ export function CreditosCheckout() {
   const [loading, setLoading] = useState(false)
   const [loadingPedido, setLoadingPedido] = useState(false)
   const [pedido, setPedido] = useState<PedidoDetalhe | null>(null)
-  const [pedidoError, setPedidoError] = useState<string | null>(null)
+  const [pedidoError, setPedidoError] = useState<CheckoutError | null>(null)
   const [copiedPix, setCopiedPix] = useState(false)
   const [copiedBoleto, setCopiedBoleto] = useState(false)
   const lastNotifiedStatusRef = useRef<string | null>(null)
 
-  const visualState = getVisualState(pedido, pedidoError, loadingPedido && !pedido)
+  const visualState = getVisualState(pedido, pedidoError?.message ?? null, loadingPedido && !pedido)
   const canProceed = pedido?.status === 'PAGO'
   const shouldOfferRetry = pedido?.status === 'CANCELADO' || pedido?.status === 'EXPIRADO' || Boolean(pedidoError)
 
@@ -220,7 +309,11 @@ export function CreditosCheckout() {
       setPedidoError(null)
       return data
     } catch {
-      setPedidoError('Nao foi possivel consultar o status atualizado do pedido.')
+      setPedidoError({
+        title: 'Erro ao consultar o pedido',
+        message: 'Não foi possível consultar o status atualizado do pedido.',
+        statusCode: null,
+      })
       return null
     } finally {
       if (!silent) setLoadingPedido(false)
@@ -230,7 +323,7 @@ export function CreditosCheckout() {
   function buildRequestPayload(): IniciarPedidoRequest | null {
     const numericValue = parseFloat(valor)
     if (Number.isNaN(numericValue) || numericValue < 50) {
-      toast.error('Valor minimo: R$ 50,00')
+      toast.error('Valor mínimo: R$ 50,00')
       return null
     }
 
@@ -254,26 +347,31 @@ export function CreditosCheckout() {
       const response = await pedidosApi.iniciar(payload)
       const normalized = normalizePedidoCriadoToDetalhe(response)
       setPedido(normalized)
-      toast.success(normalized.metodo === 'PIX' ? 'Cobranca PIX gerada.' : 'Boleto gerado com sucesso.')
+      toast.success(normalized.metodo === 'PIX' ? 'Cobrança PIX gerada.' : 'Boleto gerado com sucesso.')
       await carregarPedido(normalized.id, true)
-    } catch {
+    } catch (error) {
       setPedido(null)
-      setPedidoError('Nao foi possivel gerar a cobranca. Tente novamente em instantes.')
-      toast.error('Erro ao gerar cobranca.')
+      const checkoutError = buildCheckoutError(error, 'Não foi possível gerar a cobrança. Tente novamente em instantes.')
+      setPedidoError(checkoutError)
+      toast.error(
+        checkoutError.statusCode
+          ? `${checkoutError.title} (${checkoutError.statusCode})`
+          : checkoutError.title
+      )
     } finally {
       setLoading(false)
     }
   }
 
   async function copiarPix(text: string) {
-    await copyToClipboard(text, 'Codigo PIX copiado.', () => {
+    await copyToClipboard(text, 'Código PIX copiado.', () => {
       setCopiedPix(true)
       window.setTimeout(() => setCopiedPix(false), 2000)
     })
   }
 
   async function copiarBoleto(text: string) {
-    await copyToClipboard(text, 'Linha digitavel copiada.', () => {
+    await copyToClipboard(text, 'Linha digitável copiada.', () => {
       setCopiedBoleto(true)
       window.setTimeout(() => setCopiedBoleto(false), 2000)
     })
@@ -322,18 +420,18 @@ export function CreditosCheckout() {
     <div style={{ maxWidth: '860px', display: 'flex', flexDirection: 'column', gap: '28px' }}>
       <Card>
         <CardHeader>
-          <CardTitle>Compra de creditos</CardTitle>
+          <CardTitle>Compra de créditos</CardTitle>
         </CardHeader>
 
         <div style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
           <div style={{ padding: '20px 22px', borderRadius: '18px', background: 'linear-gradient(135deg, color-mix(in srgb, var(--accent-dim) 88%, transparent), color-mix(in srgb, var(--info-dim) 42%, transparent))', border: '1px solid var(--accent-glow)', fontSize: '13px', lineHeight: 1.8, boxShadow: '0 16px 34px rgba(0,212,170,0.08)' }}>
             <span style={{ color: 'var(--text-muted)' }}>
-              O frontend usa apenas a API do backend. O pedido so e liberado quando o backend confirmar o pagamento via webhook.
+              O frontend usa apenas a API do backend. O pedido só é liberado quando o backend confirmar o pagamento via webhook.
             </span>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--text-dim)' }}>Metodo de pagamento</div>
+            <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--text-dim)' }}>Método de pagamento</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }} className="credit-method-row">
               {PAYMENT_OPTIONS.map((option) => {
                 const active = metodo === option.id
@@ -411,7 +509,7 @@ export function CreditosCheckout() {
                 style={{ width: '100%', paddingLeft: '48px', paddingRight: '18px', paddingTop: '16px', paddingBottom: '16px', borderRadius: '16px', border: '1px solid var(--border)', background: 'color-mix(in srgb, var(--surface-2) 94%, transparent)', color: 'var(--text)', fontFamily: 'var(--mono)', fontSize: '18px', fontWeight: 600, outline: 'none', boxSizing: 'border-box' }}
               />
             </div>
-            <p style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '-4px' }}>Valor minimo: R$ 50,00</p>
+            <p style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '-4px' }}>Valor mínimo: R$ 50,00</p>
           </div>
 
           <button
@@ -438,7 +536,7 @@ export function CreditosCheckout() {
             }}
           >
             {loading ? <Spinner size={16} /> : <Banknote size={18} />}
-            {loading ? 'Gerando cobranca...' : `${metodo === 'PIX' ? 'Gerar pedido PIX' : 'Gerar boleto'} - ${parseFloat(valor) > 0 ? fmtMoney(valor) : '--'}`}
+            {loading ? 'Gerando cobrança...' : `${metodo === 'PIX' ? 'Gerar pedido PIX' : 'Gerar boleto'} - ${parseFloat(valor) > 0 ? fmtMoney(valor) : '--'}`}
           </button>
         </div>
       </Card>
@@ -484,13 +582,13 @@ export function CreditosCheckout() {
                   </div>
                   {gatewayStatus && (
                     <div style={{ padding: '16px', borderRadius: '14px', background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-                      <div style={{ fontSize: '11px', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '8px' }}>Gateway status</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '8px' }}>Status no gateway</div>
                       <div style={{ fontFamily: 'var(--mono)', fontSize: '13px', color: 'var(--text)' }}>{gatewayStatus}</div>
                     </div>
                   )}
                   {gatewayStatusDetail && (
                     <div style={{ padding: '16px', borderRadius: '14px', background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-                      <div style={{ fontSize: '11px', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '8px' }}>Gateway detalhe</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '8px' }}>Detalhe do gateway</div>
                       <div style={{ fontFamily: 'var(--mono)', fontSize: '13px', color: 'var(--text)' }}>{gatewayStatusDetail}</div>
                     </div>
                   )}
@@ -499,7 +597,7 @@ export function CreditosCheckout() {
                 <div style={{ padding: '18px', borderRadius: '16px', lineHeight: 1.7, ...statePanelStyle(visualState) }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', fontWeight: 700, color: 'var(--text)' }}>
                     {visualState === 'paid' ? <CheckCircle2 size={18} /> : visualState === 'awaiting' || visualState === 'loading' ? <RefreshCw size={18} /> : <CircleAlert size={18} />}
-                    {visualState === 'paid' ? 'Pagamento confirmado' : visualState === 'awaiting' ? 'Aguardando pagamento' : visualState === 'cancelled' ? 'Pagamento indisponivel' : visualState === 'error' ? 'Erro ao acompanhar pedido' : 'Status do pedido'}
+                    {visualState === 'paid' ? 'Pagamento confirmado' : visualState === 'awaiting' ? 'Aguardando pagamento' : visualState === 'cancelled' ? 'Pagamento indisponível' : visualState === 'error' ? 'Erro ao acompanhar pedido' : 'Status do pedido'}
                   </div>
                   {getStatusMessage(pedido)}
                 </div>
@@ -518,7 +616,7 @@ export function CreditosCheckout() {
                       </>
                     ) : (
                       <div style={{ padding: '14px 16px', borderRadius: '14px', border: '1px solid color-mix(in srgb, var(--warn) 35%, var(--border))', background: 'color-mix(in srgb, var(--warn-dim) 82%, transparent)', color: 'var(--text-muted)', fontSize: '13px' }}>
-                        O backend ainda nao retornou o codigo PIX para este pedido.
+                        O backend ainda não retornou o código PIX para este pedido.
                       </div>
                     )}
 
@@ -541,8 +639,8 @@ export function CreditosCheckout() {
                               {copiedPix ? <Check size={16} /> : <Copy size={16} />}
                             </span>
                             <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
-                              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>{copiedPix ? 'Codigo copiado' : 'Copiar codigo PIX'}</span>
-                              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Pague no banco e aguarde a confirmacao oficial</span>
+                              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>{copiedPix ? 'Código copiado' : 'Copiar código PIX'}</span>
+                              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Pague no banco e aguarde a confirmação oficial</span>
                             </span>
                           </span>
                           <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: copiedPix ? '#7ef3c5' : 'var(--accent)' }}>{copiedPix ? 'OK' : 'PIX'}</span>
@@ -558,7 +656,7 @@ export function CreditosCheckout() {
                       <>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>
                           <Landmark size={16} />
-                          Linha digitavel
+                          Linha digitável
                         </div>
                         <div style={{ fontFamily: 'var(--mono)', fontSize: '12px', wordBreak: 'break-all', color: 'var(--text-muted)', background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 95%, transparent), color-mix(in srgb, var(--surface-2) 98%, transparent))', border: '1px solid color-mix(in srgb, var(--info) 16%, var(--border))', borderRadius: '18px', padding: '20px', lineHeight: 1.8, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03), 0 18px 42px rgba(0,0,0,0.12)' }}>
                           {pedido.boleto_linha_digitavel}
@@ -566,7 +664,7 @@ export function CreditosCheckout() {
                       </>
                     ) : (
                       <div style={{ padding: '14px 16px', borderRadius: '14px', border: '1px solid color-mix(in srgb, var(--warn) 35%, var(--border))', background: 'color-mix(in srgb, var(--warn-dim) 82%, transparent)', color: 'var(--text-muted)', fontSize: '13px' }}>
-                        O backend ainda nao retornou a linha digitavel para este boleto.
+                        O backend ainda não retornou a linha digitável para este boleto.
                       </div>
                     )}
 
@@ -578,7 +676,7 @@ export function CreditosCheckout() {
                               {copiedBoleto ? <Check size={16} /> : <Copy size={16} />}
                             </span>
                             <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
-                              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>{copiedBoleto ? 'Linha copiada' : 'Copiar linha digitavel'}</span>
+                              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>{copiedBoleto ? 'Linha copiada' : 'Copiar linha digitável'}</span>
                               <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>Use no internet banking ou repasse ao financeiro</span>
                             </span>
                           </span>
@@ -594,7 +692,7 @@ export function CreditosCheckout() {
                             </span>
                             <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
                               <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>Abrir boleto</span>
-                              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Visualize ou baixe o titulo gerado pelo backend</span>
+                              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Visualize ou baixe o título gerado pelo backend</span>
                             </span>
                           </span>
                           <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--accent)' }}><ExternalLink size={12} /></span>
@@ -606,7 +704,7 @@ export function CreditosCheckout() {
 
                 {pedido.checkout_url && (
                   <div style={{ padding: '14px 16px', borderRadius: '14px', border: '1px solid var(--border)', background: 'color-mix(in srgb, var(--surface-2) 92%, transparent)', color: 'var(--text-muted)', fontSize: '13px', lineHeight: 1.7 }}>
-                    Um checkout_url foi retornado pelo backend. O frontend o preserva apenas como compatibilidade, mas a liberacao do fluxo continua dependendo do status <strong style={{ color: 'var(--text)' }}>PAGO</strong>.
+                    Um `checkout_url` foi retornado pelo backend. O frontend o preserva apenas como compatibilidade, mas a liberação do fluxo continua dependendo do status <strong style={{ color: 'var(--text)' }}>PAGO</strong>.
                   </div>
                 )}
 
@@ -634,7 +732,7 @@ export function CreditosCheckout() {
                         </span>
                         <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
                           <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>Gerar novo pedido</span>
-                          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Cria uma nova cobranca com o metodo atual</span>
+                          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Cria uma nova cobrança com o método atual</span>
                         </span>
                       </span>
                       <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--accent)' }}>NOVO</span>
@@ -646,12 +744,12 @@ export function CreditosCheckout() {
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                       <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>
-                        {canProceed ? 'Fluxo liberado para continuar' : 'Aguardando confirmacao oficial'}
+                        {canProceed ? 'Fluxo liberado para continuar' : 'Aguardando confirmação oficial'}
                       </div>
                       <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
                         {canProceed
                           ? 'O backend marcou este pedido como PAGO. Agora o restante do fluxo pode prosseguir.'
-                          : 'A cobranca criada nao significa pagamento concluido. O frontend continua bloqueado ate o backend confirmar.'}
+                          : 'A cobrança criada não significa pagamento concluído. O frontend continua bloqueado até o backend confirmar.'}
                       </div>
                     </div>
                     {!canProceed && (
@@ -662,7 +760,7 @@ export function CreditosCheckout() {
                           </span>
                           <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
                             <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>Alterar pedido</span>
-                            <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>Voltar para ajustar metodo ou valor</span>
+                            <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>Voltar para ajustar método ou valor</span>
                           </span>
                         </span>
                         <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--text-dim)' }}>EDIT</span>
@@ -674,8 +772,15 @@ export function CreditosCheckout() {
             )}
 
             {!pedido && pedidoError ? (
-              <div style={{ padding: '14px 16px', borderRadius: '14px', border: '1px solid color-mix(in srgb, var(--danger) 30%, var(--border))', background: 'color-mix(in srgb, var(--danger-dim) 82%, transparent)', color: 'var(--text-muted)', fontSize: '13px' }}>
-                {pedidoError}
+              <div style={{ padding: '16px 18px', borderRadius: '16px', border: '1px solid color-mix(in srgb, var(--danger) 30%, var(--border))', background: 'color-mix(in srgb, var(--danger-dim) 82%, transparent)', color: 'var(--text-muted)', fontSize: '13px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text)', fontWeight: 700 }}>
+                  <CircleAlert size={16} />
+                  {pedidoError.statusCode ? `${pedidoError.title} (${pedidoError.statusCode})` : pedidoError.title}
+                </div>
+                <div style={{ lineHeight: 1.7 }}>{pedidoError.message}</div>
+                <div style={{ fontSize: '12px', color: 'var(--text-dim)' }}>
+                  Verifique a autenticação, os dados enviados e a resposta do backend para este pedido.
+                </div>
               </div>
             ) : null}
           </div>
