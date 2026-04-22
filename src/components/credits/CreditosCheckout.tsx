@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+﻿import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -32,7 +32,7 @@ type CheckoutError = {
 
 const PAYMENT_OPTIONS: Array<{ id: MetodoAtivo; label: string; note: string; icon: ReactNode }> = [
   { id: 'PIX', label: 'PIX', note: 'Copia e cola imediato com QR Code gerado pelo backend.', icon: <Sparkles size={16} /> },
-  { id: 'BOLETO', label: 'Boleto bancário', note: 'Linha digitável e link do boleto vindos do backend.', icon: <Landmark size={16} /> },
+  { id: 'BOLETO', label: 'Boleto bancÃ¡rio', note: 'Linha digitÃ¡vel e link do boleto vindos do backend.', icon: <Landmark size={16} /> },
 ]
 
 function fmtMoney(value: string | number) {
@@ -96,19 +96,19 @@ function getVisualState(pedido: PedidoDetalhe | null, pedidoError: string | null
 function getStatusMessage(pedido: PedidoDetalhe) {
   if (pedido.status === 'PAGO') {
     return pedido.credito_lancado
-      ? 'Pagamento confirmado pelo backend e crédito já lançado. Você pode seguir com segurança.'
-      : 'Pagamento confirmado pelo backend. Aguarde apenas a conciliação final do crédito, se necessário.'
+      ? 'Pagamento confirmado pelo backend e crÃ©dito jÃ¡ lanÃ§ado. VocÃª pode seguir com seguranÃ§a.'
+      : 'Pagamento confirmado pelo backend. Aguarde apenas a conciliaÃ§Ã£o final do crÃ©dito, se necessÃ¡rio.'
   }
   if (pedido.status === 'AGUARDANDO_PAGAMENTO') {
-    return 'Pedido aguardando pagamento. O fluxo só avança quando o backend receber a confirmação oficial do webhook.'
+    return 'Pedido aguardando pagamento. Assim que a confirmaÃ§Ã£o chegar, continuaremos por aqui.'
   }
   if (pedido.status === 'CANCELADO') {
-    return 'Pagamento cancelado. Gere um novo pedido para continuar a compra de créditos.'
+    return 'Pagamento cancelado. Gere um novo pedido para continuar a compra de crÃ©ditos.'
   }
   if (pedido.status === 'EXPIRADO') {
-    return 'Pagamento expirado. Gere um novo pedido para receber novos dados de cobrança.'
+    return 'Pagamento expirado. Gere um novo pedido para receber novos dados de cobranÃ§a.'
   }
-  return 'Pedido criado. Aguardando atualização oficial do backend.'
+  return 'Pedido criado. Aguardando atualizaÃ§Ã£o oficial do backend.'
 }
 
 function isQrImageSource(value?: string | null) {
@@ -122,17 +122,17 @@ function resolveQrCodeSource(value?: string | null) {
 }
 
 function hasPixInlineData(pedido: PedidoDetalhe) {
-  return Boolean(pedido.pix_copia_cola || pedido.pix_qr_code_url)
+  return Boolean(pedido.pix_copia_cola && pedido.pix_qr_code_url)
 }
 
 function hasBoletoInlineData(pedido: PedidoDetalhe) {
-  return Boolean(pedido.boleto_linha_digitavel || pedido.boleto_url)
+  return Boolean(pedido.boleto_linha_digitavel && pedido.boleto_url)
 }
 
 function buildCheckoutError(error: unknown, fallback: string): CheckoutError {
   if (!axios.isAxiosError(error)) {
     return {
-      title: 'Erro ao gerar cobrança',
+      title: 'Erro ao gerar cobranÃ§a',
       message: fallback,
       statusCode: null,
     }
@@ -164,7 +164,7 @@ function buildCheckoutError(error: unknown, fallback: string): CheckoutError {
     if (Array.isArray(record.detail)) {
       const firstIssue = record.detail.find((item) => item && typeof item === 'object') as Record<string, unknown> | undefined
       if (firstIssue && typeof firstIssue.msg === 'string' && firstIssue.msg.trim()) {
-        return { title: 'Dados inválidos para cobrança', message: firstIssue.msg, statusCode }
+        return { title: 'Dados invÃ¡lidos para cobranÃ§a', message: firstIssue.msg, statusCode }
       }
     }
 
@@ -178,35 +178,35 @@ function buildCheckoutError(error: unknown, fallback: string): CheckoutError {
 
   if (statusCode === 401) {
     return {
-      title: 'Sessão expirada',
-      message: 'Sua sessão expirou ou o usuário não está autenticado. Faça login novamente e tente outra vez.',
+      title: 'SessÃ£o expirada',
+      message: 'Sua sessÃ£o expirou ou o usuÃ¡rio nÃ£o estÃ¡ autenticado. FaÃ§a login novamente e tente outra vez.',
       statusCode,
     }
   }
   if (statusCode === 403) {
     return {
       title: 'Acesso negado',
-      message: 'Você não tem permissão para criar este pedido.',
+      message: 'VocÃª nÃ£o tem permissÃ£o para criar este pedido.',
       statusCode,
     }
   }
   if (statusCode === 422) {
     return {
       title: 'Dados rejeitados pelo backend',
-      message: 'O backend rejeitou os dados enviados para gerar a cobrança.',
+      message: 'O backend rejeitou os dados enviados para gerar a cobranÃ§a.',
       statusCode,
     }
   }
   if (statusCode && statusCode >= 500) {
     return {
       title: 'Falha interna no backend',
-      message: 'O servidor não conseguiu gerar a cobrança neste momento.',
+      message: 'O servidor nÃ£o conseguiu gerar a cobranÃ§a neste momento.',
       statusCode,
     }
   }
 
   return {
-    title: 'Erro ao gerar cobrança',
+    title: 'Erro ao gerar cobranÃ§a',
     message: fallback,
     statusCode,
   }
@@ -316,11 +316,12 @@ export function CreditosCheckout() {
       setPedido(data)
       setPedidoError(null)
       return data
-    } catch {
+    } catch (error) {
+      const checkoutError = buildCheckoutError(error, 'Não foi possível consultar o status atualizado do pedido.')
       setPedidoError({
         title: 'Erro ao consultar o pedido',
-        message: 'Não foi possível consultar o status atualizado do pedido.',
-        statusCode: null,
+        message: checkoutError.message,
+        statusCode: checkoutError.statusCode ?? null,
       })
       return null
     } finally {
@@ -331,7 +332,7 @@ export function CreditosCheckout() {
   function buildRequestPayload(): IniciarPedidoRequest | null {
     const numericValue = parseFloat(valor)
     if (Number.isNaN(numericValue) || numericValue < 50) {
-      toast.error('Valor mínimo: R$ 50,00')
+      toast.error('Valor mÃ­nimo: R$ 50,00')
       return null
     }
 
@@ -436,7 +437,7 @@ export function CreditosCheckout() {
         <div style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
           <div style={{ padding: '20px 22px', borderRadius: '18px', background: 'linear-gradient(135deg, color-mix(in srgb, var(--accent-dim) 88%, transparent), color-mix(in srgb, var(--info-dim) 42%, transparent))', border: '1px solid var(--accent-glow)', fontSize: '13px', lineHeight: 1.8, boxShadow: '0 16px 34px rgba(0,212,170,0.08)' }}>
             <span style={{ color: 'var(--text-muted)' }}>
-              O frontend usa apenas a API do backend. O pedido só é liberado quando o backend confirmar o pagamento via webhook.
+              Gere seu pagamento por PIX ou boleto e acompanhe tudo por aqui. Assim que a confirmação chegar, você poderá continuar.
             </span>
           </div>
 
@@ -614,13 +615,13 @@ export function CreditosCheckout() {
 
                 {pedido.metodo === 'PIX' && (
                   <>
-                    {!pixInlineReady && pedido.checkout_url && (
+                    {!pixInlineReady && (
                       <div style={{ padding: '14px 16px', borderRadius: '14px', border: '1px solid color-mix(in srgb, var(--warn) 35%, var(--border))', background: 'color-mix(in srgb, var(--warn-dim) 82%, transparent)', color: 'var(--text-muted)', fontSize: '13px', lineHeight: 1.7 }}>
-                        Este pedido PIX chegou do backend apenas com <strong style={{ color: 'var(--text)' }}>checkout_url</strong>. Sem os campos <strong style={{ color: 'var(--text)' }}>pix_copia_cola</strong> e <strong style={{ color: 'var(--text)' }}>pix_qr_code_url</strong>, o frontend nÃ£o consegue exibir o cÃ³digo PIX e o QR Code diretamente na plataforma.
+                        Os dados do PIX ainda estão incompletos. Para exibir o pagamento diretamente na plataforma, o backend precisa retornar <strong style={{ color: 'var(--text)' }}>pix_copia_cola</strong> e <strong style={{ color: 'var(--text)' }}>pix_qr_code_url</strong>.
                       </div>
                     )}
 
-                    {pedido.pix_copia_cola ? (
+                    {pixInlineReady ? (
                       <>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>
                           <QrCode size={16} />
@@ -632,11 +633,11 @@ export function CreditosCheckout() {
                       </>
                     ) : (
                       <div style={{ padding: '14px 16px', borderRadius: '14px', border: '1px solid color-mix(in srgb, var(--warn) 35%, var(--border))', background: 'color-mix(in srgb, var(--warn-dim) 82%, transparent)', color: 'var(--text-muted)', fontSize: '13px' }}>
-                        O backend ainda não retornou o código PIX para este pedido.
+                        O backend ainda não retornou os dados completos do PIX para este pedido.
                       </div>
                     )}
 
-                    {resolveQrCodeSource(pedido.pix_qr_code_url) && (
+                    {pixInlineReady && resolveQrCodeSource(pedido.pix_qr_code_url) && (
                       <div style={{ display: 'grid', placeItems: 'center', gap: '12px', padding: '20px', borderRadius: '22px', border: '1px solid color-mix(in srgb, var(--accent-glow) 55%, var(--border))', background: 'radial-gradient(circle at top, color-mix(in srgb, var(--accent-dim) 46%, transparent), transparent 56%), linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, transparent), color-mix(in srgb, var(--surface-2) 99%, transparent))', boxShadow: '0 20px 40px rgba(15,23,42,0.10)' }}>
                         <div style={{ width: '100%', maxWidth: '252px', padding: '16px', borderRadius: '24px', background: '#ffffff', boxShadow: '0 18px 36px rgba(15,23,42,0.18)' }}>
                           <img src={resolveQrCodeSource(pedido.pix_qr_code_url) ?? undefined} alt="QR Code PIX" style={{ width: '100%', aspectRatio: '1 / 1', objectFit: 'contain', borderRadius: '14px', display: 'block' }} />
@@ -648,7 +649,7 @@ export function CreditosCheckout() {
                     )}
 
                     <div style={{ display: 'flex', gap: '12px' }} className="credit-result-actions">
-                      {pedido.pix_copia_cola && (
+                      {pixInlineReady && pedido.pix_copia_cola && (
                         <button type="button" onClick={() => void copiarPix(pedido.pix_copia_cola!)} style={actionButtonStyle('accent')}>
                           <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                             <span style={{ width: '34px', height: '34px', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: copiedPix ? 'rgba(16,185,129,0.18)' : 'rgba(0,212,170,0.14)', color: copiedPix ? '#7ef3c5' : 'var(--accent)', border: '1px solid color-mix(in srgb, var(--accent-glow) 70%, transparent)' }}>
@@ -656,22 +657,22 @@ export function CreditosCheckout() {
                             </span>
                             <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
                               <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>{copiedPix ? 'Código copiado' : 'Copiar código PIX'}</span>
-                              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Pague no banco e aguarde a confirmação oficial</span>
+                              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Use no app do banco e acompanhe a confirmação por aqui</span>
                             </span>
                           </span>
                           <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: copiedPix ? '#7ef3c5' : 'var(--accent)' }}>{copiedPix ? 'OK' : 'PIX'}</span>
                         </button>
                       )}
 
-                      {pedido.checkout_url && (
+                      {!pixInlineReady && pedido.checkout_url && (
                         <a href={pedido.checkout_url} target="_blank" rel="noopener noreferrer" style={actionButtonStyle('neutral')}>
                           <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                             <span style={{ width: '34px', height: '34px', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'color-mix(in srgb, var(--surface-2) 80%, transparent)', color: 'var(--text)', border: '1px solid var(--border)' }}>
                               <ExternalLink size={15} />
                             </span>
                             <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
-                              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>Abrir checkout do PIX</span>
-                              <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>Use este link quando o backend nÃ£o retornar os dados inline do PIX</span>
+                              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>Abrir checkout externo</span>
+                              <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>Continue o pagamento na AbacatePay se o PIX ainda não estiver disponível aqui</span>
                             </span>
                           </span>
                           <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--text-dim)' }}><ExternalLink size={12} /></span>
@@ -683,9 +684,9 @@ export function CreditosCheckout() {
 
                 {pedido.metodo === 'BOLETO' && (
                   <>
-                    {!boletoInlineReady && pedido.checkout_url && (
+                    {!boletoInlineReady && (
                       <div style={{ padding: '14px 16px', borderRadius: '14px', border: '1px solid color-mix(in srgb, var(--warn) 35%, var(--border))', background: 'color-mix(in srgb, var(--warn-dim) 82%, transparent)', color: 'var(--text-muted)', fontSize: '13px', lineHeight: 1.7 }}>
-                        Este pedido de boleto chegou do backend apenas com <strong style={{ color: 'var(--text)' }}>checkout_url</strong>. Sem <strong style={{ color: 'var(--text)' }}>boleto_linha_digitavel</strong> e <strong style={{ color: 'var(--text)' }}>boleto_url</strong>, a plataforma nÃ£o consegue mostrar os dados do boleto diretamente.
+                        Os dados do boleto ainda estão incompletos. Para exibir tudo corretamente na plataforma, o backend precisa retornar <strong style={{ color: 'var(--text)' }}>boleto_linha_digitavel</strong> e <strong style={{ color: 'var(--text)' }}>boleto_url</strong>.
                       </div>
                     )}
 
@@ -693,7 +694,7 @@ export function CreditosCheckout() {
                       <>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>
                           <Landmark size={16} />
-                          Linha digitável
+                          Linha digitÃ¡vel
                         </div>
                         <div style={{ fontFamily: 'var(--mono)', fontSize: '12px', wordBreak: 'break-all', color: 'var(--text-muted)', background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 95%, transparent), color-mix(in srgb, var(--surface-2) 98%, transparent))', border: '1px solid color-mix(in srgb, var(--info) 16%, var(--border))', borderRadius: '18px', padding: '20px', lineHeight: 1.8, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03), 0 18px 42px rgba(0,0,0,0.12)' }}>
                           {pedido.boleto_linha_digitavel}
@@ -735,47 +736,11 @@ export function CreditosCheckout() {
                           <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--accent)' }}><ExternalLink size={12} /></span>
                         </a>
                       )}
-
-                      {pedido.checkout_url && (
-                        <a href={pedido.checkout_url} target="_blank" rel="noopener noreferrer" style={actionButtonStyle('neutral')}>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <span style={{ width: '34px', height: '34px', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'color-mix(in srgb, var(--surface-2) 80%, transparent)', color: 'var(--text)', border: '1px solid var(--border)' }}>
-                              <ExternalLink size={15} />
-                            </span>
-                            <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
-                              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>Abrir checkout do boleto</span>
-                              <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>Use este link quando o backend nÃ£o retornar os dados inline do boleto</span>
-                            </span>
-                          </span>
-                          <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--text-dim)' }}><ExternalLink size={12} /></span>
-                        </a>
-                      )}
                     </div>
                   </>
                 )}
 
-                {pedido.checkout_url && (
-                  <div style={{ padding: '14px 16px', borderRadius: '14px', border: '1px solid var(--border)', background: 'color-mix(in srgb, var(--surface-2) 92%, transparent)', color: 'var(--text-muted)', fontSize: '13px', lineHeight: 1.7 }}>
-                    Um `checkout_url` foi retornado pelo backend. O frontend o preserva apenas como compatibilidade, mas a liberação do fluxo continua dependendo do status <strong style={{ color: 'var(--text)' }}>PAGO</strong>.
-                  </div>
-                )}
-
                 <div style={{ display: 'flex', gap: '12px' }} className="credit-result-actions">
-                  {pedido.checkout_url && (
-                    <a href={pedido.checkout_url} target="_blank" rel="noopener noreferrer" style={actionButtonStyle('neutral')}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <span style={{ width: '34px', height: '34px', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'color-mix(in srgb, var(--surface-2) 80%, transparent)', color: 'var(--text)', border: '1px solid var(--border)' }}>
-                          <ExternalLink size={15} />
-                        </span>
-                        <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
-                          <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>Abrir checkout legado</span>
-                          <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>Opcional e sem valor para confirmar pagamento</span>
-                        </span>
-                      </span>
-                      <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--text-dim)' }}><ExternalLink size={12} /></span>
-                    </a>
-                  )}
-
                   {shouldOfferRetry && (
                     <button type="button" onClick={iniciar} disabled={loading} style={actionButtonStyle('accent', loading)}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -801,13 +766,13 @@ export function CreditosCheckout() {
                       <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
                         {canProceed
                           ? 'O backend marcou este pedido como PAGO. Agora o restante do fluxo pode prosseguir.'
-                          : 'A cobrança criada não significa pagamento concluído. O frontend continua bloqueado até o backend confirmar.'}
+                          : 'A cobrança criada não significa pagamento concluído. Aguardando para prosseguirmos.'}
                       </div>
                     </div>
                     {!canProceed && (
                       <button type="button" onClick={resetNovoPedido} style={actionButtonStyle('neutral')}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <span style={{ width: '34px', height: '34px', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'color-mix(in srgb, var(--surface-2) 80%, transparent)', color: 'var(--text)', border: '1px solid var(--border)' }}>
+                          <span style={{ width: '34px', height: '34px', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,212,170,0.14)', color: 'var(--accent)', border: '1px solid color-mix(in srgb, var(--accent-glow) 70%, transparent)' }}>
                             <RefreshCw size={15} />
                           </span>
                           <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
@@ -841,3 +806,4 @@ export function CreditosCheckout() {
     </div>
   )
 }
+
