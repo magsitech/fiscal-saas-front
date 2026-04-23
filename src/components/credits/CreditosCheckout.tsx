@@ -739,7 +739,7 @@ export function CreditosCheckout() {
                             </span>
                             <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
                               <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>Abrir boleto</span>
-                              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Visualize ou baixe o título gerado pelo backend</span>
+                              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Visualize ou baixe o boleto</span>
                             </span>
                           </span>
                           <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--accent)' }}><ExternalLink size={12} /></span>
