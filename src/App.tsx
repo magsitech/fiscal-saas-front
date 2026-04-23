@@ -5,6 +5,8 @@ import { ProtectedRoute, PublicOnlyRoute } from '@/components/auth/ProtectedRout
 import { AppLayout } from '@/components/layout/AppLayout'
 import { LandingPage } from '@/pages/LandingPage'
 import { PricingPage } from '@/pages/PricingPage'
+import { AboutPage } from '@/pages/AboutPage'
+import { ContactPage } from '@/pages/ContactPage'
 import { AuthPage } from '@/pages/AuthPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import {
@@ -134,6 +136,8 @@ export default function App() {
       <Routes>
         <Route path="/" element={<HomeRoute />} />
         <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/sobre" element={<AboutPage />} />
+        <Route path="/contato" element={<ContactPage />} />
         <Route path="/termos-de-uso" element={<TermsOfServicePage />} />
         <Route path="/politica-de-privacidade" element={<PrivacyPolicyPage />} />
         <Route element={<PublicOnlyRoute />}>
