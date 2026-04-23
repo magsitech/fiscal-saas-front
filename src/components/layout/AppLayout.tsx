@@ -172,7 +172,7 @@ export function AppLayout() {
             background: 'color-mix(in srgb, var(--surface) 94%, transparent)',
           }}
         >
-          © 2026 validaeNota. Plataforma de validação fiscal brasileira.
+          © 2026 validaENota. Plataforma de validação fiscal brasileira.
           <br />
           MAGSI TECH CONSULTORIA EM TECNOLOGIA DA INFORMACAO LTDA - CNPJ: 66.328.989/0001-75
         </footer>
