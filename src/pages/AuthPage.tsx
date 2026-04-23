@@ -497,9 +497,7 @@ export function AuthPage() {
             ))}
             <div style={{ fontSize: '10px', color: 'var(--text-dim)', marginTop: '6px' }}>* inclui adicional fixo de R$ 0,03</div>
             <div style={{ borderTop: '1px solid var(--border)', marginTop: '18px', paddingTop: '18px', textAlign: 'center', fontSize: '11px', color: 'var(--text-dim)', lineHeight: 1.6 }}>
-              © 2026 validaENota. Plataforma de validação fiscal brasileira.
-              <br />
-              MAGSI TECH CONSULTORIA EM TECNOLOGIA DA INFORMACAO LTDA - CNPJ: 66.328.989/0001-75
+              © 2026 validaeNota. Plataforma de validação fiscal brasileira.
             </div>
           </div>
         </aside>
