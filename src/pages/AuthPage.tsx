@@ -10,6 +10,7 @@ import {
   Lock,
   Mail,
   Menu,
+  Phone,
   User,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -17,6 +18,7 @@ import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { authApi } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
 import { Spinner } from '@/components/ui'
+import { formatBrazilPhone, normalizeBrazilPhone } from '@/utils/phone'
 
 type Mode = 'login' | 'tipo' | 'form-pf' | 'form-pj' | 'esqueci-senha'
 
@@ -264,11 +266,11 @@ export function AuthPage() {
   const [loginForm, setLoginForm] = useState({ email: '', senha: '' })
   const [loginErros, setLoginErros] = useState<Record<string, string>>({})
 
-  const [pfForm, setPfForm] = useState({ nome: '', email: '', cpf: '', senha: '', confirmar: '' })
+  const [pfForm, setPfForm] = useState({ nome: '', email: '', telefone: '', cpf: '', senha: '', confirmar: '' })
   const [pfErros, setPfErros] = useState<Record<string, string>>({})
   const [pfAcceptedLegal, setPfAcceptedLegal] = useState(false)
 
-  const [pjForm, setPjForm] = useState({ razao_social: '', cnpj: '', responsavel: '', email: '', senha: '', confirmar: '' })
+  const [pjForm, setPjForm] = useState({ razao_social: '', cnpj: '', responsavel: '', email: '', telefone: '', senha: '', confirmar: '' })
   const [pjErros, setPjErros] = useState<Record<string, string>>({})
   const [pjAcceptedLegal, setPjAcceptedLegal] = useState(false)
 
@@ -302,6 +304,7 @@ export function AuthPage() {
     const e: Record<string, string> = {}
     if (!pfForm.nome || pfForm.nome.length < 3) e.nome = 'Mínimo de 3 caracteres'
     if (!pfForm.email || !/\S+@\S+\.\S+/.test(pfForm.email)) e.email = 'E-mail inválido'
+    if (pfForm.telefone.trim() && !normalizeBrazilPhone(pfForm.telefone)) e.telefone = 'Informe um telefone válido com DDD'
     if (!/^\d{11}$/.test(pfForm.cpf.replace(/\D/g, ''))) e.cpf = 'CPF: 11 dígitos'
     const senhaErro = validarSenhaForca(pfForm.senha)
     if (senhaErro) e.senha = senhaErro
@@ -317,6 +320,7 @@ export function AuthPage() {
     if (!/^\d{14}$/.test(pjForm.cnpj.replace(/\D/g, ''))) e.cnpj = 'CNPJ: 14 dígitos'
     if (!pjForm.responsavel.trim()) e.responsavel = 'Obrigatório'
     if (!pjForm.email || !/\S+@\S+\.\S+/.test(pjForm.email)) e.email = 'E-mail inválido'
+    if (pjForm.telefone.trim() && !normalizeBrazilPhone(pjForm.telefone)) e.telefone = 'Informe um telefone válido com DDD'
     const senhaErro = validarSenhaForca(pjForm.senha)
     if (senhaErro) e.senha = senhaErro
     if (pjForm.senha !== pjForm.confirmar) e.confirmar = 'As senhas não coincidem'
@@ -352,6 +356,7 @@ export function AuthPage() {
         tipo_cliente: 'PF',
         nome: pfForm.nome,
         email: pfForm.email,
+        telefone: normalizeBrazilPhone(pfForm.telefone),
         nr_documento: pfForm.cpf.replace(/\D/g, ''),
         senha: pfForm.senha,
         confirmacao_senha: pfForm.confirmar,
@@ -374,6 +379,7 @@ export function AuthPage() {
         nome: pjForm.responsavel,
         nome_fantasia: pjForm.razao_social,
         email: pjForm.email,
+        telefone: normalizeBrazilPhone(pjForm.telefone),
         nr_documento: pjForm.cnpj.replace(/\D/g, ''),
         senha: pjForm.senha,
         confirmacao_senha: pjForm.confirmar,
@@ -675,6 +681,11 @@ export function AuthPage() {
                       <input type="email" placeholder="maria@email.com" value={pfForm.email} onChange={(e) => setPfForm({ ...pfForm, email: e.target.value })} style={S.inp(!!pfErros.email)} />
                     </IcInput>
                   </Field>
+                  <Field label="Telefone" error={pfErros.telefone}>
+                    <IcInput icon={<Phone size={15} />}>
+                      <input type="tel" placeholder="(11) 99999-8888" inputMode="tel" autoComplete="tel-national" value={pfForm.telefone} onChange={(e) => setPfForm({ ...pfForm, telefone: formatBrazilPhone(e.target.value) })} style={S.inp(!!pfErros.telefone)} />
+                    </IcInput>
+                  </Field>
                   <Field label="CPF" error={pfErros.cpf}>
                     <IcInput icon={<CreditCard size={15} />}>
                       <input placeholder="000.000.000-00" maxLength={14} inputMode="numeric" value={pfForm.cpf} onChange={(e) => setPfForm({ ...pfForm, cpf: e.target.value.replace(/\D/g, '').slice(0, 11) })} style={S.inp(!!pfErros.cpf)} />
@@ -732,6 +743,11 @@ export function AuthPage() {
                   <Field label="E-mail corporativo" error={pjErros.email}>
                     <IcInput icon={<Mail size={15} />}>
                       <input type="email" placeholder="contato@empresa.com" value={pjForm.email} onChange={(e) => setPjForm({ ...pjForm, email: e.target.value })} style={S.inp(!!pjErros.email)} />
+                    </IcInput>
+                  </Field>
+                  <Field label="Telefone" error={pjErros.telefone}>
+                    <IcInput icon={<Phone size={15} />}>
+                      <input type="tel" placeholder="(11) 99999-8888" inputMode="tel" autoComplete="tel-national" value={pjForm.telefone} onChange={(e) => setPjForm({ ...pjForm, telefone: formatBrazilPhone(e.target.value) })} style={S.inp(!!pjErros.telefone)} />
                     </IcInput>
                   </Field>
                   <Field label="Senha" error={pjErros.senha}>

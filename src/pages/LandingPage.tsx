@@ -98,12 +98,6 @@ const STEPS = [
   },
 ]
 
-const STATS = [
-  { value: '27', label: 'UFs suportadas' },
-  { value: '99,9%', label: 'Disponibilidade alvo' },
-  { value: '1,5s', label: 'Ritmo seguro por consulta' },
-]
-
 export function LandingPage() {
   const navigate = useNavigate()
 
@@ -177,8 +171,8 @@ export function LandingPage() {
             margin: '0 auto 36px',
           }}
         >
-          Consulte notas fiscais com rastreabilidade, auditoria e extrato financeiro em uma plataforma preparada
-          para operação real, testes em `staging` e produção em `main`.
+          Consulte notas fiscais com rastreabilidade, auditoria e acompanhamento financeiro em uma plataforma feita
+          para dar mais clareza, segurança e confiança à sua rotina.
         </p>
 
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -304,42 +298,6 @@ export function LandingPage() {
               </div>
               <h3 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '8px' }}>{vantagem.title}</h3>
               <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.65 }}>{vantagem.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <div style={{ height: '1px', background: 'var(--border)', margin: '0 40px' }} />
-      <section className="landing-section" style={{ padding: '56px 40px', maxWidth: '1040px', margin: '0 auto' }}>
-        <SectionHeader label="Números" title="Plataforma confiável em produção" />
-        <div
-          className="landing-grid-4"
-          style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginTop: '36px' }}
-        >
-          {STATS.map((stat) => (
-            <div
-              key={stat.label}
-              style={{
-                background: 'var(--surface)',
-                border: '1px solid var(--border)',
-                borderRadius: '12px',
-                padding: '28px 20px',
-                textAlign: 'center',
-              }}
-            >
-              <div
-                style={{
-                  fontFamily: 'var(--mono)',
-                  fontSize: '32px',
-                  fontWeight: 700,
-                  color: 'var(--accent)',
-                  lineHeight: 1,
-                  marginBottom: '10px',
-                }}
-              >
-                {stat.value}
-              </div>
-              <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{stat.label}</div>
             </div>
           ))}
         </div>

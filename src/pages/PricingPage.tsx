@@ -91,11 +91,6 @@ export function PricingPage() {
             Compra via PIX ou boleto, com saldo válido por 30 dias após a confirmação do pedido.
           </p>
         </InfoBox>
-        <InfoBox title="Cache e deduplicação inteligente">
-          <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.7, marginBottom: '12px' }}>
-            Consultas repetidas da mesma nota não geram novo débito dentro da janela de cache.
-          </p>
-        </InfoBox>
       </div>
 
       <div style={{ textAlign: 'center', padding: '0 40px 64px' }}>
