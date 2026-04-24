@@ -242,6 +242,21 @@ export interface ConsultarNotaResponse {
   dados_nf: Record<string, unknown> | null
 }
 
+export type TipoPlano = 'TRIAL' | 'BASICO' | 'PRO' | 'BUSINESS' | 'CANCELADO'
+
+export interface AssinaturaResumo {
+  plano: TipoPlano
+  trial_expira_em: string | null
+  trial_ativo: boolean
+  assinatura_inicio: string | null
+  ciclo_inicio: string | null
+  ciclo_expira_em: string | null
+  franquia_usada: number | null
+  franquia_limite: number | null
+  franquia_restante: number | null
+  proximo_plano: string | null
+}
+
 export interface ApiKeyInfo {
   prefixo: string
   sufixo: string
