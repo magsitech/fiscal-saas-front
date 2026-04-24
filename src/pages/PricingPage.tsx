@@ -107,7 +107,7 @@ export function PricingPage() {
       </div>
 
       {/* Cards de planos */}
-      <div style={{ maxWidth: '1160px', margin: '0 auto', padding: '0 40px 48px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', alignItems: 'start' }} className="pricing-plans-grid">
+      <div style={{ maxWidth: '1160px', margin: '0 auto', padding: '0 40px 48px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', alignItems: 'stretch' }} className="pricing-plans-grid">
         {PLANOS.map((plano) => (
           <div
             key={plano.id}
@@ -120,6 +120,8 @@ export function PricingPage() {
               flexDirection: 'column',
               gap: '0',
               position: 'relative',
+              height: '100%',
+              boxSizing: 'border-box',
             }}
           >
             {plano.badge && (
@@ -155,7 +157,7 @@ export function PricingPage() {
               <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>{plano.descricao}</p>
             </div>
 
-            <div style={{ borderTop: '1px solid var(--border)', paddingTop: '18px', marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: '18px', marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '10px', flex: 1 }}>
               {plano.features.map((f) => (
                 <div key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '13px', color: 'var(--text-muted)' }}>
                   <Check size={14} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: '1px' }} />
