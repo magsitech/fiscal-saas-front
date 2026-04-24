@@ -27,7 +27,7 @@ function LegalLayout({
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)', fontFamily: 'var(--sans)' }}>
-      <PublicNav current="home" />
+      <PublicNav />
 
       <main style={{ maxWidth: '940px', margin: '0 auto', padding: '56px 24px 96px', display: 'flex', flexDirection: 'column', gap: '28px' }}>
         <button
