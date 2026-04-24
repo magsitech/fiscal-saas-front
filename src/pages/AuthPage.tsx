@@ -25,10 +25,19 @@ type Mode = 'login' | 'plano-cadastro' | 'tipo' | 'form-pf' | 'form-pj' | 'esque
 
 const PLANOS_CADASTRO = [
   {
+    id: 'TRIAL',
+    nome: 'Experimentar grátis',
+    preco: null,
+    destaque: false,
+    badge: '14 dias grátis',
+    resumo: 'R$ 50 em créditos incluídos. Sem cartão. Escolha um plano depois.',
+  },
+  {
     id: 'BASICO',
     nome: 'Básico',
     preco: 29,
     destaque: false,
+    badge: null,
     resumo: 'R$ 0,22 fixo por consulta, sem franquia.',
   },
   {
@@ -36,6 +45,7 @@ const PLANOS_CADASTRO = [
     nome: 'Pro',
     preco: 99,
     destaque: true,
+    badge: 'Popular',
     resumo: '500 consultas/mês incluídas. Excedente progressivo.',
   },
   {
@@ -43,6 +53,7 @@ const PLANOS_CADASTRO = [
     nome: 'Business',
     preco: 149,
     destaque: false,
+    badge: null,
     resumo: '1.000 consultas/mês incluídas. Melhor custo no excedente.',
   },
 ]
@@ -292,7 +303,7 @@ export function AuthPage() {
 
   useEffect(() => {
     const plano = searchParams.get('plano')
-    if (plano && ['BASICO', 'PRO', 'BUSINESS'].includes(plano)) {
+    if (plano && ['TRIAL', 'BASICO', 'PRO', 'BUSINESS'].includes(plano)) {
       setPlanoCadastro(plano)
       setMode('tipo')
     }
@@ -655,11 +666,17 @@ export function AuthPage() {
                         type="button"
                         onClick={() => { setPlanoCadastro(p.id); setMode('tipo') }}
                         style={{
-                          border: p.destaque ? '1.5px solid var(--accent-glow)' : '1.5px solid var(--border)',
+                          border: p.id === 'TRIAL'
+                            ? '1.5px dashed var(--border)'
+                            : p.destaque
+                              ? '1.5px solid var(--accent-glow)'
+                              : '1.5px solid var(--border)',
                           borderRadius: '14px',
                           padding: '16px 18px',
                           cursor: 'pointer',
-                          background: p.destaque ? 'color-mix(in srgb, var(--surface) 80%, var(--accent-dim) 20%)' : 'transparent',
+                          background: p.destaque
+                            ? 'color-mix(in srgb, var(--surface) 80%, var(--accent-dim) 20%)'
+                            : 'transparent',
                           fontFamily: 'var(--sans)',
                           color: 'var(--text)',
                           textAlign: 'left',
@@ -670,24 +687,41 @@ export function AuthPage() {
                           transition: 'border-color .15s',
                         }}
                         onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)' }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = p.destaque ? 'var(--accent-glow)' : 'var(--border)' }}
+                        onMouseLeave={e => {
+                          e.currentTarget.style.borderColor = p.id === 'TRIAL'
+                            ? 'var(--border)'
+                            : p.destaque ? 'var(--accent-glow)' : 'var(--border)'
+                        }}
                       >
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
                             <span style={{ fontSize: '14px', fontWeight: 700 }}>{p.nome}</span>
-                            {p.destaque && (
-                              <span style={{ fontSize: '10px', fontWeight: 700, background: 'var(--accent)', color: '#04110d', padding: '1px 8px', borderRadius: '999px' }}>
-                                Popular
+                            {p.badge && (
+                              <span style={{
+                                fontSize: '10px', fontWeight: 700, padding: '1px 8px', borderRadius: '999px',
+                                background: p.id === 'TRIAL' ? 'var(--info-dim, rgba(59,130,246,0.12))' : 'var(--accent)',
+                                color: p.id === 'TRIAL' ? 'var(--info, #3b82f6)' : '#04110d',
+                                border: p.id === 'TRIAL' ? '1px solid var(--info-glow, rgba(59,130,246,0.3))' : 'none',
+                              }}>
+                                {p.badge}
                               </span>
                             )}
                           </div>
                           <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{p.resumo}</span>
                         </div>
                         <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                          <span style={{ fontFamily: 'var(--mono)', fontSize: '16px', fontWeight: 700, color: p.destaque ? 'var(--accent)' : 'var(--text)' }}>
-                            R$ {p.preco}
-                          </span>
-                          <span style={{ fontSize: '11px', color: 'var(--text-dim)', display: 'block' }}>/mês</span>
+                          {p.preco !== null ? (
+                            <>
+                              <span style={{ fontFamily: 'var(--mono)', fontSize: '16px', fontWeight: 700, color: p.destaque ? 'var(--accent)' : 'var(--text)' }}>
+                                R$ {p.preco}
+                              </span>
+                              <span style={{ fontSize: '11px', color: 'var(--text-dim)', display: 'block' }}>/mês</span>
+                            </>
+                          ) : (
+                            <span style={{ fontFamily: 'var(--mono)', fontSize: '16px', fontWeight: 700, color: 'var(--info, #3b82f6)' }}>
+                              Grátis
+                            </span>
+                          )}
                         </div>
                       </button>
                     ))}
