@@ -569,7 +569,7 @@ export function LandingPage() {
 
         {/* Inline registration form */}
         {selectedPlanId && planoAtual && (
-          <div ref={formRef} style={{ maxWidth: '760px', margin: '0 auto 56px', padding: '0 40px', animation: 'fadeSlideDown .25s ease' }}>
+          <div ref={formRef} style={{ maxWidth: '760px', margin: '0 auto 56px', padding: '0 40px', animation: 'fadeSlideDown .25s ease', scrollMarginTop: '80px' }}>
             <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', overflow: 'hidden' }}>
               <div style={{ padding: '28px 32px 24px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' }}>
                 <div>

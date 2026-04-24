@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   CircleAlert,
   Copy,
+  CreditCard,
   ExternalLink,
   Landmark,
   QrCode,
@@ -22,7 +23,7 @@ import { Badge, Card, CardHeader, CardTitle, Spinner } from '@/components/ui'
 
 const POLLING_INTERVAL_MS = 5000
 
-type MetodoAtivo = Extract<MetodoPagamento, 'PIX' | 'BOLETO'>
+type MetodoAtivo = Extract<MetodoPagamento, 'PIX' | 'BOLETO' | 'CARTAO'>
 type CheckoutVisualState = 'idle' | 'loading' | 'awaiting' | 'paid' | 'cancelled' | 'error'
 type CheckoutError = {
   title: string
@@ -33,6 +34,7 @@ type CheckoutError = {
 const PAYMENT_OPTIONS: Array<{ id: MetodoAtivo; label: string; note: string; icon: ReactNode }> = [
   { id: 'PIX', label: 'PIX', note: 'Copia e cola imediato com QR Code gerado pelo backend.', icon: <Sparkles size={16} /> },
   { id: 'BOLETO', label: 'Boleto bancário', note: 'Linha digitável e link do boleto vindos do backend.', icon: <Landmark size={16} /> },
+  { id: 'CARTAO', label: 'Cartão de crédito', note: 'Aprovação imediata. Crédito lançado na confirmação.', icon: <CreditCard size={16} /> },
 ]
 
 function fmtMoney(value: string | number) {
@@ -307,6 +309,14 @@ export function CreditosCheckout() {
   const [copiedBoleto, setCopiedBoleto] = useState(false)
   const lastNotifiedStatusRef = useRef<string | null>(null)
 
+  const [cardNumber, setCardNumber] = useState('')
+  const [cardHolder, setCardHolder] = useState('')
+  const [cardExpiryMonth, setCardExpiryMonth] = useState('')
+  const [cardExpiryYear, setCardExpiryYear] = useState('')
+  const [cardCvv, setCardCvv] = useState('')
+  const [cardInstallments, setCardInstallments] = useState(1)
+  const [cardResult, setCardResult] = useState<{ last_four: string | null; brand: string | null } | null>(null)
+
   const visualState = getVisualState(pedido, pedidoError?.message ?? null, loadingPedido && !pedido)
   const canProceed = pedido?.status === 'PAGO'
   const shouldOfferRetry = pedido?.status === 'CANCELADO' || pedido?.status === 'EXPIRADO' || Boolean(pedidoError)
@@ -339,6 +349,30 @@ export function CreditosCheckout() {
       return null
     }
 
+    if (metodo === 'CARTAO') {
+      const digits = cardNumber.replace(/\D/g, '')
+      if (digits.length !== 16) { toast.error('Número do cartão inválido (16 dígitos).'); return null }
+      if (!cardHolder.trim()) { toast.error('Informe o nome do titular.'); return null }
+      const mm = parseInt(cardExpiryMonth, 10)
+      const yyyy = parseInt(cardExpiryYear, 10)
+      const now = new Date()
+      if (!mm || mm < 1 || mm > 12) { toast.error('Mês de vencimento inválido.'); return null }
+      if (!yyyy || yyyy < now.getFullYear() || (yyyy === now.getFullYear() && mm < now.getMonth() + 1)) {
+        toast.error('Cartão vencido ou ano inválido.'); return null
+      }
+      if (!/^\d{3,4}$/.test(cardCvv)) { toast.error('CVV inválido (3 ou 4 dígitos).'); return null }
+      return {
+        metodo,
+        valor: numericValue,
+        card_number: digits,
+        card_holder_name: cardHolder.trim(),
+        card_expiry_month: String(mm).padStart(2, '0'),
+        card_expiry_year: String(yyyy),
+        card_cvv: cardCvv,
+        card_installments: cardInstallments,
+      }
+    }
+
     return {
       metodo,
       valor: numericValue,
@@ -359,8 +393,19 @@ export function CreditosCheckout() {
       const response = await pedidosApi.iniciar(payload)
       const normalized = normalizePedidoCriadoToDetalhe(response)
       setPedido(normalized)
-      toast.success(normalized.metodo === 'PIX' ? 'Cobrança PIX gerada.' : 'Boleto gerado com sucesso.')
-      await carregarPedido(normalized.id, true)
+      if (metodo === 'CARTAO') {
+        setCardResult({ last_four: response.card_last_four ?? null, brand: response.card_brand ?? null })
+        setCardNumber('')
+        setCardHolder('')
+        setCardExpiryMonth('')
+        setCardExpiryYear('')
+        setCardCvv('')
+        setCardInstallments(1)
+        toast.success('Pagamento com cartão confirmado.')
+      } else {
+        toast.success(normalized.metodo === 'PIX' ? 'Cobrança PIX gerada.' : 'Boleto gerado com sucesso.')
+        await carregarPedido(normalized.id, true)
+      }
     } catch (error) {
       setPedido(null)
       const checkoutError = buildCheckoutError(error, 'Não foi possível gerar a cobrança. Tente novamente em instantes.')
@@ -394,11 +439,12 @@ export function CreditosCheckout() {
     setPedidoError(null)
     setCopiedPix(false)
     setCopiedBoleto(false)
+    setCardResult(null)
     lastNotifiedStatusRef.current = null
   }
 
   useEffect(() => {
-    if (!pedido?.id || isFinalStatus(pedido.status)) return
+    if (!pedido?.id || isFinalStatus(pedido.status) || pedido.metodo === 'CARTAO') return
 
     const timer = window.setInterval(() => {
       carregarPedido(pedido.id, true)
@@ -442,13 +488,13 @@ export function CreditosCheckout() {
         <div style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
           <div style={{ padding: '20px 22px', borderRadius: '18px', background: 'linear-gradient(135deg, color-mix(in srgb, var(--accent-dim) 88%, transparent), color-mix(in srgb, var(--info-dim) 42%, transparent))', border: '1px solid var(--accent-glow)', fontSize: '13px', lineHeight: 1.8, boxShadow: '0 16px 34px rgba(0,212,170,0.08)' }}>
             <span style={{ color: 'var(--text-muted)' }}>
-              Gere seu pagamento por PIX ou boleto e acompanhe tudo por aqui. Assim que a confirmação chegar, você poderá continuar.
+              Gere seu pagamento por PIX, boleto ou cartão de crédito. Cartão é aprovado na hora; PIX e boleto aguardam confirmação do banco.
             </span>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--text-dim)' }}>Método de pagamento</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }} className="credit-method-row">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }} className="credit-method-row">
               {PAYMENT_OPTIONS.map((option) => {
                 const active = metodo === option.id
                 return (
@@ -485,6 +531,65 @@ export function CreditosCheckout() {
               })}
             </div>
           </div>
+
+          {metodo === 'CARTAO' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '24px', borderRadius: '20px', border: '1px solid var(--border)', background: 'color-mix(in srgb, var(--surface-2) 72%, transparent)' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--text-dim)' }}>Dados do cartão</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <input
+                  type="text"
+                  placeholder="Número do cartão (16 dígitos)"
+                  value={cardNumber}
+                  maxLength={19}
+                  onChange={(e) => setCardNumber(e.target.value.replace(/[^\d\s]/g, '').replace(/(\d{4})(?=\d)/g, '$1 ').slice(0, 19))}
+                  style={{ width: '100%', padding: '12px 16px', borderRadius: '14px', border: '1px solid var(--border)', background: 'color-mix(in srgb, var(--surface-2) 94%, transparent)', color: 'var(--text)', fontFamily: 'var(--mono)', fontSize: '14px', outline: 'none', letterSpacing: '0.08em' }}
+                />
+                <input
+                  type="text"
+                  placeholder="Nome do titular (como no cartão)"
+                  value={cardHolder}
+                  onChange={(e) => setCardHolder(e.target.value.toUpperCase())}
+                  style={{ width: '100%', padding: '12px 16px', borderRadius: '14px', border: '1px solid var(--border)', background: 'color-mix(in srgb, var(--surface-2) 94%, transparent)', color: 'var(--text)', fontFamily: 'var(--mono)', fontSize: '13px', outline: 'none', letterSpacing: '0.05em' }}
+                />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                  <input
+                    type="text"
+                    placeholder="Mês (MM)"
+                    value={cardExpiryMonth}
+                    maxLength={2}
+                    onChange={(e) => setCardExpiryMonth(e.target.value.replace(/\D/g, ''))}
+                    style={{ padding: '12px 16px', borderRadius: '14px', border: '1px solid var(--border)', background: 'color-mix(in srgb, var(--surface-2) 94%, transparent)', color: 'var(--text)', fontFamily: 'var(--mono)', fontSize: '14px', outline: 'none', textAlign: 'center' }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Ano (AAAA)"
+                    value={cardExpiryYear}
+                    maxLength={4}
+                    onChange={(e) => setCardExpiryYear(e.target.value.replace(/\D/g, ''))}
+                    style={{ padding: '12px 16px', borderRadius: '14px', border: '1px solid var(--border)', background: 'color-mix(in srgb, var(--surface-2) 94%, transparent)', color: 'var(--text)', fontFamily: 'var(--mono)', fontSize: '14px', outline: 'none', textAlign: 'center' }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="CVV"
+                    value={cardCvv}
+                    maxLength={4}
+                    onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, ''))}
+                    style={{ padding: '12px 16px', borderRadius: '14px', border: '1px solid var(--border)', background: 'color-mix(in srgb, var(--surface-2) 94%, transparent)', color: 'var(--text)', fontFamily: 'var(--mono)', fontSize: '14px', outline: 'none', textAlign: 'center' }}
+                  />
+                </div>
+                <select
+                  value={cardInstallments}
+                  onChange={(e) => setCardInstallments(Number(e.target.value))}
+                  style={{ padding: '12px 16px', borderRadius: '14px', border: '1px solid var(--border)', background: 'color-mix(in srgb, var(--surface-2) 94%, transparent)', color: 'var(--text)', fontFamily: 'var(--sans)', fontSize: '13px', outline: 'none' }}
+                >
+                  {[1,2,3,4,5,6,7,8,9,10,11,12].map((n) => (
+                    <option key={n} value={n}>{n}× {n === 1 ? '(à vista)' : `de ${fmtMoney(parseFloat(valor || '0') / n)}`}</option>
+                  ))}
+                </select>
+              </div>
+              <p style={{ fontSize: '11px', color: 'var(--text-dim)', margin: 0 }}>Os dados do cartão são enviados diretamente ao backend via HTTPS e descartados após a resposta.</p>
+            </div>
+          )}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--text-dim)' }}>Valor</div>
@@ -552,7 +657,7 @@ export function CreditosCheckout() {
             }}
           >
             {loading ? <Spinner size={16} /> : <Banknote size={18} />}
-            {loading ? 'Gerando cobrança...' : `${metodo === 'PIX' ? 'Gerar pedido PIX' : 'Gerar boleto'} - ${parseFloat(valor) > 0 ? fmtMoney(valor) : '--'}`}
+            {loading ? 'Gerando cobrança...' : `${metodo === 'PIX' ? 'Gerar pedido PIX' : metodo === 'BOLETO' ? 'Gerar boleto' : 'Pagar com cartão'} - ${parseFloat(valor) > 0 ? fmtMoney(valor) : '--'}`}
           </button>
         </div>
       </Card>
@@ -747,6 +852,20 @@ export function CreditosCheckout() {
                       )}
                     </div>
                   </>
+                )}
+
+                {pedido.metodo === 'CARTAO' && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '20px 22px', borderRadius: '18px', border: '1px solid var(--accent-glow)', background: 'linear-gradient(135deg, var(--accent-dim), color-mix(in srgb, var(--info-dim) 40%, transparent))' }}>
+                    <span style={{ width: '42px', height: '42px', borderRadius: '14px', flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,212,170,0.14)', color: 'var(--accent)', border: '1px solid var(--accent-glow)' }}>
+                      <CreditCard size={18} />
+                    </span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>
+                        {cardResult?.brand ? cardResult.brand.toUpperCase() : 'Cartão'}{cardResult?.last_four ? ` •••• ${cardResult.last_four}` : ''}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Pagamento aprovado na hora</div>
+                    </div>
+                  </div>
                 )}
 
                 <div style={{ display: 'flex', gap: '12px' }} className="credit-result-actions">
