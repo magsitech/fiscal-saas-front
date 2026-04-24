@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { background: var(--bg); margin: 0; padding: 20px; font-family: var(--font-sans); }
+  .row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+  .group-label { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px; margin-top: 16px; }
+  .group-label:first-child { margin-top: 0; }
+  .vn-btn { display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 18px;font-family:var(--font-sans);font-size:14px;font-weight:600;border-radius:18px;border:1px solid transparent;cursor:pointer;transition:all 200ms;white-space:nowrap;box-shadow:0 14px 34px rgba(15,23,42,0.10); }
+  .vn-btn-sm { padding: 7px 14px; font-size: 12px; }
+  .vn-btn-lg { padding: 13px 28px; font-size: 15px; }
+  .primary { background:linear-gradient(135deg,#00d4aa,color-mix(in srgb,#00d4aa 72%,white));color:#041311;border-color:rgba(255,255,255,0.18); }
+  .ghost { background:var(--surface);color:var(--text);border-color:var(--border); }
+  .danger { background:var(--danger-dim);color:var(--danger);border-color:rgba(239,68,68,0.20); }
+  .soft { background:var(--accent-dim);color:var(--accent);border-color:var(--accent-glow); }
+  .disabled { opacity: 0.5; cursor: not-allowed; }
+</style>
+</head>
+<body>
+  <div class="group-label">Variants</div>
+  <div class="row">
+    <button class="vn-btn primary">Começar gratuitamente</button>
+    <button class="vn-btn ghost">Ver preços →</button>
+    <button class="vn-btn soft">Ver todas</button>
+    <button class="vn-btn danger">Excluir conta</button>
+  </div>
+  <div class="group-label">Sizes</div>
+  <div class="row">
+    <button class="vn-btn primary vn-btn-sm">Calcular</button>
+    <button class="vn-btn primary">Salvar alterações</button>
+    <button class="vn-btn primary vn-btn-lg">Criar conta gratuitamente</button>
+  </div>
+  <div class="group-label">Disabled</div>
+  <div class="row">
+    <button class="vn-btn primary disabled" disabled>Calcular</button>
+    <button class="vn-btn ghost disabled" disabled>Gerar boleto</button>
+  </div>
+</body>
+</html>

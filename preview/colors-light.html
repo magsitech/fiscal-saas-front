@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { background: var(--bg); margin: 0; padding: 20px; font-family: var(--font-sans); }
+  .grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; }
+  .swatch { border-radius: 8px; height: 48px; border: 1px solid rgba(0,0,0,0.08); }
+  .row { display: flex; flex-direction: column; gap: 4px; }
+  .lbl { font-size: 10px; color: var(--text-dim); font-family: var(--font-mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .val { font-size: 9px; color: var(--text-dim); font-family: var(--font-mono); opacity: 0.7; }
+  .section { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 10px; }
+</style>
+</head>
+<body>
+<div class="section">Light Mode — Base Palette</div>
+<div class="grid">
+  <div class="row"><div class="swatch" style="background:#eef3f8"></div><div class="lbl">--bg</div><div class="val">#eef3f8</div></div>
+  <div class="row"><div class="swatch" style="background:#ffffff"></div><div class="lbl">--surface</div><div class="val">#ffffff</div></div>
+  <div class="row"><div class="swatch" style="background:#dde7f1"></div><div class="lbl">--surface-2</div><div class="val">#dde7f1</div></div>
+  <div class="row"><div class="swatch" style="background:#d0dceb"></div><div class="lbl">--surface-3</div><div class="val">#d0dceb</div></div>
+  <div class="row"><div class="swatch" style="background:#bccbda"></div><div class="lbl">--border</div><div class="val">#bccbda</div></div>
+  <div class="row"><div class="swatch" style="background:#99aec2"></div><div class="lbl">--border-bright</div><div class="val">#99aec2</div></div>
+  <div class="row"><div class="swatch" style="background:#567088"></div><div class="lbl">--text-dim</div><div class="val">#567088</div></div>
+  <div class="row"><div class="swatch" style="background:#31495f"></div><div class="lbl">--text-muted</div><div class="val">#31495f</div></div>
+</div>
+<div style="margin-top:16px">
+<div class="grid">
+  <div class="row"><div class="swatch" style="background:#102130"></div><div class="lbl">--text</div><div class="val">#102130</div></div>
+  <div class="row"><div class="swatch" style="background:#007f69"></div><div class="lbl">--accent</div><div class="val">#007f69</div></div>
+  <div class="row"><div class="swatch" style="background:rgba(0,127,105,0.12)"></div><div class="lbl">--accent-dim</div><div class="val">12% teal</div></div>
+  <div class="row"><div class="swatch" style="background:rgba(0,127,105,0.24)"></div><div class="lbl">--accent-glow</div><div class="val">24% teal</div></div>
+  <div class="row"><div class="swatch" style="background:#b45309"></div><div class="lbl">--warn</div><div class="val">#b45309</div></div>
+  <div class="row"><div class="swatch" style="background:#b91c1c"></div><div class="lbl">--danger</div><div class="val">#b91c1c</div></div>
+  <div class="row"><div class="swatch" style="background:#1d4ed8"></div><div class="lbl">--info</div><div class="val">#1d4ed8</div></div>
+  <div class="row"><div class="swatch" style="background:#15803d"></div><div class="lbl">--success</div><div class="val">#15803d</div></div>
+</div>
+</div>
+</body>
+</html>

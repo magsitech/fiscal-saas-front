@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>validaENota — UI Kit</title>
+<link rel="stylesheet" href="../../colors_and_type.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body, #root { height: 100%; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font-sans); overflow: hidden; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  @keyframes fadeSlideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Screen switcher bar */
+  .screen-bar {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    z-index: 9999; display: flex; gap: 6px;
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    backdrop-filter: blur(16px); border: 1px solid var(--border-bright);
+    border-radius: 999px; padding: 6px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .screen-btn {
+    padding: 8px 18px; border-radius: 999px; border: none;
+    font-family: var(--font-sans); font-size: 12px; font-weight: 700;
+    cursor: pointer; transition: all 200ms;
+    color: var(--text-muted); background: transparent;
+  }
+  .screen-btn.active {
+    background: var(--accent); color: #04110d;
+    box-shadow: 0 4px 12px rgba(0,212,170,0.3);
+  }
+
+  /* Scrollable screens */
+  .screen-wrap { height: 100%; overflow-y: auto; overflow-x: hidden; }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--surface); }
+  ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 3px; }
+
+  ::selection { background: var(--accent-dim); color: var(--accent); }
+
+  /* Responsive helpers (copied from index.css) */
+  .app-shell { display: flex; align-items: stretch; height: 100vh; overflow: hidden; }
+  .app-workspace { display: flex; flex-direction: column; min-width: 0; overflow: hidden; flex: 1; }
+  .app-main { width: 100%; overflow-y: auto; flex: 1; padding-bottom: 32px; }
+  .auth-root { display: flex; min-height: 100vh; }
+  .auth-left { display: flex; }
+  .auth-right { flex: 1; display: flex; }
+  .dashboard-kpis { display: grid; }
+  .dashboard-bottom-grid { display: grid; }
+  @media (max-width: 900px) {
+    .auth-left { display: none !important; }
+    .dashboard-kpis { grid-template-columns: 1fr 1fr !important; }
+    .dashboard-bottom-grid { grid-template-columns: 1fr !important; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="LandingScreen.jsx"></script>
+<script type="text/babel" src="AuthScreen.jsx"></script>
+<script type="text/babel" src="AppShell.jsx"></script>
+<script type="text/babel" src="DashboardScreen.jsx"></script>
+<script type="text/babel" src="CreditsScreen.jsx"></script>
+
+<script type="text/babel">
+const SCREENS = [
+  { id: 'landing',   label: 'Landing' },
+  { id: 'auth',      label: 'Login' },
+  { id: 'dashboard', label: 'Dashboard' },
+  { id: 'credits',   label: 'Créditos' },
+]
+
+function App() {
+  const [screen, setScreen] = React.useState('landing')
+
+  const navigate = React.useCallback((to) => {
+    setScreen(to)
+  }, [])
+
+  const renderScreen = () => {
+    switch (screen) {
+      case 'landing':   return <LandingScreen navigate={navigate} />
+      case 'auth':      return <AuthScreen navigate={navigate} />
+      case 'dashboard': return <DashboardScreen navigate={navigate} />
+      case 'credits':   return <CreditsScreen navigate={navigate} />
+      default:          return <DashboardScreen navigate={navigate} />
+    }
+  }
+
+  const isFullHeight = screen === 'dashboard' || screen === 'credits'
+
+  return (
+    <>
+      <div className="screen-wrap" style={{ height: isFullHeight ? '100%' : 'auto' }}>
+        {renderScreen()}
+      </div>
+      <div className="screen-bar">
+        {SCREENS.map(s => (
+          <button key={s.id} className={`screen-btn${screen === s.id ? ' active' : ''}`} onClick={() => setScreen(s.id)}>
+            {s.label}
+          </button>
+        ))}
+      </div>
+    </>
+  )
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'))
+root.render(<App />)
+</script>
+</body>
+</html>

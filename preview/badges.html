@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { background: var(--bg); margin: 0; padding: 20px; font-family: var(--font-sans); }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+  .badge { display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600; }
+  .dot { width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block;flex-shrink:0; }
+  .lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 6px; }
+</style>
+</head>
+<body>
+  <div class="lbl">Status badges — all variants</div>
+  <div class="row">
+    <span class="badge" style="background:var(--accent-dim);color:var(--accent)"><span class="dot"></span>Autorizada</span>
+    <span class="badge" style="background:var(--accent-dim);color:var(--accent)"><span class="dot"></span>Pago</span>
+    <span class="badge" style="background:var(--accent-dim);color:var(--accent)"><span class="dot"></span>Ativo</span>
+    <span class="badge" style="background:var(--accent-dim);color:var(--accent)"><span class="dot"></span>Crédito</span>
+    <span class="badge" style="background:var(--accent-dim);color:var(--accent)"><span class="dot"></span>Confirmado</span>
+  </div>
+  <div class="row">
+    <span class="badge" style="background:var(--warn-dim);color:var(--warn)"><span class="dot"></span>Pendente</span>
+    <span class="badge" style="background:var(--warn-dim);color:var(--warn)"><span class="dot"></span>Aguardando</span>
+    <span class="badge" style="background:var(--warn-dim);color:var(--warn)"><span class="dot"></span>Estorno</span>
+  </div>
+  <div class="row">
+    <span class="badge" style="background:var(--danger-dim);color:var(--danger)"><span class="dot"></span>Cancelada</span>
+    <span class="badge" style="background:var(--danger-dim);color:var(--danger)"><span class="dot"></span>Denegada</span>
+    <span class="badge" style="background:var(--danger-dim);color:var(--danger)"><span class="dot"></span>Erro</span>
+    <span class="badge" style="background:var(--danger-dim);color:var(--danger)"><span class="dot"></span>Expirado</span>
+    <span class="badge" style="background:var(--danger-dim);color:var(--danger)"><span class="dot"></span>Zerado</span>
+    <span class="badge" style="background:var(--danger-dim);color:var(--danger)"><span class="dot"></span>Débito</span>
+  </div>
+  <div class="row">
+    <span class="badge" style="background:var(--info-dim);color:var(--info)"><span class="dot"></span>Processando</span>
+    <span class="badge" style="background:var(--info-dim);color:var(--info)"><span class="dot"></span>Cache</span>
+    <span class="badge" style="background:var(--surface-2);color:var(--text-muted)"><span class="dot"></span>Sem Saldo</span>
+  </div>
+</body>
+</html>
