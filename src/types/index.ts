@@ -32,6 +32,7 @@ export interface RegisterPayload {
   nr_documento: string
   senha: string
   confirmacao_senha: string
+  plano_selecionado?: string | null
 }
 
 export interface TokenResponse {

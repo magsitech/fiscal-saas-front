@@ -1,61 +1,21 @@
-import { useEffect, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useState, type CSSProperties, type ReactNode, type FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft,
   ArrowRight,
-  Building2,
-  CreditCard,
   Eye,
   EyeOff,
   Lock,
   Mail,
   Menu,
-  Phone,
-  User,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { authApi } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
 import { Spinner } from '@/components/ui'
-import { formatBrazilPhone, normalizeBrazilPhone } from '@/utils/phone'
 
-type Mode = 'login' | 'plano-cadastro' | 'tipo' | 'form-pf' | 'form-pj' | 'esqueci-senha'
-
-const PLANOS_CADASTRO = [
-  {
-    id: 'TRIAL',
-    nome: 'Trial',
-    preco: null,
-    destaque: false,
-    badge: '14 dias grátis',
-    resumo: 'R$ 50 em créditos incluídos. Sem cartão. Escolha um plano depois.',
-  },
-  {
-    id: 'BASICO',
-    nome: 'Básico',
-    preco: 29,
-    destaque: false,
-    badge: null,
-    resumo: 'R$ 0,22 fixo por consulta, sem franquia.',
-  },
-  {
-    id: 'PRO',
-    nome: 'Pro',
-    preco: 99,
-    destaque: true,
-    badge: 'Popular',
-    resumo: '500 consultas/mês incluídas. Excedente progressivo.',
-  },
-  {
-    id: 'BUSINESS',
-    nome: 'Business',
-    preco: 149,
-    destaque: false,
-    badge: null,
-    resumo: '1.000 consultas/mês incluídas. Melhor custo no excedente.',
-  },
-]
+type Mode = 'login' | 'esqueci-senha'
 
 const S = {
   root: {
@@ -143,27 +103,6 @@ const S = {
     maxWidth: '390px',
     margin: '0 auto',
   },
-  tabBar: {
-    display: 'flex',
-    background: 'var(--surface-2)',
-    border: '1px solid var(--border)',
-    borderRadius: '12px',
-    padding: '4px',
-    marginBottom: '26px',
-  },
-  tab: (on: boolean): React.CSSProperties => ({
-    flex: 1,
-    padding: '10px',
-    borderRadius: '9px',
-    fontSize: '13px',
-    fontWeight: 700,
-    cursor: 'pointer',
-    border: 'none',
-    fontFamily: 'var(--sans)',
-    background: on ? 'var(--accent)' : 'transparent',
-    color: on ? '#04110d' : 'var(--text-muted)',
-    transition: 'all .15s',
-  }),
   inp: (err?: boolean): React.CSSProperties => ({
     width: '100%',
     background: 'var(--surface-2)',
@@ -186,34 +125,6 @@ const S = {
     marginBottom: '6px',
   },
   err: { fontSize: '11px', color: 'var(--danger)', marginTop: '4px', display: 'block' },
-  consentBox: (err?: boolean): React.CSSProperties => ({
-    marginBottom: '14px',
-    padding: '14px 14px 14px 12px',
-    borderRadius: '14px',
-    border: `1px solid ${err ? 'var(--danger)' : 'var(--border)'}`,
-    background: 'color-mix(in srgb, var(--surface-2) 90%, transparent)',
-    display: 'flex',
-    gap: '10px',
-    alignItems: 'flex-start',
-  }),
-  consentCheck: {
-    marginTop: '2px',
-    width: '16px',
-    height: '16px',
-    accentColor: 'var(--accent)',
-    cursor: 'pointer',
-    flexShrink: 0,
-  },
-  consentText: {
-    fontSize: '12px',
-    color: 'var(--text-muted)',
-    lineHeight: 1.65,
-  },
-  consentLink: {
-    color: 'var(--accent)',
-    fontWeight: 700,
-    textDecoration: 'none',
-  },
   icWrap: { position: 'relative' as const },
   ic: {
     position: 'absolute' as const,
@@ -266,66 +177,26 @@ function IcInput({ icon, right, children }: { icon: ReactNode; right?: ReactNode
   )
 }
 
-function SenhaBar({ senha }: { senha: string }) {
-  const checks = [senha.length >= 8, /[A-Z]/.test(senha), /\d/.test(senha), /[^A-Za-z0-9]/.test(senha)]
-  const n = checks.filter(Boolean).length
-  const colors = ['', '#ef4444', '#f59e0b', '#3b82f6', '#00d4aa']
-  const labels = ['8+ chars', 'Maiúscula', 'Número', 'Símbolo']
-  if (!senha) return null
-  return (
-    <div style={{ marginTop: '6px' }}>
-      <div style={{ display: 'flex', gap: '3px', marginBottom: '4px' }}>
-        {[0, 1, 2, 3].map((i) => (
-          <div key={i} style={{ flex: 1, height: '3px', borderRadius: '2px', background: i < n ? colors[n] : 'var(--border)', transition: 'background .2s' }} />
-        ))}
-      </div>
-      <div style={{ display: 'flex', gap: '10px', fontSize: '11px', flexWrap: 'wrap' }}>
-        {labels.map((label, i) => (
-          <span key={label} style={{ color: checks[i] ? 'var(--accent)' : 'var(--text-dim)' }}>
-            {label}
-          </span>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 export function AuthPage() {
   const [mode, setMode] = useState<Mode>('login')
   const [loading, setLoading] = useState(false)
   const [showPass, setShowPass] = useState(false)
   const [showAside, setShowAside] = useState(() => (typeof window === 'undefined' ? true : window.innerWidth >= 901))
-  const [planoCadastro, setPlanoCadastro] = useState<string>('')
   const { setTokens, setUsuario } = useAuthStore()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
   useEffect(() => {
     const plano = searchParams.get('plano')
-    if (plano && ['TRIAL', 'BASICO', 'PRO', 'BUSINESS'].includes(plano)) {
-      setPlanoCadastro(plano)
-      setMode('tipo')
-    }
+    if (plano) navigate(`/planos?plano=${plano}`, { replace: true })
   }, [])
 
   const [loginForm, setLoginForm] = useState({ email: '', senha: '' })
   const [loginErros, setLoginErros] = useState<Record<string, string>>({})
 
-  const [pfForm, setPfForm] = useState({ nome: '', email: '', telefone: '', cpf: '', senha: '', confirmar: '' })
-  const [pfErros, setPfErros] = useState<Record<string, string>>({})
-  const [pfAcceptedLegal, setPfAcceptedLegal] = useState(false)
-
-  const [pjForm, setPjForm] = useState({ razao_social: '', cnpj: '', responsavel: '', email: '', telefone: '', senha: '', confirmar: '' })
-  const [pjErros, setPjErros] = useState<Record<string, string>>({})
-  const [pjAcceptedLegal, setPjAcceptedLegal] = useState(false)
-
   function switchToLogin() {
     setMode('login')
     setLoginErros({})
-  }
-
-  function switchToCadastro() {
-    setMode('plano-cadastro')
   }
 
   function validarLogin() {
@@ -334,43 +205,6 @@ export function AuthPage() {
     else if (!/\S+@\S+\.\S+/.test(loginForm.email)) e.email = 'E-mail inválido'
     if (!loginForm.senha) e.senha = 'Obrigatório'
     setLoginErros(e)
-    return !Object.keys(e).length
-  }
-
-  function validarSenhaForca(senha: string): string | null {
-    if (senha.length < 8) return 'Mínimo de 8 caracteres'
-    if (!/[A-Z]/.test(senha)) return 'Precisa de uma maiúscula'
-    if (!/\d/.test(senha)) return 'Precisa de um número'
-    if (!/[^A-Za-z0-9]/.test(senha)) return 'Precisa de um símbolo'
-    return null
-  }
-
-  function validarPF() {
-    const e: Record<string, string> = {}
-    if (!pfForm.nome || pfForm.nome.length < 3) e.nome = 'Mínimo de 3 caracteres'
-    if (!pfForm.email || !/\S+@\S+\.\S+/.test(pfForm.email)) e.email = 'E-mail inválido'
-    if (pfForm.telefone.trim() && !normalizeBrazilPhone(pfForm.telefone)) e.telefone = 'Informe um telefone válido com DDD'
-    if (!/^\d{11}$/.test(pfForm.cpf.replace(/\D/g, ''))) e.cpf = 'CPF: 11 dígitos'
-    const senhaErro = validarSenhaForca(pfForm.senha)
-    if (senhaErro) e.senha = senhaErro
-    if (pfForm.senha !== pfForm.confirmar) e.confirmar = 'As senhas não coincidem'
-    if (!pfAcceptedLegal) e.aceite_legal = 'Voc\u00ea precisa aceitar os Termos de Uso e a Pol\u00edtica de Privacidade'
-    setPfErros(e)
-    return !Object.keys(e).length
-  }
-
-  function validarPJ() {
-    const e: Record<string, string> = {}
-    if (!pjForm.razao_social.trim()) e.razao_social = 'Obrigatório'
-    if (!/^\d{14}$/.test(pjForm.cnpj.replace(/\D/g, ''))) e.cnpj = 'CNPJ: 14 dígitos'
-    if (!pjForm.responsavel.trim()) e.responsavel = 'Obrigatório'
-    if (!pjForm.email || !/\S+@\S+\.\S+/.test(pjForm.email)) e.email = 'E-mail inválido'
-    if (pjForm.telefone.trim() && !normalizeBrazilPhone(pjForm.telefone)) e.telefone = 'Informe um telefone válido com DDD'
-    const senhaErro = validarSenhaForca(pjForm.senha)
-    if (senhaErro) e.senha = senhaErro
-    if (pjForm.senha !== pjForm.confirmar) e.confirmar = 'As senhas não coincidem'
-    if (!pjAcceptedLegal) e.aceite_legal = 'Voc\u00ea precisa aceitar os Termos de Uso e a Pol\u00edtica de Privacidade'
-    setPjErros(e)
     return !Object.keys(e).length
   }
 
@@ -387,51 +221,6 @@ export function AuthPage() {
       navigate('/app')
     } catch (err: any) {
       toast.error(err?.response?.data?.detail ?? 'Credenciais inválidas')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function handleCadastroPF(e: FormEvent) {
-    e.preventDefault()
-    if (!validarPF()) return
-    setLoading(true)
-    try {
-      await authApi.register({
-        tipo_cliente: 'PF',
-        nome: pfForm.nome,
-        email: pfForm.email,
-        telefone: normalizeBrazilPhone(pfForm.telefone),
-        nr_documento: pfForm.cpf.replace(/\D/g, ''),
-        senha: pfForm.senha,
-        confirmacao_senha: pfForm.confirmar,
-      })
-      navigate('/verificar-email', { state: { email: pfForm.email } })
-    } catch (err: any) {
-      toast.error(err?.response?.data?.detail ?? 'Erro ao criar conta')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function handleCadastroPJ(e: FormEvent) {
-    e.preventDefault()
-    if (!validarPJ()) return
-    setLoading(true)
-    try {
-      await authApi.register({
-        tipo_cliente: 'PJ',
-        nome: pjForm.responsavel,
-        nome_fantasia: pjForm.razao_social,
-        email: pjForm.email,
-        telefone: normalizeBrazilPhone(pjForm.telefone),
-        nr_documento: pjForm.cnpj.replace(/\D/g, ''),
-        senha: pjForm.senha,
-        confirmacao_senha: pjForm.confirmar,
-      })
-      navigate('/verificar-email', { state: { email: pjForm.email } })
-    } catch (err: any) {
-      toast.error(err?.response?.data?.detail ?? 'Erro ao criar conta')
     } finally {
       setLoading(false)
     }
@@ -462,44 +251,6 @@ export function AuthPage() {
       {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
     </button>
   )
-
-  function LegalConsent({
-    checked,
-    onChange,
-    error,
-    inputId,
-  }: {
-    checked: boolean
-    onChange: (checked: boolean) => void
-    error?: string
-    inputId: string
-  }) {
-    return (
-      <div>
-        <div style={S.consentBox(!!error)}>
-          <input
-            id={inputId}
-            type="checkbox"
-            checked={checked}
-            onChange={(e) => onChange(e.target.checked)}
-            style={S.consentCheck}
-          />
-          <label htmlFor={inputId} style={S.consentText}>
-            Li e concordo com os{' '}
-            <a href="/termos-de-uso" target="_blank" rel="noopener noreferrer" style={S.consentLink}>
-              Termos de Uso
-            </a>{' '}
-            e com a{' '}
-            <a href="/politica-de-privacidade" target="_blank" rel="noopener noreferrer" style={S.consentLink}>
-              Política de Privacidade
-            </a>
-            .
-          </label>
-        </div>
-        {error && <span style={S.err}>{error}</span>}
-      </div>
-    )
-  }
 
   return (
     <div style={S.root} className={`auth-root${showAside ? '' : ' auth-root-collapsed'}`}>
@@ -577,17 +328,6 @@ export function AuthPage() {
 
           <div style={S.card}>
             <div style={S.form} className="auth-form">
-              {mode !== 'esqueci-senha' && (
-                <div style={S.tabBar}>
-                  <button style={S.tab(mode === 'login')} onClick={switchToLogin}>
-                    Entrar
-                  </button>
-                  <button style={S.tab(mode !== 'login')} onClick={switchToCadastro}>
-                    Criar conta
-                  </button>
-                </div>
-              )}
-
               {mode === 'login' && (
                 <form onSubmit={handleLogin} noValidate>
                   <h2 style={{ fontSize: '30px', fontWeight: 700, marginBottom: '6px', letterSpacing: '-0.03em' }}>Bem-vindo de volta</h2>
@@ -609,7 +349,8 @@ export function AuthPage() {
                     <span style={S.linkSpan} onClick={() => { setEsqueciEmail(''); setEsqueciEnviado(false); setMode('esqueci-senha') }}>Esqueci minha senha</span>
                   </p>
                   <p style={S.linkTxt}>
-                    Não tem conta? <span style={S.linkSpan} onClick={switchToCadastro}>Criar conta</span>
+                    Não tem conta?{' '}
+                    <span style={S.linkSpan} onClick={() => navigate('/planos')}>Criar conta</span>
                   </p>
                 </form>
               )}
@@ -651,277 +392,6 @@ export function AuthPage() {
                   )}
                 </form>
               )}
-
-              {mode === 'plano-cadastro' && (
-                <div>
-                  <h2 style={{ fontSize: '26px', fontWeight: 700, marginBottom: '6px', letterSpacing: '-0.03em' }}>Escolha seu plano</h2>
-                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '20px', lineHeight: 1.6 }}>
-                    Todo plano começa com <strong style={{ color: 'var(--text)' }}>14 dias grátis</strong> + R$ 50 em créditos. Cancele quando quiser.
-                  </p>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
-                    {PLANOS_CADASTRO.map((p) => (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => { setPlanoCadastro(p.id); setMode('tipo') }}
-                        style={{
-                          border: p.id === 'TRIAL'
-                            ? '1.5px dashed var(--border)'
-                            : p.destaque
-                              ? '1.5px solid var(--accent-glow)'
-                              : '1.5px solid var(--border)',
-                          borderRadius: '14px',
-                          padding: '16px 18px',
-                          cursor: 'pointer',
-                          background: p.destaque
-                            ? 'color-mix(in srgb, var(--surface) 80%, var(--accent-dim) 20%)'
-                            : 'transparent',
-                          fontFamily: 'var(--sans)',
-                          color: 'var(--text)',
-                          textAlign: 'left',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          gap: '12px',
-                          transition: 'border-color .15s',
-                        }}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)' }}
-                        onMouseLeave={e => {
-                          e.currentTarget.style.borderColor = p.id === 'TRIAL'
-                            ? 'var(--border)'
-                            : p.destaque ? 'var(--accent-glow)' : 'var(--border)'
-                        }}
-                      >
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
-                            <span style={{ fontSize: '14px', fontWeight: 700 }}>{p.nome}</span>
-                            {p.badge && (
-                              <span style={{
-                                fontSize: '10px', fontWeight: 700, padding: '1px 8px', borderRadius: '999px',
-                                background: p.id === 'TRIAL' ? 'var(--info-dim, rgba(59,130,246,0.12))' : 'var(--accent)',
-                                color: p.id === 'TRIAL' ? 'var(--info, #3b82f6)' : '#04110d',
-                                border: p.id === 'TRIAL' ? '1px solid var(--info-glow, rgba(59,130,246,0.3))' : 'none',
-                              }}>
-                                {p.badge}
-                              </span>
-                            )}
-                          </div>
-                          <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{p.resumo}</span>
-                        </div>
-                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                          {p.preco !== null ? (
-                            <>
-                              <span style={{ fontFamily: 'var(--mono)', fontSize: '16px', fontWeight: 700, color: p.destaque ? 'var(--accent)' : 'var(--text)' }}>
-                                R$ {p.preco}
-                              </span>
-                              <span style={{ fontSize: '11px', color: 'var(--text-dim)', display: 'block' }}>/mês</span>
-                            </>
-                          ) : (
-                            <span style={{ fontFamily: 'var(--mono)', fontSize: '16px', fontWeight: 700, color: 'var(--info, #3b82f6)' }}>
-                              Grátis
-                            </span>
-                          )}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                  <p style={S.linkTxt}>
-                    Já tem conta? <span style={S.linkSpan} onClick={switchToLogin}>Entrar</span>
-                  </p>
-                </div>
-              )}
-
-              {mode === 'tipo' && (
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
-                    <button type="button" onClick={() => setMode('plano-cadastro')} style={S.ghostBtn}>
-                      <ArrowLeft size={14} />
-                    </button>
-                    <div>
-                      <h2 style={{ fontSize: '20px', fontWeight: 700, lineHeight: 1 }}>Criar conta</h2>
-                      {planoCadastro && (
-                        <div style={{ fontSize: '11px', color: 'var(--accent)', marginTop: '3px', fontWeight: 600 }}>
-                          Plano {PLANOS_CADASTRO.find(p => p.id === planoCadastro)?.nome}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '28px', lineHeight: 1.6 }}>
-                    Selecione como deseja se cadastrar para continuar.
-                  </p>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '20px' }} className="auth-type-grid">
-                    <button
-                      type="button"
-                      onClick={() => setMode('form-pf')}
-                      style={{ border: '1.5px solid var(--border)', borderRadius: '16px', padding: '24px 16px', cursor: 'pointer', background: 'transparent', fontFamily: 'var(--sans)', color: 'var(--text)', transition: 'all .18s', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = 'var(--accent)'
-                        e.currentTarget.style.background = 'var(--accent-dim)'
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = 'var(--border)'
-                        e.currentTarget.style.background = 'transparent'
-                      }}
-                    >
-                      <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'var(--surface-2)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px', color: 'var(--text-muted)' }}>
-                        <User size={20} />
-                      </div>
-                      <div style={{ fontSize: '15px', fontWeight: 700, marginBottom: '6px' }}>Pessoa Física</div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5 }}>Cadastro com CPF para pessoas físicas</div>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setMode('form-pj')}
-                      style={{ border: '1.5px solid var(--border)', borderRadius: '16px', padding: '24px 16px', cursor: 'pointer', background: 'transparent', fontFamily: 'var(--sans)', color: 'var(--text)', transition: 'all .18s', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = 'var(--accent)'
-                        e.currentTarget.style.background = 'var(--accent-dim)'
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = 'var(--border)'
-                        e.currentTarget.style.background = 'transparent'
-                      }}
-                    >
-                      <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'var(--surface-2)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px', color: 'var(--text-muted)' }}>
-                        <Building2 size={20} />
-                      </div>
-                      <div style={{ fontSize: '15px', fontWeight: 700, marginBottom: '6px' }}>Pessoa Jurídica</div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5 }}>Cadastro com CNPJ para empresas</div>
-                    </button>
-                  </div>
-                  <p style={S.linkTxt}>
-                    Já tem conta? <span style={S.linkSpan} onClick={switchToLogin}>Entrar</span>
-                  </p>
-                </div>
-              )}
-
-              {mode === 'form-pf' && (
-                <form onSubmit={handleCadastroPF} noValidate>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }} className="auth-heading-row">
-                    <button type="button" onClick={() => setMode('tipo')} style={S.ghostBtn}>
-                      <ArrowLeft size={14} />
-                    </button>
-                    <div>
-                      <div style={{ fontSize: '20px', fontWeight: 700, lineHeight: 1 }}>Pessoa Física</div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                        Preencha seus dados pessoais
-                        {planoCadastro && (
-                          <span style={{ marginLeft: '6px', color: 'var(--accent)', fontWeight: 600 }}>
-                            · Plano {PLANOS_CADASTRO.find(p => p.id === planoCadastro)?.nome}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <Field label="Nome completo" error={pfErros.nome}>
-                    <IcInput icon={<User size={15} />}>
-                      <input placeholder="Maria da Silva" value={pfForm.nome} onChange={(e) => setPfForm({ ...pfForm, nome: e.target.value })} style={S.inp(!!pfErros.nome)} />
-                    </IcInput>
-                  </Field>
-                  <Field label="E-mail" error={pfErros.email}>
-                    <IcInput icon={<Mail size={15} />}>
-                      <input type="email" placeholder="maria@email.com" value={pfForm.email} onChange={(e) => setPfForm({ ...pfForm, email: e.target.value })} style={S.inp(!!pfErros.email)} />
-                    </IcInput>
-                  </Field>
-                  <Field label="Telefone" error={pfErros.telefone}>
-                    <IcInput icon={<Phone size={15} />}>
-                      <input type="tel" placeholder="(11) 99999-8888" inputMode="tel" autoComplete="tel-national" value={pfForm.telefone} onChange={(e) => setPfForm({ ...pfForm, telefone: formatBrazilPhone(e.target.value) })} style={S.inp(!!pfErros.telefone)} />
-                    </IcInput>
-                  </Field>
-                  <Field label="CPF" error={pfErros.cpf}>
-                    <IcInput icon={<CreditCard size={15} />}>
-                      <input placeholder="000.000.000-00" maxLength={14} inputMode="numeric" value={pfForm.cpf} onChange={(e) => setPfForm({ ...pfForm, cpf: e.target.value.replace(/\D/g, '').slice(0, 11) })} style={S.inp(!!pfErros.cpf)} />
-                    </IcInput>
-                  </Field>
-                  <Field label="Senha" error={pfErros.senha}>
-                    <IcInput icon={<Lock size={15} />} right={eyeBtn}>
-                      <input type={showPass ? 'text' : 'password'} placeholder="Mín. 8 caracteres" value={pfForm.senha} onChange={(e) => setPfForm({ ...pfForm, senha: e.target.value })} style={S.inp(!!pfErros.senha)} />
-                    </IcInput>
-                    <SenhaBar senha={pfForm.senha} />
-                  </Field>
-                  <Field label="Confirmar senha" error={pfErros.confirmar}>
-                    <IcInput icon={<Lock size={15} />}>
-                      <input type={showPass ? 'text' : 'password'} placeholder="Repita a senha" value={pfForm.confirmar} onChange={(e) => setPfForm({ ...pfForm, confirmar: e.target.value })} style={S.inp(!!pfErros.confirmar)} />
-                    </IcInput>
-                  </Field>
-                  <LegalConsent
-                    checked={pfAcceptedLegal}
-                    onChange={setPfAcceptedLegal}
-                    error={pfErros.aceite_legal}
-                    inputId="pf-legal-consent"
-                  />
-                  <button type="submit" disabled={loading} style={S.submitBtn(loading)}>
-                    {loading ? <Spinner size={16} /> : <>Criar conta <ArrowRight size={16} /></>}
-                  </button>
-                </form>
-              )}
-
-              {mode === 'form-pj' && (
-                <form onSubmit={handleCadastroPJ} noValidate>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }} className="auth-heading-row">
-                    <button type="button" onClick={() => setMode('tipo')} style={S.ghostBtn}>
-                      <ArrowLeft size={14} />
-                    </button>
-                    <div>
-                      <div style={{ fontSize: '20px', fontWeight: 700, lineHeight: 1 }}>Pessoa Jurídica</div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                        Preencha os dados da empresa
-                        {planoCadastro && (
-                          <span style={{ marginLeft: '6px', color: 'var(--accent)', fontWeight: 600 }}>
-                            · Plano {PLANOS_CADASTRO.find(p => p.id === planoCadastro)?.nome}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <Field label="Razão social" error={pjErros.razao_social}>
-                    <IcInput icon={<Building2 size={15} />}>
-                      <input placeholder="Empresa Exemplo LTDA" value={pjForm.razao_social} onChange={(e) => setPjForm({ ...pjForm, razao_social: e.target.value })} style={S.inp(!!pjErros.razao_social)} />
-                    </IcInput>
-                  </Field>
-                  <Field label="CNPJ" error={pjErros.cnpj}>
-                    <IcInput icon={<CreditCard size={15} />}>
-                      <input placeholder="00.000.000/0001-00" maxLength={18} inputMode="numeric" value={pjForm.cnpj} onChange={(e) => setPjForm({ ...pjForm, cnpj: e.target.value.replace(/\D/g, '').slice(0, 14) })} style={S.inp(!!pjErros.cnpj)} />
-                    </IcInput>
-                  </Field>
-                  <Field label="Nome do responsável" error={pjErros.responsavel}>
-                    <IcInput icon={<User size={15} />}>
-                      <input placeholder="João da Silva" value={pjForm.responsavel} onChange={(e) => setPjForm({ ...pjForm, responsavel: e.target.value })} style={S.inp(!!pjErros.responsavel)} />
-                    </IcInput>
-                  </Field>
-                  <Field label="E-mail corporativo" error={pjErros.email}>
-                    <IcInput icon={<Mail size={15} />}>
-                      <input type="email" placeholder="contato@empresa.com" value={pjForm.email} onChange={(e) => setPjForm({ ...pjForm, email: e.target.value })} style={S.inp(!!pjErros.email)} />
-                    </IcInput>
-                  </Field>
-                  <Field label="Telefone" error={pjErros.telefone}>
-                    <IcInput icon={<Phone size={15} />}>
-                      <input type="tel" placeholder="(11) 99999-8888" inputMode="tel" autoComplete="tel-national" value={pjForm.telefone} onChange={(e) => setPjForm({ ...pjForm, telefone: formatBrazilPhone(e.target.value) })} style={S.inp(!!pjErros.telefone)} />
-                    </IcInput>
-                  </Field>
-                  <Field label="Senha" error={pjErros.senha}>
-                    <IcInput icon={<Lock size={15} />} right={eyeBtn}>
-                      <input type={showPass ? 'text' : 'password'} placeholder="Mín. 8 caracteres" value={pjForm.senha} onChange={(e) => setPjForm({ ...pjForm, senha: e.target.value })} style={S.inp(!!pjErros.senha)} />
-                    </IcInput>
-                    <SenhaBar senha={pjForm.senha} />
-                  </Field>
-                  <Field label="Confirmar senha" error={pjErros.confirmar}>
-                    <IcInput icon={<Lock size={15} />}>
-                      <input type={showPass ? 'text' : 'password'} placeholder="Repita a senha" value={pjForm.confirmar} onChange={(e) => setPjForm({ ...pjForm, confirmar: e.target.value })} style={S.inp(!!pjErros.confirmar)} />
-                    </IcInput>
-                  </Field>
-                  <LegalConsent
-                    checked={pjAcceptedLegal}
-                    onChange={setPjAcceptedLegal}
-                    error={pjErros.aceite_legal}
-                    inputId="pj-legal-consent"
-                  />
-                  <button type="submit" disabled={loading} style={S.submitBtn(loading)}>
-                    {loading ? <Spinner size={16} /> : <>Criar conta <ArrowRight size={16} /></>}
-                  </button>
-                </form>
-              )}
             </div>
           </div>
         </div>
@@ -929,4 +399,3 @@ export function AuthPage() {
     </div>
   )
 }
-
