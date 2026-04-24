@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { background: var(--bg); margin: 0; padding: 20px; font-family: var(--font-sans); }
+  .row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .dot { width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0; }
+  .info { display: flex; flex-direction: column; gap: 2px; }
+  .name { font-size: 12px; font-weight: 600; color: var(--text); }
+  .desc { font-size: 10px; color: var(--text-dim); font-family: var(--font-mono); }
+  .divider { height: 1px; background: var(--border); margin: 12px 0; }
+  .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+  .badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+  <div>
+    <div class="row">
+      <div class="dot" style="background:#00d4aa"></div>
+      <div class="info"><div class="name">Accent / Success</div><div class="desc">Autorizada · Pago · Ativo · Crédito</div></div>
+    </div>
+    <div class="row">
+      <div class="dot" style="background:#f59e0b"></div>
+      <div class="info"><div class="name">Warn</div><div class="desc">Pendente · Aguardando · Estorno</div></div>
+    </div>
+    <div class="row">
+      <div class="dot" style="background:#ef4444"></div>
+      <div class="info"><div class="name">Danger</div><div class="desc">Cancelada · Denegada · Erro · Expirado · Zerado</div></div>
+    </div>
+    <div class="row">
+      <div class="dot" style="background:#3b82f6"></div>
+      <div class="info"><div class="name">Info</div><div class="desc">Processando · Cache · NF-e model 55</div></div>
+    </div>
+    <div class="row">
+      <div class="dot" style="background:var(--surface-2); border: 1px solid var(--border)"></div>
+      <div class="info"><div class="name">Neutral / Gray</div><div class="desc">Sem saldo · Estado neutro</div></div>
+    </div>
+  </div>
+  <div>
+    <div class="badges">
+      <span class="badge" style="background:var(--accent-dim);color:var(--accent)"><span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block"></span>Autorizada</span>
+      <span class="badge" style="background:var(--warn-dim);color:var(--warn)"><span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block"></span>Pendente</span>
+      <span class="badge" style="background:var(--danger-dim);color:var(--danger)"><span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block"></span>Cancelada</span>
+      <span class="badge" style="background:var(--info-dim);color:var(--info)"><span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block"></span>Processando</span>
+      <span class="badge" style="background:var(--accent-dim);color:var(--accent)"><span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block"></span>Pago</span>
+      <span class="badge" style="background:var(--danger-dim);color:var(--danger)"><span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block"></span>Expirado</span>
+      <span class="badge" style="background:var(--warn-dim);color:var(--warn)"><span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block"></span>Estorno</span>
+      <span class="badge" style="background:var(--info-dim);color:var(--info)"><span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block"></span>Cache</span>
+      <span class="badge" style="background:var(--surface-2);color:var(--text-muted)"><span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block"></span>Sem Saldo</span>
+      <span class="badge" style="background:var(--danger-dim);color:var(--danger)"><span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block"></span>Zerado</span>
+      <span class="badge" style="background:var(--accent-dim);color:var(--accent)"><span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block"></span>Ativo</span>
+      <span class="badge" style="background:var(--danger-dim);color:var(--danger)"><span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block"></span>Denegada</span>
+    </div>
+  </div>
+</div>
+</body>
+</html>

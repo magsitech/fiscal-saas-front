@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { background: var(--bg); margin: 0; padding: 20px; font-family: var(--font-sans); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; color: var(--text-dim); }
+  .input { background: color-mix(in srgb, var(--surface-2) 94%, transparent); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; font-family: var(--font-sans); font-size: 14px; color: var(--text); outline: none; width: 100%; box-sizing: border-box; }
+  .input-focus { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-dim); }
+  .input-error { border-color: var(--danger); }
+  .error-msg { font-size: 12px; color: var(--danger); }
+  .select { background: color-mix(in srgb, var(--surface-2) 94%, transparent); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; font-family: var(--font-sans); font-size: 14px; color: var(--text); outline: none; width: 100%; box-sizing: border-box; cursor: pointer; }
+  .lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 10px; margin-top: 16px; }
+  .lbl:first-child { margin-top: 0; }
+</style>
+</head>
+<body>
+  <div class="lbl">Input states</div>
+  <div class="grid">
+    <div class="field">
+      <div class="field-label">E-mail</div>
+      <input class="input" placeholder="nome@empresa.com.br" />
+    </div>
+    <div class="field">
+      <div class="field-label">Foco ativo</div>
+      <input class="input input-focus" value="empresa@contabilidade.com" />
+    </div>
+    <div class="field">
+      <div class="field-label">Com erro</div>
+      <input class="input input-error" value="email-invalido" />
+      <div class="error-msg">E-mail inválido</div>
+    </div>
+    <div class="field">
+      <div class="field-label">Método de pagamento</div>
+      <select class="select">
+        <option>PIX</option>
+        <option>BOLETO</option>
+      </select>
+    </div>
+  </div>
+</body>
+</html>
