@@ -1,9 +1,10 @@
-import { useState, type CSSProperties, type FormEvent, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft,
   ArrowRight,
   Building2,
+  Check,
   CreditCard,
   Eye,
   EyeOff,
@@ -20,7 +21,31 @@ import { useAuthStore } from '@/store/auth'
 import { Spinner } from '@/components/ui'
 import { formatBrazilPhone, normalizeBrazilPhone } from '@/utils/phone'
 
-type Mode = 'login' | 'tipo' | 'form-pf' | 'form-pj' | 'esqueci-senha'
+type Mode = 'login' | 'plano-cadastro' | 'tipo' | 'form-pf' | 'form-pj' | 'esqueci-senha'
+
+const PLANOS_CADASTRO = [
+  {
+    id: 'BASICO',
+    nome: 'Básico',
+    preco: 29,
+    destaque: false,
+    resumo: 'R$ 0,22 fixo por consulta, sem franquia.',
+  },
+  {
+    id: 'PRO',
+    nome: 'Pro',
+    preco: 99,
+    destaque: true,
+    resumo: '500 consultas/mês incluídas. Excedente progressivo.',
+  },
+  {
+    id: 'BUSINESS',
+    nome: 'Business',
+    preco: 149,
+    destaque: false,
+    resumo: '1.000 consultas/mês incluídas. Melhor custo no excedente.',
+  },
+]
 
 const S = {
   root: {
@@ -260,8 +285,18 @@ export function AuthPage() {
   const [loading, setLoading] = useState(false)
   const [showPass, setShowPass] = useState(false)
   const [showAside, setShowAside] = useState(() => (typeof window === 'undefined' ? true : window.innerWidth >= 901))
+  const [planoCadastro, setPlanoCadastro] = useState<string>('')
   const { setTokens, setUsuario } = useAuthStore()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+
+  useEffect(() => {
+    const plano = searchParams.get('plano')
+    if (plano && ['BASICO', 'PRO', 'BUSINESS'].includes(plano)) {
+      setPlanoCadastro(plano)
+      setMode('tipo')
+    }
+  }, [])
 
   const [loginForm, setLoginForm] = useState({ email: '', senha: '' })
   const [loginErros, setLoginErros] = useState<Record<string, string>>({})
@@ -280,7 +315,7 @@ export function AuthPage() {
   }
 
   function switchToCadastro() {
-    setMode('tipo')
+    setMode('plano-cadastro')
   }
 
   function validarLogin() {
@@ -607,9 +642,77 @@ export function AuthPage() {
                 </form>
               )}
 
+              {mode === 'plano-cadastro' && (
+                <div>
+                  <h2 style={{ fontSize: '26px', fontWeight: 700, marginBottom: '6px', letterSpacing: '-0.03em' }}>Escolha seu plano</h2>
+                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '20px', lineHeight: 1.6 }}>
+                    Todo plano começa com <strong style={{ color: 'var(--text)' }}>14 dias grátis</strong> + R$ 50 em créditos. Cancele quando quiser.
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
+                    {PLANOS_CADASTRO.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => { setPlanoCadastro(p.id); setMode('tipo') }}
+                        style={{
+                          border: p.destaque ? '1.5px solid var(--accent-glow)' : '1.5px solid var(--border)',
+                          borderRadius: '14px',
+                          padding: '16px 18px',
+                          cursor: 'pointer',
+                          background: p.destaque ? 'color-mix(in srgb, var(--surface) 80%, var(--accent-dim) 20%)' : 'transparent',
+                          fontFamily: 'var(--sans)',
+                          color: 'var(--text)',
+                          textAlign: 'left',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: '12px',
+                          transition: 'border-color .15s',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)' }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = p.destaque ? 'var(--accent-glow)' : 'var(--border)' }}
+                      >
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
+                            <span style={{ fontSize: '14px', fontWeight: 700 }}>{p.nome}</span>
+                            {p.destaque && (
+                              <span style={{ fontSize: '10px', fontWeight: 700, background: 'var(--accent)', color: '#04110d', padding: '1px 8px', borderRadius: '999px' }}>
+                                Popular
+                              </span>
+                            )}
+                          </div>
+                          <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{p.resumo}</span>
+                        </div>
+                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                          <span style={{ fontFamily: 'var(--mono)', fontSize: '16px', fontWeight: 700, color: p.destaque ? 'var(--accent)' : 'var(--text)' }}>
+                            R$ {p.preco}
+                          </span>
+                          <span style={{ fontSize: '11px', color: 'var(--text-dim)', display: 'block' }}>/mês</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                  <p style={S.linkTxt}>
+                    Já tem conta? <span style={S.linkSpan} onClick={switchToLogin}>Entrar</span>
+                  </p>
+                </div>
+              )}
+
               {mode === 'tipo' && (
                 <div>
-                  <h2 style={{ fontSize: '30px', fontWeight: 700, marginBottom: '6px', letterSpacing: '-0.03em' }}>Criar conta</h2>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
+                    <button type="button" onClick={() => setMode('plano-cadastro')} style={S.ghostBtn}>
+                      <ArrowLeft size={14} />
+                    </button>
+                    <div>
+                      <h2 style={{ fontSize: '20px', fontWeight: 700, lineHeight: 1 }}>Criar conta</h2>
+                      {planoCadastro && (
+                        <div style={{ fontSize: '11px', color: 'var(--accent)', marginTop: '3px', fontWeight: 600 }}>
+                          Plano {PLANOS_CADASTRO.find(p => p.id === planoCadastro)?.nome}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                   <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '28px', lineHeight: 1.6 }}>
                     Selecione como deseja se cadastrar para continuar.
                   </p>
@@ -668,7 +771,14 @@ export function AuthPage() {
                     </button>
                     <div>
                       <div style={{ fontSize: '20px', fontWeight: 700, lineHeight: 1 }}>Pessoa Física</div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>Preencha seus dados pessoais</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                        Preencha seus dados pessoais
+                        {planoCadastro && (
+                          <span style={{ marginLeft: '6px', color: 'var(--accent)', fontWeight: 600 }}>
+                            · Plano {PLANOS_CADASTRO.find(p => p.id === planoCadastro)?.nome}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <Field label="Nome completo" error={pfErros.nome}>
@@ -722,7 +832,14 @@ export function AuthPage() {
                     </button>
                     <div>
                       <div style={{ fontSize: '20px', fontWeight: 700, lineHeight: 1 }}>Pessoa Jurídica</div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>Preencha os dados da empresa</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                        Preencha os dados da empresa
+                        {planoCadastro && (
+                          <span style={{ marginLeft: '6px', color: 'var(--accent)', fontWeight: 600 }}>
+                            · Plano {PLANOS_CADASTRO.find(p => p.id === planoCadastro)?.nome}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <Field label="Razão social" error={pjErros.razao_social}>
