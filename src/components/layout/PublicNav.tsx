@@ -1,15 +1,45 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Menu, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 
-export function PublicNav({ current }: { current: 'home' | 'pricing' | 'about' | 'contact' }) {
+const SECTIONS = ['home', 'sobre', 'planos', 'contato'] as const
+type Section = typeof SECTIONS[number]
+const LABELS: Record<Section, string> = { home: 'Home', sobre: 'Sobre', planos: 'Planos', contato: 'Contato' }
+
+export function scrollToSection(id: string) {
+  const el = document.getElementById(id)
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+export function PublicNav() {
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [active, setActive] = useState<Section>('home')
 
-  function go(path: '/' | '/planos' | '/sobre' | '/contato' | '/login') {
+  useEffect(() => {
+    function onScroll() {
+      const threshold = window.scrollY + window.innerHeight * 0.35
+      let current: Section = 'home'
+      for (const id of SECTIONS) {
+        const el = document.getElementById(id)
+        if (el && el.offsetTop <= threshold) current = id
+      }
+      setActive(current)
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  function go(id: Section) {
     setMobileOpen(false)
-    navigate(path)
+    scrollToSection(id)
+  }
+
+  function goLogin() {
+    setMobileOpen(false)
+    navigate('/login')
   }
 
   return (
@@ -23,16 +53,14 @@ export function PublicNav({ current }: { current: 'home' | 'pricing' | 'about' |
           padding: '0 40px',
           height: '60px',
           background: 'color-mix(in srgb, var(--surface) 92%, transparent)',
+          backdropFilter: 'blur(12px)',
           borderBottom: '1px solid var(--border)',
+          transition: 'background .3s',
         }}
       >
         <div
           className="public-nav-desktop app-desktop-only"
-          style={{
-            position: 'relative',
-            height: '100%',
-            width: '100%',
-          }}
+          style={{ position: 'relative', height: '100%', width: '100%' }}
         >
           <div
             style={{
@@ -54,15 +82,14 @@ export function PublicNav({ current }: { current: 'home' | 'pricing' | 'about' |
               }}
             >
               <div className="landing-nav-links" style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                <PublicNavButton label="Home" active={current === 'home'} onClick={() => go('/')} />
-                <PublicNavButton label="Sobre" active={current === 'about'} onClick={() => go('/sobre')} />
-                <PublicNavButton label="Planos" active={current === 'pricing'} onClick={() => go('/planos')} />
-                <PublicNavButton label="Contato" active={current === 'contact'} onClick={() => go('/contato')} />
+                {SECTIONS.map(id => (
+                  <PublicNavButton key={id} label={LABELS[id]} active={active === id} onClick={() => go(id)} />
+                ))}
               </div>
 
               <div className="landing-nav-cta">
                 <button
-                  onClick={() => go('/login')}
+                  onClick={goLogin}
                   style={{
                     padding: '8px 20px',
                     background: 'var(--accent)',
@@ -73,7 +100,10 @@ export function PublicNav({ current }: { current: 'home' | 'pricing' | 'about' |
                     fontWeight: 700,
                     cursor: 'pointer',
                     fontFamily: 'var(--sans)',
+                    transition: 'opacity .15s',
                   }}
+                  onMouseEnter={e => { e.currentTarget.style.opacity = '0.85' }}
+                  onMouseLeave={e => { e.currentTarget.style.opacity = '1' }}
                 >
                   Área do Cliente
                 </button>
@@ -97,15 +127,11 @@ export function PublicNav({ current }: { current: 'home' | 'pricing' | 'about' |
 
         <div
           className="public-nav-mobile app-mobile-only"
-          style={{
-            position: 'relative',
-            width: '100%',
-            minHeight: '38px',
-          }}
+          style={{ position: 'relative', width: '100%', minHeight: '38px' }}
         >
           <button
             type="button"
-            onClick={() => setMobileOpen((value) => !value)}
+            onClick={() => setMobileOpen(v => !v)}
             style={{
               border: '1px solid var(--border)',
               background: 'var(--surface-2)',
@@ -117,8 +143,9 @@ export function PublicNav({ current }: { current: 'home' | 'pricing' | 'about' |
               gap: '8px',
               fontSize: '13px',
               fontWeight: 700,
+              transition: 'background .15s',
             }}
-            aria-label={mobileOpen ? 'Fechar menu da Área do Cliente' : 'Abrir menu da Área do Cliente'}
+            aria-label={mobileOpen ? 'Fechar menu' : 'Abrir menu'}
           >
             {mobileOpen ? <X size={16} /> : <Menu size={16} />}
             Área do Cliente
@@ -139,6 +166,7 @@ export function PublicNav({ current }: { current: 'home' | 'pricing' | 'about' |
             zIndex: 95,
             padding: '12px 16px 0',
             background: 'var(--bg)',
+            animation: 'fadeSlideDown .18s ease',
           }}
         >
           <div
@@ -154,7 +182,7 @@ export function PublicNav({ current }: { current: 'home' | 'pricing' | 'about' |
           >
             <button
               type="button"
-              onClick={() => go('/login')}
+              onClick={goLogin}
               style={{
                 width: '100%',
                 border: 'none',
@@ -165,15 +193,15 @@ export function PublicNav({ current }: { current: 'home' | 'pricing' | 'about' |
                 fontWeight: 700,
                 padding: '12px 14px',
                 textAlign: 'left',
+                cursor: 'pointer',
               }}
             >
               Área do Cliente
             </button>
             <div style={{ display: 'grid', gap: '6px' }}>
-              <PublicMenuButton label="Home" active={current === 'home'} onClick={() => go('/')} />
-              <PublicMenuButton label="Sobre" active={current === 'about'} onClick={() => go('/sobre')} />
-              <PublicMenuButton label="Planos" active={current === 'pricing'} onClick={() => go('/planos')} />
-              <PublicMenuButton label="Contato" active={current === 'contact'} onClick={() => go('/contato')} />
+              {SECTIONS.map(id => (
+                <PublicMenuButton key={id} label={LABELS[id]} active={active === id} onClick={() => go(id)} />
+              ))}
             </div>
           </div>
         </div>
@@ -196,6 +224,7 @@ function PublicNavButton({ label, active, onClick }: { label: string; active?: b
         background: active ? 'var(--surface-2)' : 'transparent',
         border: 'none',
         fontFamily: 'var(--sans)',
+        transition: 'color .15s, background .15s',
       }}
     >
       {label}
@@ -217,6 +246,8 @@ function PublicMenuButton({ label, active, onClick }: { label: string; active?: 
         fontWeight: 600,
         padding: '11px 12px',
         textAlign: 'left',
+        cursor: 'pointer',
+        transition: 'background .15s, color .15s',
       }}
     >
       {label}
