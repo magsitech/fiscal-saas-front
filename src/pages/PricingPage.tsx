@@ -5,11 +5,26 @@ import { PublicNav } from '@/components/layout/PublicNav'
 
 const PLANOS = [
   {
+    id: 'TRIAL',
+    nome: 'Trial',
+    preco: null,
+    descricao: 'Experimente a plataforma sem compromisso. Sem cartão.',
+    features: [
+      '14 dias de acesso completo',
+      'R$ 50,00 em créditos incluídos',
+      'Validação NF-e e NFC-e',
+      'Dashboard e relatórios',
+      'Sem cartão de crédito',
+    ],
+    destaque: false,
+    badge: '14 dias grátis',
+    btnLabel: 'Começar grátis',
+    isTrial: true,
+  },
+  {
     id: 'BASICO',
     nome: 'Básico',
     preco: 29,
-    franquia: null,
-    excedente: 'R$ 0,22 fixo por consulta',
     descricao: 'Ideal para volumes baixos e testes em produção.',
     features: [
       'Validação NF-e e NFC-e',
@@ -20,13 +35,13 @@ const PLANOS = [
     ],
     destaque: false,
     badge: null,
+    btnLabel: 'Assinar Básico',
+    isTrial: false,
   },
   {
     id: 'PRO',
     nome: 'Pro',
     preco: 99,
-    franquia: 500,
-    excedente: 'A partir de R$ 0,22 (faixa 1)',
     descricao: 'Para empresas com volume regular de notas fiscais.',
     features: [
       '500 consultas/mês incluídas',
@@ -37,13 +52,13 @@ const PLANOS = [
     ],
     destaque: true,
     badge: 'Mais popular',
+    btnLabel: 'Assinar Pro',
+    isTrial: false,
   },
   {
     id: 'BUSINESS',
     nome: 'Business',
     preco: 149,
-    franquia: 1000,
-    excedente: 'A partir de R$ 0,18 (faixa 2)',
     descricao: 'Para alto volume com melhor custo no excedente.',
     features: [
       '1.000 consultas/mês incluídas',
@@ -54,6 +69,8 @@ const PLANOS = [
     ],
     destaque: false,
     badge: null,
+    btnLabel: 'Assinar Business',
+    isTrial: false,
   },
 ]
 
@@ -90,13 +107,13 @@ export function PricingPage() {
       </div>
 
       {/* Cards de planos */}
-      <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '0 40px 48px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', alignItems: 'start' }} className="pricing-plans-grid">
+      <div style={{ maxWidth: '1160px', margin: '0 auto', padding: '0 40px 48px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', alignItems: 'start' }} className="pricing-plans-grid">
         {PLANOS.map((plano) => (
           <div
             key={plano.id}
             style={{
               background: plano.destaque ? 'linear-gradient(160deg, color-mix(in srgb, var(--surface) 80%, var(--accent-dim) 20%), var(--surface))' : 'var(--surface)',
-              border: plano.destaque ? '2px solid var(--accent-glow)' : '1px solid var(--border)',
+              border: plano.isTrial ? '1.5px dashed var(--border)' : plano.destaque ? '2px solid var(--accent-glow)' : '1px solid var(--border)',
               borderRadius: '16px',
               padding: '28px',
               display: 'flex',
@@ -108,7 +125,8 @@ export function PricingPage() {
             {plano.badge && (
               <div style={{
                 position: 'absolute', top: '-12px', left: '50%', transform: 'translateX(-50%)',
-                background: 'var(--accent)', color: '#04110d',
+                background: plano.isTrial ? 'var(--info, #3b82f6)' : 'var(--accent)',
+                color: plano.isTrial ? '#fff' : '#04110d',
                 fontSize: '11px', fontWeight: 700, letterSpacing: '0.5px',
                 padding: '3px 12px', borderRadius: '999px', whiteSpace: 'nowrap',
               }}>
@@ -121,10 +139,18 @@ export function PricingPage() {
                 {plano.nome}
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', marginBottom: '8px' }}>
-                <span style={{ fontFamily: 'var(--mono)', fontSize: '38px', fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1, color: plano.destaque ? 'var(--accent)' : 'var(--text)' }}>
-                  R$ {plano.preco}
-                </span>
-                <span style={{ fontSize: '13px', color: 'var(--text-dim)', paddingBottom: '5px' }}>/mês</span>
+                {plano.preco !== null ? (
+                  <>
+                    <span style={{ fontFamily: 'var(--mono)', fontSize: '38px', fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1, color: plano.destaque ? 'var(--accent)' : 'var(--text)' }}>
+                      R$ {plano.preco}
+                    </span>
+                    <span style={{ fontSize: '13px', color: 'var(--text-dim)', paddingBottom: '5px' }}>/mês</span>
+                  </>
+                ) : (
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: '38px', fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1, color: 'var(--info, #3b82f6)' }}>
+                    Grátis
+                  </span>
+                )}
               </div>
               <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>{plano.descricao}</p>
             </div>
@@ -144,9 +170,9 @@ export function PricingPage() {
               style={{
                 width: '100%',
                 padding: '12px',
-                background: plano.destaque ? 'var(--accent)' : 'var(--surface-2)',
-                color: plano.destaque ? '#04110d' : 'var(--text)',
-                border: plano.destaque ? 'none' : '1px solid var(--border)',
+                background: plano.isTrial ? 'var(--info, #3b82f6)' : plano.destaque ? 'var(--accent)' : 'var(--surface-2)',
+                color: plano.isTrial ? '#fff' : plano.destaque ? '#04110d' : 'var(--text)',
+                border: plano.isTrial || plano.destaque ? 'none' : '1px solid var(--border)',
                 borderRadius: '10px',
                 fontSize: '14px',
                 fontWeight: 700,
@@ -157,7 +183,7 @@ export function PricingPage() {
               onMouseEnter={e => { e.currentTarget.style.opacity = '0.85' }}
               onMouseLeave={e => { e.currentTarget.style.opacity = '1' }}
             >
-              Começar trial grátis
+              {plano.btnLabel}
             </button>
           </div>
         ))}

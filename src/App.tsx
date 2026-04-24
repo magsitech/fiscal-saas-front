@@ -135,7 +135,8 @@ export default function App() {
       />
       <Routes>
         <Route path="/" element={<HomeRoute />} />
-        <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/planos" element={<PricingPage />} />
+        <Route path="/pricing" element={<Navigate to="/planos" replace />} />
         <Route path="/sobre" element={<AboutPage />} />
         <Route path="/contato" element={<ContactPage />} />
         <Route path="/termos-de-uso" element={<TermsOfServicePage />} />

@@ -7,7 +7,7 @@ export function PublicNav({ current }: { current: 'home' | 'pricing' | 'about' |
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
 
-  function go(path: '/' | '/pricing' | '/sobre' | '/contato' | '/login') {
+  function go(path: '/' | '/planos' | '/sobre' | '/contato' | '/login') {
     setMobileOpen(false)
     navigate(path)
   }
@@ -56,7 +56,7 @@ export function PublicNav({ current }: { current: 'home' | 'pricing' | 'about' |
               <div className="landing-nav-links" style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                 <PublicNavButton label="Home" active={current === 'home'} onClick={() => go('/')} />
                 <PublicNavButton label="Sobre" active={current === 'about'} onClick={() => go('/sobre')} />
-                <PublicNavButton label="Preços" active={current === 'pricing'} onClick={() => go('/pricing')} />
+                <PublicNavButton label="Planos" active={current === 'pricing'} onClick={() => go('/planos')} />
                 <PublicNavButton label="Contato" active={current === 'contact'} onClick={() => go('/contato')} />
               </div>
 
@@ -172,7 +172,7 @@ export function PublicNav({ current }: { current: 'home' | 'pricing' | 'about' |
             <div style={{ display: 'grid', gap: '6px' }}>
               <PublicMenuButton label="Home" active={current === 'home'} onClick={() => go('/')} />
               <PublicMenuButton label="Sobre" active={current === 'about'} onClick={() => go('/sobre')} />
-              <PublicMenuButton label="Preços" active={current === 'pricing'} onClick={() => go('/pricing')} />
+              <PublicMenuButton label="Planos" active={current === 'pricing'} onClick={() => go('/planos')} />
               <PublicMenuButton label="Contato" active={current === 'contact'} onClick={() => go('/contato')} />
             </div>
           </div>

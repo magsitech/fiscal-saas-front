@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   ArrowRight,
   Building2,
-  Check,
   CreditCard,
   Eye,
   EyeOff,
@@ -26,7 +25,7 @@ type Mode = 'login' | 'plano-cadastro' | 'tipo' | 'form-pf' | 'form-pj' | 'esque
 const PLANOS_CADASTRO = [
   {
     id: 'TRIAL',
-    nome: 'Experimentar grátis',
+    nome: 'Trial',
     preco: null,
     destaque: false,
     badge: '14 dias grátis',
