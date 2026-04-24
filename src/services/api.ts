@@ -2,6 +2,7 @@ import axios from 'axios'
 import type {
   ApiKeyCreateResponse,
   ApiKeyInfo,
+  AssinaturaResumo,
   AuditoriaItem,
   AtualizarPerfilPayload,
   Cliente,
@@ -22,6 +23,7 @@ import type {
   SaldoResumo,
   SimuladorResponse,
   TipoConsulta,
+  TipoPlano,
   TokenResponse,
   UfConsulta,
 } from '@/types'
@@ -147,6 +149,22 @@ function normalizeExtratoItem(payload: unknown): ExtratoItem {
         ? raw.auditoria_id
         : null,
     criado_em: typeof raw.criado_em === 'string' ? raw.criado_em : new Date().toISOString(),
+  }
+}
+
+function normalizeAssinaturaResumo(payload: unknown): AssinaturaResumo {
+  const raw = unwrapPayload<Record<string, unknown>>(payload)
+  return {
+    plano: String(raw.plano ?? 'TRIAL') as TipoPlano,
+    trial_expira_em: typeof raw.trial_expira_em === 'string' ? raw.trial_expira_em : null,
+    trial_ativo: Boolean(raw.trial_ativo),
+    assinatura_inicio: typeof raw.assinatura_inicio === 'string' ? raw.assinatura_inicio : null,
+    ciclo_inicio: typeof raw.ciclo_inicio === 'string' ? raw.ciclo_inicio : null,
+    ciclo_expira_em: typeof raw.ciclo_expira_em === 'string' ? raw.ciclo_expira_em : null,
+    franquia_usada: raw.franquia_usada != null ? Number(raw.franquia_usada) : null,
+    franquia_limite: raw.franquia_limite != null ? Number(raw.franquia_limite) : null,
+    franquia_restante: raw.franquia_restante != null ? Number(raw.franquia_restante) : null,
+    proximo_plano: typeof raw.proximo_plano === 'string' ? raw.proximo_plano : null,
   }
 }
 
@@ -405,6 +423,18 @@ export const pedidosApi = {
     }
     const { data } = await http.get<PedidoDetalhe>(`/pedidos/${pedidoId}`)
     return normalizePedidoDetalhe(data)
+  },
+}
+
+export const planosApi = {
+  assinatura: async (): Promise<AssinaturaResumo | null> => {
+    if (USE_MOCK_API) return null
+    try {
+      const { data } = await http.get<AssinaturaResumo>('/planos/assinatura')
+      return normalizeAssinaturaResumo(data)
+    } catch {
+      return null
+    }
   },
 }
 

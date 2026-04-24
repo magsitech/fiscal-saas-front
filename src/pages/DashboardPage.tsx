@@ -3,8 +3,8 @@ import { differenceInCalendarDays, format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
-import { dashboardApi, saldoApi } from '@/services/api'
-import type { AuditoriaItem, DashboardResumo, SaldoResumo } from '@/types'
+import { dashboardApi, planosApi, saldoApi } from '@/services/api'
+import type { AssinaturaResumo, AuditoriaItem, DashboardResumo, SaldoResumo } from '@/types'
 import {
   Badge,
   Card,
@@ -18,6 +18,10 @@ import {
   Th,
   TrHover,
 } from '@/components/ui'
+
+const PLANO_LABEL: Record<string, string> = {
+  BASICO: 'Básico', PRO: 'Pro', BUSINESS: 'Business', TRIAL: 'Trial', CANCELADO: 'Cancelado',
+}
 
 const FAIXAS = [
   { label: '1–500', preco: 0.22, pct: 100 },
@@ -85,6 +89,7 @@ function KpiCard({
 export function DashboardPage() {
   const [resumo, setResumo] = useState<DashboardResumo | null>(null)
   const [saldo, setSaldo] = useState<SaldoResumo | null>(null)
+  const [assinatura, setAssinatura] = useState<AssinaturaResumo | null>(null)
   const [ultimas, setUltimas] = useState<AuditoriaItem[]>([])
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
@@ -94,10 +99,12 @@ export function DashboardPage() {
       dashboardApi.resumo().catch(() => null),
       saldoApi.resumo().catch(() => null),
       dashboardApi.auditoria().catch(() => []),
-    ]).then(([r, s, v]) => {
+      planosApi.assinatura().catch(() => null),
+    ]).then(([r, s, v, a]) => {
       setResumo(r)
       setSaldo(s)
       setUltimas(v.slice(0, 5))
+      setAssinatura(a)
       setLoading(false)
     })
   }, [])
@@ -266,6 +273,25 @@ export function DashboardPage() {
               <span>{(resumo?.consultas_periodo ?? saldo?.consultas_no_periodo ?? 0).toLocaleString('pt-BR')} consultas no período</span>
             </div>
           </div>
+
+          {/* Aviso de mudança de plano agendada */}
+          {!loading && assinatura?.proximo_plano && assinatura.ciclo_expira_em && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '10px',
+              padding: '12px 16px', borderRadius: '12px',
+              background: 'var(--warn-dim, rgba(234,179,8,0.08))',
+              border: '1px solid var(--warn-glow, rgba(234,179,8,0.25))',
+              fontSize: '13px', color: 'var(--warn, #ca8a04)',
+            }}>
+              <span style={{ fontSize: '15px' }}>⚠</span>
+              <span>
+                Seu plano muda para{' '}
+                <strong>{PLANO_LABEL[assinatura.proximo_plano] ?? assinatura.proximo_plano}</strong>
+                {' '}em{' '}
+                <strong>{format(parseISO(assinatura.ciclo_expira_em), 'dd/MM/yyyy', { locale: ptBR })}</strong>
+              </span>
+            </div>
+          )}
         </div>
       </section>
 
