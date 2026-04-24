@@ -169,7 +169,16 @@ export interface PedidoCartaoPayerPayload {
   payer_doc_number?: string
 }
 
-export interface IniciarPedidoRequest extends Partial<PedidoBoletoPayerPayload>, Partial<PedidoCartaoPayerPayload> {
+export interface PedidoCartaoDiretoPayload {
+  card_number: string
+  card_holder_name: string
+  card_expiry_month: string
+  card_expiry_year: string
+  card_cvv: string
+  card_installments?: number
+}
+
+export interface IniciarPedidoRequest extends Partial<PedidoBoletoPayerPayload>, Partial<PedidoCartaoPayerPayload>, Partial<PedidoCartaoDiretoPayload> {
   metodo: MetodoPagamento
   valor: number
   descricao?: string
@@ -222,6 +231,8 @@ export interface IniciarPedidoResponse extends PedidoPagamentoData, PedidoStatus
   criado_em?: string | null
   confirmado_em?: string | null
   credito_lancado?: boolean
+  card_last_four?: string | null
+  card_brand?: string | null
 }
 
 export type UfConsulta = 'rj' | 'sp'
