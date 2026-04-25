@@ -7,9 +7,10 @@ import {
   ChevronUp,
   Copy,
   CreditCard,
+  Eye,
+  EyeOff,
   KeyRound,
   Lock,
-  LogOut,
   Mail,
   Phone,
   RefreshCcw,
@@ -18,11 +19,15 @@ import {
   User,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import type { ApiKeyCreateResponse, ApiKeyInfo } from '@/types'
-import { apiKeyApi, authApi } from '@/services/api'
+import type { ApiKeyCreateResponse, ApiKeyInfo, AssinaturaResumo } from '@/types'
+import { apiKeyApi, authApi, planosApi } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
 import { Skeleton, Spinner } from '@/components/ui'
 import { formatBrazilPhone, normalizeBrazilPhone } from '@/utils/phone'
+
+const PLANO_LABEL: Record<string, string> = {
+  BASICO: 'Básico', PRO: 'Pro', BUSINESS: 'Business', TRIAL: 'Trial', CANCELADO: 'Cancelado',
+}
 
 // ─── Botão inline reutilizável ────────────────────────────────
 type BtnVariant = 'primary' | 'ghost' | 'danger' | 'soft'
@@ -131,6 +136,7 @@ function Field({
   helperText,
   inputMode,
   autoComplete,
+  showPasswordToggle = false,
 }: {
   label: string
   type?: string
@@ -143,8 +149,11 @@ function Field({
   helperText?: string
   inputMode?: InputHTMLAttributes<HTMLInputElement>['inputMode']
   autoComplete?: string
+  showPasswordToggle?: boolean
 }) {
   const [focused, setFocused] = useState(false)
+  const [showPwd, setShowPwd] = useState(false)
+  const effectiveType = type === 'password' && showPasswordToggle ? (showPwd ? 'text' : 'password') : type
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -175,7 +184,7 @@ function Field({
           </span>
         )}
         <input
-          type={type}
+          type={effectiveType}
           value={value}
           onChange={onChange}
           placeholder={placeholder}
@@ -197,7 +206,7 @@ function Field({
           style={{
             width: '100%',
             paddingLeft: icon ? '42px' : '16px',
-            paddingRight: '16px',
+            paddingRight: showPasswordToggle && type === 'password' ? '46px' : '16px',
             paddingTop: '13px',
             paddingBottom: '13px',
             borderRadius: '14px',
@@ -215,6 +224,29 @@ function Field({
             transition: 'border-color 0.15s, box-shadow 0.15s',
           }}
         />
+        {showPasswordToggle && type === 'password' && (
+          <button
+            type="button"
+            onClick={() => setShowPwd((v) => !v)}
+            style={{
+              position: 'absolute',
+              right: '12px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              color: 'var(--text-dim)',
+              display: 'flex',
+              alignItems: 'center',
+              padding: '4px',
+            }}
+            tabIndex={-1}
+            aria-label={showPwd ? 'Ocultar senha' : 'Mostrar senha'}
+          >
+            {showPwd ? <EyeOff size={15} /> : <Eye size={15} />}
+          </button>
+        )}
       </div>
 
       {error && (
@@ -278,7 +310,8 @@ function ReadonlyField({ icon, value, badge }: { icon: React.ReactNode; value: R
 }
 
 export function PerfilPage() {
-  const { usuario, setUsuario, logout } = useAuthStore()
+  const { usuario, setUsuario } = useAuthStore()
+  const [assinatura, setAssinatura] = useState<AssinaturaResumo | null>(null)
 
   const [perfil, setPerfil] = useState({
     nome: usuario?.nome ?? '',
@@ -324,6 +357,10 @@ export function PerfilPage() {
       .catch(() => { if (active) toast.error('Erro ao carregar o status da API Key.') })
       .finally(() => { if (active) setLoadingApiKey(false) })
     return () => { active = false }
+  }, [])
+
+  useEffect(() => {
+    planosApi.assinatura().then(setAssinatura).catch(() => null)
   }, [])
 
   async function salvarPerfil(e: React.FormEvent) {
@@ -783,6 +820,27 @@ export function PerfilPage() {
             </div>
           </div>
 
+          {/* Linha 4: plano */}
+          <div style={grid2}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <SectionLabel>Plano</SectionLabel>
+              <ReadonlyField
+                icon={<Shield size={14} />}
+                value={assinatura ? (PLANO_LABEL[assinatura.plano] ?? assinatura.plano) : '-'}
+                badge="atual"
+              />
+            </div>
+            {assinatura?.plano === 'TRIAL' && assinatura.trial_expira_em && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <SectionLabel>Expiração do teste</SectionLabel>
+                <ReadonlyField
+                  icon={<Shield size={14} />}
+                  value={format(parseISO(assinatura.trial_expira_em), "dd/MM/yyyy", { locale: ptBR })}
+                />
+              </div>
+            )}
+          </div>
+
           {/* Salvar */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '4px' }}>
             <Btn type="submit" loading={savingPerfil}>
@@ -826,6 +884,7 @@ export function PerfilPage() {
               onChange={(e) => setSenha({ ...senha, atual: e.target.value })}
               error={senhaErros.atual}
               icon={<Lock size={15} />}
+              showPasswordToggle
             />
 
             <div style={grid2}>
@@ -837,6 +896,7 @@ export function PerfilPage() {
                 onChange={(e) => setSenha({ ...senha, nova: e.target.value })}
                 error={senhaErros.nova}
                 icon={<Lock size={15} />}
+                showPasswordToggle
               />
               <Field
                 label="Confirmar nova senha"
@@ -846,6 +906,7 @@ export function PerfilPage() {
                 onChange={(e) => setSenha({ ...senha, confirmar: e.target.value })}
                 error={senhaErros.confirmar}
                 icon={<Lock size={15} />}
+                showPasswordToggle
               />
             </div>
 

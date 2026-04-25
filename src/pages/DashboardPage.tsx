@@ -1,23 +1,9 @@
 import { useEffect, useState } from 'react'
 import { differenceInCalendarDays, format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { useNavigate } from 'react-router-dom'
-import { ArrowRight } from 'lucide-react'
 import { dashboardApi, planosApi, saldoApi } from '@/services/api'
-import type { AssinaturaResumo, AuditoriaItem, DashboardResumo, SaldoResumo } from '@/types'
-import {
-  Badge,
-  Card,
-  CardHeader,
-  CardTitle,
-  ChaveNF,
-  Empty,
-  Skeleton,
-  Table,
-  Td,
-  Th,
-  TrHover,
-} from '@/components/ui'
+import type { AssinaturaResumo, DashboardResumo, SaldoResumo } from '@/types'
+import { Card, Skeleton } from '@/components/ui'
 
 const PLANO_LABEL: Record<string, string> = {
   BASICO: 'Básico', PRO: 'Pro', BUSINESS: 'Business', TRIAL: 'Trial', CANCELADO: 'Cancelado',
@@ -91,20 +77,16 @@ export function DashboardPage() {
   const [resumo, setResumo] = useState<DashboardResumo | null>(null)
   const [saldo, setSaldo] = useState<SaldoResumo | null>(null)
   const [assinatura, setAssinatura] = useState<AssinaturaResumo | null>(null)
-  const [ultimas, setUltimas] = useState<AuditoriaItem[]>([])
   const [loading, setLoading] = useState(true)
-  const navigate = useNavigate()
 
   useEffect(() => {
     Promise.all([
       dashboardApi.resumo().catch(() => null),
       saldoApi.resumo().catch(() => null),
-      dashboardApi.auditoria().catch(() => []),
       planosApi.assinatura().catch(() => null),
-    ]).then(([r, s, v, a]) => {
+    ]).then(([r, s, a]) => {
       setResumo(r)
       setSaldo(s)
-      setUltimas(v.slice(0, 5))
       setAssinatura(a)
       setLoading(false)
     })
@@ -223,15 +205,22 @@ export function DashboardPage() {
               }} className="dashboard-summary-panel-label">
                 Situação atual
               </div>
-              <div style={{ fontSize: '16px', fontWeight: 600, marginBottom: '6px' }} className="dashboard-summary-panel-value">
-                {resumo?.saldo_status ?? 'Sem saldo'}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                <div style={{ fontSize: '16px', fontWeight: 600 }} className="dashboard-summary-panel-value">
+                  {resumo?.saldo_status ?? 'Sem saldo'}
+                </div>
+                {assinatura?.plano && (
+                  <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 10px', borderRadius: '999px', background: 'rgba(0,212,170,0.16)', color: 'var(--accent)', border: '1px solid rgba(0,212,170,0.22)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                    {PLANO_LABEL[assinatura.plano] ?? assinatura.plano}
+                  </span>
+                )}
               </div>
               <div style={{ fontSize: '13px', lineHeight: 1.6, marginBottom: '20px' }} className="dashboard-summary-panel-copy">
                 {resumo?.saldo_expira_em
                   ? `Créditos válidos até ${new Date(resumo.saldo_expira_em).toLocaleDateString('pt-BR')}`
                   : 'Sem expiração ativa no momento.'}
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: assinatura?.plano === 'TRIAL' ? '1fr 1fr' : '1fr', gap: '10px' }}>
                 <div className="dashboard-summary-stat" style={{ borderRadius: '14px', border: '1px solid', padding: '14px 16px' }}>
                   <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.13em', marginBottom: '6px' }} className="dashboard-summary-stat-label">
                     Consultas
@@ -240,14 +229,16 @@ export function DashboardPage() {
                     {(resumo?.consultas_periodo ?? saldo?.consultas_no_periodo ?? 0).toLocaleString('pt-BR')}
                   </div>
                 </div>
-                <div className="dashboard-summary-stat" style={{ borderRadius: '14px', border: '1px solid', padding: '14px 16px' }}>
-                  <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.13em', marginBottom: '6px' }} className="dashboard-summary-stat-label">
-                    Expiração
+                {assinatura?.plano === 'TRIAL' && (
+                  <div className="dashboard-summary-stat" style={{ borderRadius: '14px', border: '1px solid', padding: '14px 16px' }}>
+                    <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.13em', marginBottom: '6px' }} className="dashboard-summary-stat-label">
+                      Expiração
+                    </div>
+                    <div style={{ fontFamily: 'var(--mono)', fontSize: '14px', fontWeight: 600 }} className="dashboard-summary-stat-value">
+                      {diasRestantes !== null ? `${diasRestantes} dias` : '-'}
+                    </div>
                   </div>
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: '14px', fontWeight: 600 }} className="dashboard-summary-stat-value">
-                    {diasRestantes !== null ? `${diasRestantes} dias` : '-'}
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -315,185 +306,6 @@ export function DashboardPage() {
         )}
       </div>
 
-      {/* ── Faixas + Últimas auditorias ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: '28px' }} className="dashboard-bottom-grid">
-
-        {/* Tabela de faixas */}
-        <Card className="app-dashboard-panel">
-          <CardHeader>
-            <CardTitle>Tabela de preços por faixa</CardTitle>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Base de cálculo do simulador</span>
-          </CardHeader>
-          <div style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {FAIXAS.map((f) => (
-              <div key={f.label} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: '11px', color: 'var(--text-muted)' }}>{f.label}</span>
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: '12px', fontWeight: 600, color: 'var(--text)' }}>
-                    R$ {f.preco.toFixed(2)}
-                  </span>
-                </div>
-                <div style={{ height: '5px', borderRadius: '999px', background: 'var(--surface-2)', overflow: 'hidden' }}>
-                  <div style={{
-                    height: '100%', borderRadius: '999px',
-                    width: `${f.pct}%`,
-                    background: 'var(--accent)',
-                    opacity: 0.4 + f.pct / 180,
-                  }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        {/* Últimas auditorias */}
-        <Card className="app-dashboard-panel">
-          <CardHeader>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <CardTitle>Últimas auditorias</CardTitle>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Consultas fiscais mais recentes</div>
-            </div>
-            <button
-              type="button"
-              onClick={() => navigate('/app/auditoria')}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '8px 16px',
-                borderRadius: '999px',
-                border: '1px solid var(--accent-glow)',
-                background: 'var(--accent-dim)',
-                color: 'var(--accent)',
-                fontFamily: 'var(--sans)',
-                fontSize: '12px',
-                fontWeight: 700,
-                cursor: 'pointer',
-                letterSpacing: '0.01em',
-                transition: 'border-color 0.15s, box-shadow 0.15s, transform 0.1s',
-                whiteSpace: 'nowrap',
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.borderColor = 'var(--accent)'
-                e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-dim)'
-                e.currentTarget.style.transform = 'translateY(-1px)'
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.borderColor = 'var(--accent-glow)'
-                e.currentTarget.style.boxShadow = 'none'
-                e.currentTarget.style.transform = 'translateY(0)'
-              }}
-              onMouseDown={e => { e.currentTarget.style.transform = 'translateY(0)' }}
-            >
-              Ver todas
-              <ArrowRight size={13} />
-            </button>
-          </CardHeader>
-
-          <div className="app-data-desktop app-table-shell">
-            <Table fixed>
-              <colgroup>
-                <col style={{ width: '42%' }} />
-                <col style={{ width: '13%' }} />
-                <col style={{ width: '22%' }} />
-                <col style={{ width: '23%' }} />
-              </colgroup>
-              <thead>
-                <tr>
-                  <Th>Chave NF-e</Th>
-                  <Th><div style={{ whiteSpace: 'nowrap' }}>Modelo</div></Th>
-                  <Th>Status</Th>
-                  <Th><div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>Data</div></Th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  Array.from({ length: 4 }).map((_, i) => (
-                    <TrHover key={i}>
-                      <Td><Skeleton className="h-4 w-28" /></Td>
-                      <Td><Skeleton className="h-4 w-10" /></Td>
-                      <Td><Skeleton className="h-4 w-20" /></Td>
-                      <Td><Skeleton className="h-4 w-16" /></Td>
-                    </TrHover>
-                  ))
-                ) : ultimas.length === 0 ? (
-                  <tr><td colSpan={4}><Empty message="Nenhuma auditoria ainda" /></td></tr>
-                ) : (
-                  ultimas.map((v) => (
-                    <TrHover key={v.id}>
-                      <Td><ChaveNF chave={v.chave_nf} /></Td>
-                      <Td>
-                        <span style={{
-                          fontFamily: 'var(--mono)', fontSize: '11px', fontWeight: 700,
-                          color: v.modelo === '55' ? 'var(--info)' : 'var(--accent)',
-                          padding: '3px 7px', borderRadius: '6px',
-                          background: v.modelo === '55' ? 'var(--info-dim)' : 'var(--accent-dim)',
-                        }}>
-                          NF-{v.modelo === '55' ? 'e' : 'Ce'}
-                        </span>
-                      </Td>
-                      <Td><Badge status={v.status} /></Td>
-                      <Td>
-                        <div style={{ textAlign: 'right' }}>
-                          <span style={{ fontSize: '12px', fontFamily: 'var(--mono)', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                            {format(parseISO(v.criado_em), 'dd/MM/yyyy', { locale: ptBR })}
-                          </span>
-                        </div>
-                      </Td>
-                    </TrHover>
-                  ))
-                )}
-              </tbody>
-            </Table>
-          </div>
-
-          <div className="app-data-mobile" style={{ padding: '16px' }}>
-            <div style={{ display: 'grid', gap: '10px' }}>
-              {loading ? (
-                Array.from({ length: 3 }).map((_, i) => (
-                  <Card key={i}>
-                    <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      <Skeleton className="h-4 w-24" />
-                      <Skeleton className="h-4 w-full" />
-                      <Skeleton className="h-4 w-3/5" />
-                    </div>
-                  </Card>
-                ))
-              ) : ultimas.length === 0 ? (
-                <Empty message="Nenhuma auditoria ainda" />
-              ) : (
-                ultimas.map((v) => (
-                  <Card key={v.id}>
-                    <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
-                        <div>
-                          <div style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-dim)', marginBottom: '4px' }}>
-                            Chave NF
-                          </div>
-                          <ChaveNF chave={v.chave_nf} />
-                        </div>
-                        <Badge status={v.status} />
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', paddingTop: '8px', borderTop: '1px solid var(--border)' }}>
-                        <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-dim)' }}>Modelo</span>
-                        <span style={{ fontSize: '11px', fontFamily: 'var(--mono)', fontWeight: 600, color: v.modelo === '55' ? 'var(--info)' : 'var(--accent)' }}>
-                          NF-{v.modelo === '55' ? 'e' : 'Ce'}
-                        </span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-                        <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-dim)' }}>Data</span>
-                        <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                          {format(parseISO(v.criado_em), 'dd/MM/yyyy', { locale: ptBR })}
-                        </span>
-                      </div>
-                    </div>
-                  </Card>
-                ))
-              )}
-            </div>
-          </div>
-        </Card>
-      </div>
     </div>
   )
 }

@@ -343,8 +343,8 @@ export function CreditosCheckout() {
 
   function buildRequestPayload(): IniciarPedidoRequest | null {
     const numericValue = parseFloat(valor)
-    if (Number.isNaN(numericValue) || numericValue < 50) {
-      toast.error('Valor mínimo: R$ 50,00')
+    if (Number.isNaN(numericValue) || numericValue < 100) {
+      toast.error('Valor mínimo: R$ 100,00')
       return null
     }
 
@@ -487,6 +487,7 @@ export function CreditosCheckout() {
           <div style={{ padding: '20px 22px', borderRadius: '18px', background: 'linear-gradient(135deg, color-mix(in srgb, var(--accent-dim) 88%, transparent), color-mix(in srgb, var(--info-dim) 42%, transparent))', border: '1px solid var(--accent-glow)', fontSize: '13px', lineHeight: 1.8, boxShadow: '0 16px 34px rgba(0,212,170,0.08)' }}>
             <span style={{ color: 'var(--text-muted)' }}>
               Gere seu pagamento por PIX, boleto ou cartão de crédito. Cartão é aprovado na hora; PIX e boleto aguardam confirmação do banco.
+              {' '}<strong style={{ color: 'var(--text)' }}>Os créditos são lançados automaticamente na conta assim que o pagamento é confirmado.</strong>
             </span>
           </div>
 
@@ -583,7 +584,7 @@ export function CreditosCheckout() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--text-dim)' }}>Valor</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-              {['50', '100', '200', '500', '1000'].map((preset) => {
+              {['100', '200', '500', '1000'].map((preset) => {
                 const active = valor === preset
                 return (
                   <button
@@ -615,11 +616,11 @@ export function CreditosCheckout() {
                 placeholder="0,00"
                 value={valor}
                 onChange={(event) => setValor(event.target.value)}
-                min={50}
+                min={100}
                 style={{ width: '100%', paddingLeft: '48px', paddingRight: '18px', paddingTop: '16px', paddingBottom: '16px', borderRadius: '16px', border: '1px solid var(--border)', background: 'color-mix(in srgb, var(--surface-2) 94%, transparent)', color: 'var(--text)', fontFamily: 'var(--mono)', fontSize: '18px', fontWeight: 600, outline: 'none', boxSizing: 'border-box' }}
               />
             </div>
-            <p style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '-4px' }}>Valor mínimo: R$ 50,00</p>
+            <p style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '-4px' }}>Valor mínimo: R$ 100,00</p>
           </div>
 
           <button
@@ -651,7 +652,20 @@ export function CreditosCheckout() {
         </div>
       </Card>
 
-      {(pedido || loadingPedido || pedidoError) && (
+      {canProceed && (
+        <div style={{ padding: '20px 24px', borderRadius: '18px', border: '1px solid var(--accent-glow)', background: 'linear-gradient(135deg, var(--accent-dim), color-mix(in srgb, var(--info-dim) 40%, transparent))', display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <CheckCircle2 size={22} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+          <div>
+            <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)', marginBottom: '2px' }}>Pagamento confirmado</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Os créditos foram lançados na sua conta. Consulte o extrato para confirmar.</div>
+          </div>
+          <button type="button" onClick={resetNovoPedido} style={{ marginLeft: 'auto', padding: '8px 16px', borderRadius: '999px', border: '1px solid var(--accent-glow)', background: 'rgba(0,212,170,0.14)', color: 'var(--accent)', fontFamily: 'var(--sans)', fontSize: '12px', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>
+            Novo pedido
+          </button>
+        </div>
+      )}
+
+      {!canProceed && (pedido || loadingPedido || pedidoError) && (
         <Card>
           <CardHeader>
             <CardTitle>Resumo do pedido</CardTitle>

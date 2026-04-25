@@ -356,8 +356,11 @@ export function ValidacoesPage() {
   }, [])
 
   const filteredItems = useMemo(
-    () => items.filter((item) => inDateRange(item.criado_em, periodo, inicio, fim)),
-    [items, periodo, inicio, fim]
+    () => items.filter((item) => {
+      if (status && item.status !== status) return false
+      return inDateRange(item.criado_em, periodo, inicio, fim)
+    }),
+    [items, status, periodo, inicio, fim]
   )
   const autorizadas = filteredItems.filter((item) => item.status === 'AUTORIZADA').length
   const cacheHits = filteredItems.filter((item) => item.cache_hit).length
@@ -639,8 +642,11 @@ export function ConsumoPage() {
   }, [])
 
   const filteredItems = useMemo(
-    () => items.filter((item) => inDateRange(item.criado_em, periodo, inicio, fim)),
-    [items, periodo, inicio, fim]
+    () => items.filter((item) => {
+      if (tipo && item.tipo !== tipo) return false
+      return inDateRange(item.criado_em, periodo, inicio, fim)
+    }),
+    [items, tipo, periodo, inicio, fim]
   )
 
   const total = filteredItems.reduce((sum, item) => sum + Number(item.valor), 0)
@@ -982,6 +988,13 @@ export function PagamentosPage() {
   const pendentes = filteredItems.filter((item) => item.status === 'PENDENTE' || item.status === 'AGUARDANDO_PAGAMENTO').length
   const { pageItems, totalPages, safePage } = paginateItems(filteredItems, page)
 
+  const oldestExpiracao = useMemo(() => {
+    const comExpiracao = items.filter((item) => item.status === 'PAGO' && item.credito_expira_em)
+    if (!comExpiracao.length) return null
+    comExpiracao.sort((a, b) => new Date(a.credito_expira_em!).getTime() - new Date(b.credito_expira_em!).getTime())
+    return comExpiracao[0].credito_expira_em!
+  }, [items])
+
   function paymentTone(method: Pedido['metodo']) {
     if (method === 'PIX') return { color: 'var(--accent)', bg: 'var(--accent-dim)', icon: <Sparkles size={14} /> }
     if (method === 'BOLETO') return { color: 'var(--warn)', bg: 'var(--warn-dim)', icon: <Landmark size={14} /> }
@@ -1167,6 +1180,12 @@ export function PagamentosPage() {
           value={pendentes.toLocaleString('pt-BR')}
           note="Pedidos que ainda dependem de confirmação."
           tone="var(--warn)"
+        />
+        <MetricCard
+          label="Expiração do saldo mais antigo"
+          value={oldestExpiracao ? fmtDate(oldestExpiracao) : '—'}
+          note="Vencimento do crédito ativo mais antigo. Confira o extrato para detalhes."
+          tone="var(--danger)"
         />
       </div>
 

@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   LogOut,
   Receipt,
+  Star,
   TrendingUp,
   User,
   X,
@@ -24,6 +25,7 @@ const NAV = [
       { to: '/app', label: 'Dashboard', icon: LayoutDashboard, end: true },
       { to: '/app/auditoria', label: 'Auditoria', icon: FileText },
       { to: '/app/extrato', label: 'Extrato', icon: TrendingUp },
+      { to: '/app/perfil', label: 'Perfil', icon: User },
     ],
   },
   {
@@ -32,7 +34,7 @@ const NAV = [
       { to: '/app/creditos', label: 'Créditos', icon: CreditCard },
       { to: '/app/pedidos', label: 'Pedidos', icon: Receipt },
       { to: '/app/simulador', label: 'Simulador', icon: Calculator },
-      { to: '/app/perfil', label: 'Perfil', icon: User },
+      { to: '/app/meu-plano', label: 'Meu Plano', icon: Star },
     ],
   },
   {
