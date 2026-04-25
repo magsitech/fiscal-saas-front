@@ -42,17 +42,18 @@ function KpiCard({
   value,
   note,
   tone,
-  featured = false,
 }: {
   label: string
   value: React.ReactNode
   note: React.ReactNode
   tone: string
-  featured?: boolean
 }) {
   return (
-    <Card className={`app-kpi-card${featured ? ' app-kpi-card-featured' : ''}`}>
-      <div style={{ padding: featured ? '28px' : '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+    <Card
+      className="app-kpi-card app-kpi-card-featured"
+      style={{ '--kpi-strip': tone } as React.CSSProperties}
+    >
+      <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
         <div style={{
           fontSize: '10px',
           fontWeight: 700,
@@ -64,7 +65,7 @@ function KpiCard({
         </div>
         <div style={{
           fontFamily: 'var(--mono)',
-          fontSize: featured ? '34px' : '28px',
+          fontSize: '28px',
           fontWeight: 600,
           lineHeight: 1,
           letterSpacing: '-0.02em',
@@ -130,7 +131,6 @@ export function DashboardPage() {
       value: loading ? null : (resumo?.consultas_hoje ?? '-'),
       note: `R$ ${fmt(resumo?.gasto_hoje ?? '0')} consumidos hoje`,
       tone: 'var(--accent)',
-      featured: true,
     },
     {
       label: 'Consultas no período',
@@ -139,21 +139,18 @@ export function DashboardPage() {
         ? `R$ ${fmt(resumo?.gasto_periodo ?? '0')} debitados no período. Próxima consulta: R$ ${fmt(resumo.prox_consulta_custo)}.`
         : `R$ ${fmt(resumo?.gasto_periodo ?? '0')} debitados no período`,
       tone: 'var(--info)',
-      featured: true,
     },
     {
       label: 'Saldo utilizado',
       value: loading ? null : `R$ ${fmt(usado)}`,
       note: `de R$ ${fmt(totalPeriodo)} no período`,
       tone: 'var(--warn)',
-      featured: false,
     },
     {
       label: 'Status do saldo',
       value: loading ? null : (saldo?.status ?? '-'),
       note: diasRestantes !== null ? `${diasRestantes} dias restantes` : 'Sem saldo ativo',
       tone: saldo?.status === 'ATIVO' ? 'var(--accent)' : 'var(--danger)',
-      featured: false,
     },
   ]
 
@@ -313,7 +310,6 @@ export function DashboardPage() {
               value={k.value}
               note={k.note}
               tone={k.tone}
-              featured={k.featured}
             />
           )
         )}

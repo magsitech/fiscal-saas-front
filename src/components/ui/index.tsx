@@ -105,9 +105,9 @@ export function Badge({ status, label }: { status: string; label?: string }) {
 }
 
 // ─── Card ────────────────────────────────────────────────────
-export function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+export function Card({ children, className = '', style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
   return (
-    <div className={`bg-[var(--surface)] border border-[var(--border)] rounded-lg overflow-hidden shadow-[0_16px_40px_rgba(0,0,0,0.12)] ${className}`}>
+    <div className={`bg-[var(--surface)] border border-[var(--border)] rounded-lg overflow-hidden shadow-[0_16px_40px_rgba(0,0,0,0.12)] ${className}`} style={style}>
       {children}
     </div>
   )

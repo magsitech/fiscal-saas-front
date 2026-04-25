@@ -314,7 +314,6 @@ export function CreditosCheckout() {
   const [cardExpiryMonth, setCardExpiryMonth] = useState('')
   const [cardExpiryYear, setCardExpiryYear] = useState('')
   const [cardCvv, setCardCvv] = useState('')
-  const [cardInstallments, setCardInstallments] = useState(1)
   const [cardResult, setCardResult] = useState<{ last_four: string | null; brand: string | null } | null>(null)
 
   const visualState = getVisualState(pedido, pedidoError?.message ?? null, loadingPedido && !pedido)
@@ -369,7 +368,7 @@ export function CreditosCheckout() {
         card_expiry_month: String(mm).padStart(2, '0'),
         card_expiry_year: String(yyyy),
         card_cvv: cardCvv,
-        card_installments: cardInstallments,
+        card_installments: 1,
       }
     }
 
@@ -400,7 +399,6 @@ export function CreditosCheckout() {
         setCardExpiryMonth('')
         setCardExpiryYear('')
         setCardCvv('')
-        setCardInstallments(1)
         toast.success('Pagamento com cartão confirmado.')
       } else {
         toast.success(normalized.metodo === 'PIX' ? 'Cobrança PIX gerada.' : 'Boleto gerado com sucesso.')
@@ -577,15 +575,6 @@ export function CreditosCheckout() {
                     style={{ padding: '12px 16px', borderRadius: '14px', border: '1px solid var(--border)', background: 'color-mix(in srgb, var(--surface-2) 94%, transparent)', color: 'var(--text)', fontFamily: 'var(--mono)', fontSize: '14px', outline: 'none', textAlign: 'center' }}
                   />
                 </div>
-                <select
-                  value={cardInstallments}
-                  onChange={(e) => setCardInstallments(Number(e.target.value))}
-                  style={{ padding: '12px 16px', borderRadius: '14px', border: '1px solid var(--border)', background: 'color-mix(in srgb, var(--surface-2) 94%, transparent)', color: 'var(--text)', fontFamily: 'var(--sans)', fontSize: '13px', outline: 'none' }}
-                >
-                  {[1,2,3,4,5,6,7,8,9,10,11,12].map((n) => (
-                    <option key={n} value={n}>{n}× {n === 1 ? '(à vista)' : `de ${fmtMoney(parseFloat(valor || '0') / n)}`}</option>
-                  ))}
-                </select>
               </div>
               <p style={{ fontSize: '11px', color: 'var(--text-dim)', margin: 0 }}>Os dados do cartão são enviados diretamente ao backend via HTTPS e descartados após a resposta.</p>
             </div>

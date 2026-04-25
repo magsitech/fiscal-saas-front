@@ -425,7 +425,7 @@ input, select, textarea { font-family: inherit; }
   position: absolute;
   inset: 0 auto 0 0;
   width: 4px;
-  background: linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--info) 70%, var(--accent)));
+  background: var(--kpi-strip, var(--accent));
   opacity: 0.95;
 }
 
