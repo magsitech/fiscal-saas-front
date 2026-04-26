@@ -178,11 +178,10 @@ export interface PedidoCartaoDiretoPayload {
   card_installments?: number
 }
 
-export interface IniciarPedidoRequest extends Partial<PedidoBoletoPayerPayload>, Partial<PedidoCartaoPayerPayload>, Partial<PedidoCartaoDiretoPayload> {
-  metodo: MetodoPagamento
-  valor: number
-  descricao?: string
-}
+export type IniciarPedidoRequest =
+  | { metodo: 'PIX'; valor: number }
+  | { metodo: 'BOLETO'; valor: number }
+  | { metodo: 'CARTAO'; valor: number; card_installments?: number }
 
 export interface PedidoStatusGatewayInfo {
   gateway_status?: string | null

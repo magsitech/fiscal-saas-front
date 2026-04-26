@@ -720,7 +720,11 @@ export const mockPedidosApi = {
       expira_em: new Date(now + 30 * 60 * 1000).toISOString(),
       credito_expira_em: null,
       criado_em: new Date(now).toISOString(),
-      checkout_url: null,
+      checkout_url: metodo === 'BOLETO'
+        ? 'https://example.com/mock-boleto-checkout'
+        : metodo === 'CARTAO'
+          ? 'https://example.com/mock-abacatepay-checkout'
+          : null,
       pix_copia_cola: metodo === 'PIX'
         ? `000201mockped${now}${payload.valor.toFixed(2).replace('.', '')}`
         : null,
