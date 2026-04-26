@@ -340,6 +340,7 @@ export function PerfilPage() {
 
   const documentoLabel = usuario?.tipo === 'PJ' ? 'CNPJ' : 'CPF'
   const nomeFantasiaDisponivel = usuario?.tipo === 'PJ'
+  const planoAtualLabel = assinatura ? (PLANO_LABEL[assinatura.plano] ?? assinatura.plano) : '-'
 
   useEffect(() => {
     setPerfil({
@@ -521,6 +522,15 @@ export function PerfilPage() {
 
         {/* Status e ID */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '10px', flexShrink: 0 }}>
+          <span style={{
+            display: 'inline-flex', alignItems: 'center',
+            padding: '6px 12px', borderRadius: '999px',
+            background: 'color-mix(in srgb, var(--surface-2) 92%, transparent)',
+            border: '1px solid var(--border)',
+            color: 'var(--text-muted)', fontSize: '11px', fontWeight: 700,
+          }}>
+            {planoAtualLabel}
+          </span>
           <span style={{
             display: 'inline-flex', alignItems: 'center',
             padding: '6px 12px', borderRadius: '999px',
@@ -820,17 +830,8 @@ export function PerfilPage() {
             </div>
           </div>
 
-          {/* Linha 4: plano */}
-          <div style={grid2}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <SectionLabel>Plano</SectionLabel>
-              <ReadonlyField
-                icon={<Shield size={14} />}
-                value={assinatura ? (PLANO_LABEL[assinatura.plano] ?? assinatura.plano) : '-'}
-                badge="atual"
-              />
-            </div>
-            {assinatura?.plano === 'TRIAL' && assinatura.trial_expira_em && (
+          {assinatura?.plano === 'TRIAL' && assinatura.trial_expira_em && (
+            <div style={grid2}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <SectionLabel>Expiração do teste</SectionLabel>
                 <ReadonlyField
@@ -838,8 +839,8 @@ export function PerfilPage() {
                   value={format(parseISO(assinatura.trial_expira_em), "dd/MM/yyyy", { locale: ptBR })}
                 />
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Salvar */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '4px' }}>

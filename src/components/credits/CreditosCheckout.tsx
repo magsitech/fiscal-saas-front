@@ -1,7 +1,5 @@
 ﻿import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
-import { format, parseISO } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
 import axios from 'axios'
 import {
   Banknote,
@@ -19,12 +17,11 @@ import {
 import toast from 'react-hot-toast'
 import { pedidosApi } from '@/services/api'
 import type { IniciarPedidoRequest, MetodoPagamento, PedidoDetalhe } from '@/types'
-import { Badge, Card, CardHeader, CardTitle, Spinner } from '@/components/ui'
+import { Card, CardHeader, CardTitle, Spinner } from '@/components/ui'
 
 const POLLING_INTERVAL_MS = 5000
 
 type MetodoAtivo = Extract<MetodoPagamento, 'PIX' | 'BOLETO' | 'CARTAO'>
-type CheckoutVisualState = 'idle' | 'loading' | 'awaiting' | 'paid' | 'cancelled' | 'error'
 type CheckoutError = {
   title: string
   message: string
@@ -43,21 +40,8 @@ function fmtMoney(value: string | number) {
   return numeric.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
-function fmtDateTime(iso?: string | null) {
-  if (!iso) return '--'
-  return format(parseISO(iso), 'dd/MM/yyyy HH:mm', { locale: ptBR })
-}
-
 function isFinalStatus(status: string) {
   return status === 'PAGO' || status === 'CANCELADO' || status === 'EXPIRADO'
-}
-
-function getGatewayStatus(pedido: Pick<PedidoDetalhe, 'gateway_status' | 'mp_status'>) {
-  return pedido.gateway_status ?? pedido.mp_status ?? null
-}
-
-function getGatewayStatusDetail(pedido: Pick<PedidoDetalhe, 'gateway_status_detail' | 'mp_status_detail'>) {
-  return pedido.gateway_status_detail ?? pedido.mp_status_detail ?? null
 }
 
 function normalizePedidoCriadoToDetalhe(response: Awaited<ReturnType<typeof pedidosApi.iniciar>>): PedidoDetalhe {
@@ -86,33 +70,6 @@ function normalizePedidoCriadoToDetalhe(response: Awaited<ReturnType<typeof pedi
   }
 }
 
-function getVisualState(pedido: PedidoDetalhe | null, pedidoError: string | null, loading: boolean): CheckoutVisualState {
-  if (loading) return 'loading'
-  if (pedidoError) return 'error'
-  if (!pedido) return 'idle'
-  if (pedido.status === 'PAGO') return 'paid'
-  if (pedido.status === 'CANCELADO' || pedido.status === 'EXPIRADO') return 'cancelled'
-  return 'awaiting'
-}
-
-function getStatusMessage(pedido: PedidoDetalhe) {
-  if (pedido.status === 'PAGO') {
-    return pedido.credito_lancado
-      ? 'Pagamento confirmado. O crédito já foi lançado na sua conta.'
-      : 'Pagamento confirmado. Aguarde apenas a finalização do crédito, se necessário.'
-  }
-  if (pedido.status === 'AGUARDANDO_PAGAMENTO') {
-    return 'Pedido aguardando pagamento. Assim que a confirmação chegar, continuaremos por aqui.'
-  }
-  if (pedido.status === 'CANCELADO') {
-    return 'Pagamento cancelado. Gere um novo pedido para continuar a compra de créditos.'
-  }
-  if (pedido.status === 'EXPIRADO') {
-    return 'Pagamento expirado. Gere um novo pedido para receber novos dados de pagamento.'
-  }
-  return 'Pedido criado. Estamos acompanhando a confirmação do pagamento.'
-}
-
 function isQrImageSource(value?: string | null) {
   return typeof value === 'string' && (value.startsWith('data:image') || value.startsWith('http'))
 }
@@ -124,10 +81,6 @@ function resolveQrCodeSource(value?: string | null) {
   if (isQrImageSource(normalized)) return normalized
   if (normalized.startsWith('<svg')) return `data:image/svg+xml;utf8,${encodeURIComponent(normalized)}`
   return `data:image/png;base64,${normalized}`
-}
-
-function hasPixInlineData(pedido: PedidoDetalhe) {
-  return Boolean(pedido.pix_copia_cola?.trim() && resolveQrCodeSource(pedido.pix_qr_code_url))
 }
 
 function hasBoletoInlineData(pedido: PedidoDetalhe) {
@@ -251,59 +204,6 @@ function actionButtonStyle(tone: 'accent' | 'neutral' = 'accent', disabled = fal
   }
 }
 
-function refreshButtonStyle(loading = false): CSSProperties {
-  return {
-    minHeight: '44px',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '10px',
-    padding: '0 18px',
-    borderRadius: '999px',
-    border: '1px solid color-mix(in srgb, var(--accent-glow) 72%, var(--border))',
-    background: 'linear-gradient(135deg, color-mix(in srgb, var(--surface) 88%, transparent), color-mix(in srgb, var(--accent-dim) 62%, transparent))',
-    color: 'var(--text)',
-    fontFamily: 'var(--sans)',
-    fontSize: '13px',
-    fontWeight: 700,
-    boxShadow: '0 16px 36px rgba(0,212,170,0.12)',
-    opacity: loading ? 0.75 : 1,
-    cursor: loading ? 'wait' : 'pointer',
-  }
-}
-
-function statePanelStyle(state: CheckoutVisualState): CSSProperties {
-  if (state === 'paid') {
-    return {
-      border: '1px solid var(--accent-glow)',
-      background: 'var(--accent-dim)',
-      color: 'var(--text-muted)',
-    }
-  }
-
-  if (state === 'awaiting' || state === 'loading') {
-    return {
-      border: '1px solid var(--warn)',
-      background: 'var(--warn-dim)',
-      color: 'var(--text-muted)',
-    }
-  }
-
-  if (state === 'error' || state === 'cancelled') {
-    return {
-      border: '1px solid color-mix(in srgb, var(--danger) 30%, var(--border))',
-      background: 'color-mix(in srgb, var(--danger-dim) 82%, transparent)',
-      color: 'var(--text-muted)',
-    }
-  }
-
-  return {
-    border: '1px solid var(--border)',
-    background: 'color-mix(in srgb, var(--surface-2) 94%, transparent)',
-    color: 'var(--text-muted)',
-  }
-}
-
 async function copyToClipboard(text: string, successMessage: string, onCopied?: () => void) {
   await navigator.clipboard.writeText(text)
   toast.success(successMessage)
@@ -321,7 +221,6 @@ export function CreditosCheckout() {
   const [copiedBoleto, setCopiedBoleto] = useState(false)
   const lastNotifiedStatusRef = useRef<string | null>(null)
 
-  const visualState = getVisualState(pedido, pedidoError?.message ?? null, loadingPedido && !pedido)
   const canProceed = pedido?.status === 'PAGO'
   const shouldOfferRetry = pedido?.status === 'CANCELADO' || pedido?.status === 'EXPIRADO' || Boolean(pedidoError)
 
@@ -461,10 +360,7 @@ export function CreditosCheckout() {
     }
   }, [pedido?.status])
 
-  const gatewayStatus = pedido ? getGatewayStatus(pedido) : null
-  const gatewayStatusDetail = pedido ? getGatewayStatusDetail(pedido) : null
   const pixQrSource = pedido?.metodo === 'PIX' ? resolveQrCodeSource(pedido.pix_qr_code_url) : null
-  const pixInlineReady = pedido?.metodo === 'PIX' ? hasPixInlineData(pedido) : false
   const pixCodeAvailable = Boolean(pedido?.metodo === 'PIX' && pedido.pix_copia_cola?.trim())
   const boletoInlineReady = pedido?.metodo === 'BOLETO' ? hasBoletoInlineData(pedido) : false
   const boletoPaymentUrl = pedido?.metodo === 'BOLETO' ? getBoletoPaymentUrl(pedido) : null
@@ -523,13 +419,6 @@ export function CreditosCheckout() {
               })}
             </div>
           </div>
-
-          {metodo === 'CARTAO' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '24px', borderRadius: '20px', border: '1px solid var(--border)', background: 'color-mix(in srgb, var(--surface-2) 72%, transparent)' }}>
-              <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--text-dim)' }}>Pagamento seguro</div>
-              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.7, margin: 0 }}>Você finalizará o pagamento no ambiente seguro da AbacatePay.</p>
-            </div>
-          )}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--text-dim)' }}>Valor</div>
@@ -617,15 +506,11 @@ export function CreditosCheckout() {
 
       {!canProceed && (pedido || loadingPedido || pedidoError) && (
         <Card>
-          <CardHeader>
-            <CardTitle>Resumo do pedido</CardTitle>
-            {pedido?.id && (
-              <button type="button" onClick={() => carregarPedido(pedido.id)} disabled={loadingPedido} style={refreshButtonStyle(loadingPedido)}>
-                {loadingPedido ? <Spinner size={14} /> : <RefreshCw size={14} />}
-                Atualizar status
-              </button>
-            )}
-          </CardHeader>
+          {!pedido && (
+            <CardHeader>
+              <CardTitle>Pagamento</CardTitle>
+            </CardHeader>
+          )}
 
           <div style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {loadingPedido && !pedido ? (
@@ -637,45 +522,6 @@ export function CreditosCheckout() {
 
             {pedido && (
               <>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
-                  <div style={{ padding: '16px', borderRadius: '14px', background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-                    <div style={{ fontSize: '11px', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '8px' }}>Pedido</div>
-                    <div style={{ fontFamily: 'var(--mono)', fontSize: '13px', color: 'var(--text)' }}>{pedido.id}</div>
-                  </div>
-                  <div style={{ padding: '16px', borderRadius: '14px', background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-                    <div style={{ fontSize: '11px', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '8px' }}>Status</div>
-                    <Badge status={pedido.status} />
-                  </div>
-                  <div style={{ padding: '16px', borderRadius: '14px', background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-                    <div style={{ fontSize: '11px', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '8px' }}>Valor</div>
-                    <div style={{ fontFamily: 'var(--mono)', fontSize: '13px', color: 'var(--text)' }}>{fmtMoney(pedido.valor)}</div>
-                  </div>
-                  <div style={{ padding: '16px', borderRadius: '14px', background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-                    <div style={{ fontSize: '11px', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '8px' }}>Expira em</div>
-                    <div style={{ fontFamily: 'var(--mono)', fontSize: '13px', color: 'var(--text)' }}>{fmtDateTime(pedido.expira_em)}</div>
-                  </div>
-                  {gatewayStatus && (
-                    <div style={{ padding: '16px', borderRadius: '14px', background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-                      <div style={{ fontSize: '11px', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '8px' }}>Status do pagamento</div>
-                      <div style={{ fontFamily: 'var(--mono)', fontSize: '13px', color: 'var(--text)' }}>{gatewayStatus}</div>
-                    </div>
-                  )}
-                  {gatewayStatusDetail && (
-                    <div style={{ padding: '16px', borderRadius: '14px', background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-                      <div style={{ fontSize: '11px', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '8px' }}>Detalhe da confirmação</div>
-                      <div style={{ fontFamily: 'var(--mono)', fontSize: '13px', color: 'var(--text)' }}>{gatewayStatusDetail}</div>
-                    </div>
-                  )}
-                </div>
-
-                <div style={{ padding: '18px', borderRadius: '16px', lineHeight: 1.7, ...statePanelStyle(visualState) }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', fontWeight: 700, color: 'var(--text)' }}>
-                    {visualState === 'paid' ? <CheckCircle2 size={18} /> : visualState === 'awaiting' || visualState === 'loading' ? <RefreshCw size={18} /> : <CircleAlert size={18} />}
-                    {visualState === 'paid' ? 'Pagamento confirmado' : visualState === 'awaiting' ? 'Aguardando pagamento' : visualState === 'cancelled' ? 'Pagamento indisponível' : visualState === 'error' ? 'Erro ao acompanhar pedido' : 'Status do pedido'}
-                  </div>
-                  {getStatusMessage(pedido)}
-                </div>
-
                 {pedidoError && (
                   <div style={{ padding: '16px 18px', borderRadius: '16px', border: '1px solid color-mix(in srgb, var(--danger) 30%, var(--border))', background: 'color-mix(in srgb, var(--danger-dim) 82%, transparent)', color: 'var(--text-muted)', fontSize: '13px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text)', fontWeight: 700 }}>
@@ -688,11 +534,30 @@ export function CreditosCheckout() {
 
                 {pedido.metodo === 'PIX' && (
                   <>
-                    {!pixInlineReady && (
-                      <div style={{ padding: '14px 16px', borderRadius: '14px', border: '1px solid color-mix(in srgb, var(--warn) 35%, var(--border))', background: 'color-mix(in srgb, var(--warn-dim) 82%, transparent)', color: 'var(--text-muted)', fontSize: '13px', lineHeight: 1.7 }}>
-                        Ainda não recebemos todos os dados do PIX para este pedido.
+                    {pixQrSource ? (
+                      <div style={{ display: 'grid', placeItems: 'center', gap: '12px', padding: '20px', borderRadius: '22px', border: '1px solid color-mix(in srgb, var(--accent-glow) 55%, var(--border))', background: 'radial-gradient(circle at top, color-mix(in srgb, var(--accent-dim) 46%, transparent), transparent 56%), linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, transparent), color-mix(in srgb, var(--surface-2) 99%, transparent))', boxShadow: '0 20px 40px rgba(15,23,42,0.10)' }}>
+                        <div style={{ width: '100%', maxWidth: '252px', padding: '16px', borderRadius: '24px', background: '#ffffff', boxShadow: '0 18px 36px rgba(15,23,42,0.18)' }}>
+                          <img src={pixQrSource} alt="QR Code PIX" style={{ width: '100%', aspectRatio: '1 / 1', objectFit: 'contain', borderRadius: '14px', display: 'block' }} />
+                        </div>
                       </div>
-                    )}
+                    ) : null}
+
+                    <div style={{ display: 'flex', gap: '12px' }} className="credit-result-actions">
+                      {pixCodeAvailable && pedido.pix_copia_cola && (
+                        <button type="button" onClick={() => void copiarPix(pedido.pix_copia_cola!)} style={actionButtonStyle('accent')}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <span style={{ width: '34px', height: '34px', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: copiedPix ? 'rgba(16,185,129,0.18)' : 'rgba(0,212,170,0.14)', color: copiedPix ? '#7ef3c5' : 'var(--accent)', border: '1px solid color-mix(in srgb, var(--accent-glow) 70%, transparent)' }}>
+                              {copiedPix ? <Check size={16} /> : <Copy size={16} />}
+                            </span>
+                            <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
+                              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>{copiedPix ? 'Código copiado' : 'Copiar código PIX'}</span>
+                            </span>
+                          </span>
+                          <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: copiedPix ? '#7ef3c5' : 'var(--accent)' }}>{copiedPix ? 'OK' : 'PIX'}</span>
+                        </button>
+                      )}
+
+                    </div>
 
                     {pixCodeAvailable ? (
                       <>
@@ -704,58 +569,7 @@ export function CreditosCheckout() {
                           {pedido.pix_copia_cola}
                         </div>
                       </>
-                    ) : (
-                      <div style={{ padding: '14px 16px', borderRadius: '14px', border: '1px solid color-mix(in srgb, var(--warn) 35%, var(--border))', background: 'color-mix(in srgb, var(--warn-dim) 82%, transparent)', color: 'var(--text-muted)', fontSize: '13px' }}>
-                        Ainda não recebemos o código PIX para este pedido.
-                      </div>
-                    )}
-
-                    {pixQrSource ? (
-                      <div style={{ display: 'grid', placeItems: 'center', gap: '12px', padding: '20px', borderRadius: '22px', border: '1px solid color-mix(in srgb, var(--accent-glow) 55%, var(--border))', background: 'radial-gradient(circle at top, color-mix(in srgb, var(--accent-dim) 46%, transparent), transparent 56%), linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, transparent), color-mix(in srgb, var(--surface-2) 99%, transparent))', boxShadow: '0 20px 40px rgba(15,23,42,0.10)' }}>
-                        <div style={{ width: '100%', maxWidth: '252px', padding: '16px', borderRadius: '24px', background: '#ffffff', boxShadow: '0 18px 36px rgba(15,23,42,0.18)' }}>
-                          <img src={pixQrSource} alt="QR Code PIX" style={{ width: '100%', aspectRatio: '1 / 1', objectFit: 'contain', borderRadius: '14px', display: 'block' }} />
-                        </div>
-                        <div style={{ fontSize: '11px', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 700 }}>
-                          Escaneie com o app do banco
-                        </div>
-                      </div>
-                    ) : (
-                      <div style={{ padding: '14px 16px', borderRadius: '14px', border: '1px solid color-mix(in srgb, var(--warn) 35%, var(--border))', background: 'color-mix(in srgb, var(--warn-dim) 82%, transparent)', color: 'var(--text-muted)', fontSize: '13px' }}>
-                        Ainda não recebemos um QR Code válido para este pedido.
-                      </div>
-                    )}
-
-                    <div style={{ display: 'flex', gap: '12px' }} className="credit-result-actions">
-                      {pixCodeAvailable && pedido.pix_copia_cola && (
-                        <button type="button" onClick={() => void copiarPix(pedido.pix_copia_cola!)} style={actionButtonStyle('accent')}>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <span style={{ width: '34px', height: '34px', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: copiedPix ? 'rgba(16,185,129,0.18)' : 'rgba(0,212,170,0.14)', color: copiedPix ? '#7ef3c5' : 'var(--accent)', border: '1px solid color-mix(in srgb, var(--accent-glow) 70%, transparent)' }}>
-                              {copiedPix ? <Check size={16} /> : <Copy size={16} />}
-                            </span>
-                            <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
-                              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>{copiedPix ? 'Código copiado' : 'Copiar código PIX'}</span>
-                              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Use no app do banco e acompanhe a confirmação por aqui</span>
-                            </span>
-                          </span>
-                          <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: copiedPix ? '#7ef3c5' : 'var(--accent)' }}>{copiedPix ? 'OK' : 'PIX'}</span>
-                        </button>
-                      )}
-
-                      {!pixInlineReady && pedido.checkout_url && (
-                        <a href={pedido.checkout_url} target="_blank" rel="noopener noreferrer" style={actionButtonStyle('neutral')}>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <span style={{ width: '34px', height: '34px', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'color-mix(in srgb, var(--surface-2) 80%, transparent)', color: 'var(--text)', border: '1px solid var(--border)' }}>
-                              <ExternalLink size={15} />
-                            </span>
-                            <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
-                              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>Abrir pagamento seguro</span>
-                              <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>Continue o pagamento na AbacatePay se o PIX ainda não estiver disponível aqui</span>
-                            </span>
-                          </span>
-                          <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--text-dim)' }}><ExternalLink size={12} /></span>
-                        </a>
-                      )}
-                    </div>
+                    ) : null}
                   </>
                 )}
 
@@ -819,15 +633,6 @@ export function CreditosCheckout() {
 
                 {pedido.metodo === 'CARTAO' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '20px 22px', borderRadius: '18px', border: '1px solid var(--accent-glow)', background: 'linear-gradient(135deg, var(--accent-dim), color-mix(in srgb, var(--info-dim) 40%, transparent))' }}>
-                      <span style={{ width: '42px', height: '42px', borderRadius: '14px', flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,212,170,0.14)', color: 'var(--accent)', border: '1px solid var(--accent-glow)' }}>
-                        <CreditCard size={18} />
-                      </span>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                        <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>Pagamento seguro da AbacatePay</div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Você finalizará o pagamento no ambiente seguro da AbacatePay.</div>
-                      </div>
-                    </div>
                     {pedido.checkout_url && (
                       <a href={pedido.checkout_url} target="_blank" rel="noopener noreferrer" style={actionButtonStyle('accent')}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -836,7 +641,7 @@ export function CreditosCheckout() {
                           </span>
                           <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
                             <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>Ir para o pagamento seguro da AbacatePay</span>
-                            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Finalize o pagamento e acompanhe a confirmação por aqui</span>
+                            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Finalize o pagamento no ambiente seguro da AbacatePay</span>
                           </span>
                         </span>
                         <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--accent)' }}><ExternalLink size={12} /></span>
@@ -845,7 +650,8 @@ export function CreditosCheckout() {
                   </div>
                 )}
 
-                <div style={{ display: 'flex', gap: '12px' }} className="credit-result-actions">
+                {pedido.metodo === 'CARTAO' && (
+                  <div style={{ display: 'flex', gap: '12px' }} className="credit-result-actions">
                   {shouldOfferRetry && (
                     <button type="button" onClick={iniciar} disabled={loading} style={actionButtonStyle('accent', loading)}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -860,36 +666,9 @@ export function CreditosCheckout() {
                       <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--accent)' }}>NOVO</span>
                     </button>
                   )}
-                </div>
-
-                <div style={{ padding: '18px', borderRadius: '16px', border: `1px solid ${canProceed ? 'var(--accent-glow)' : 'var(--border)'}`, background: canProceed ? 'linear-gradient(135deg, color-mix(in srgb, var(--accent-dim) 86%, transparent), color-mix(in srgb, var(--info-dim) 32%, transparent))' : 'color-mix(in srgb, var(--surface-2) 94%, transparent)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>
-                        {canProceed ? 'Créditos liberados' : 'Aguardando confirmação do pagamento'}
-                      </div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                        {canProceed
-                          ? 'Este pedido foi confirmado como pago. Você já pode seguir com segurança.'
-                          : 'O pedido foi criado e os créditos serão liberados assim que o pagamento for confirmado.'}
-                      </div>
-                    </div>
-                    {!canProceed && (
-                      <button type="button" onClick={resetNovoPedido} style={actionButtonStyle('neutral')}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <span style={{ width: '34px', height: '34px', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,212,170,0.14)', color: 'var(--accent)', border: '1px solid color-mix(in srgb, var(--accent-glow) 70%, transparent)' }}>
-                            <RefreshCw size={15} />
-                          </span>
-                          <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
-                            <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>Alterar pedido</span>
-                            <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>Voltar para ajustar método ou valor</span>
-                          </span>
-                        </span>
-                        <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--text-dim)' }}>EDIT</span>
-                      </button>
-                    )}
                   </div>
-                </div>
+                )}
+
               </>
             )}
 
