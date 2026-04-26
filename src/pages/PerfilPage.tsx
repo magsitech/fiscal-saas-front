@@ -544,7 +544,7 @@ export function PerfilPage() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', flexWrap: 'wrap' }}>
             <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text)' }}>
-              {usuario?.ativo ? 'Ativo' : 'Pendente'}
+              {usuario?.ativo ? 'ATIVO' : 'PENDENTE'}
             </div>
             {assinatura?.plano && (
               <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 10px', borderRadius: '999px', background: 'rgba(0,212,170,0.16)', color: 'var(--accent)', border: '1px solid rgba(0,212,170,0.22)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
