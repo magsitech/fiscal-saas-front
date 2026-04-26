@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { pedidosApi } from '@/services/api'
+import { APP_ENV } from '@/config/runtime'
 import type { IniciarPedidoRequest, MetodoPagamento, PedidoDetalhe } from '@/types'
 import { Card, CardHeader, CardTitle, Spinner } from '@/components/ui'
 
@@ -99,6 +100,28 @@ function createMissingPaymentLinkError(): CheckoutError {
   }
 }
 
+function shouldLogPaymentDebug() {
+  return import.meta.env.DEV || APP_ENV === 'staging'
+}
+
+function getErrorResponsePayload(error: unknown) {
+  return axios.isAxiosError(error) ? error.response?.data ?? null : null
+}
+
+function getErrorStatus(error: unknown) {
+  return axios.isAxiosError(error) ? error.response?.status ?? null : null
+}
+
+function logPaymentError(error: unknown, payload: IniciarPedidoRequest) {
+  if (!shouldLogPaymentDebug()) return
+
+  console.error('[pagamento] Falha ao iniciar pedido', {
+    statusHTTP: getErrorStatus(error),
+    payloadEnviado: payload,
+    respostaJsonRecebida: getErrorResponsePayload(error),
+  })
+}
+
 function buildCheckoutError(error: unknown, fallback: string): CheckoutError {
   if (!axios.isAxiosError(error)) {
     return {
@@ -134,7 +157,7 @@ function buildCheckoutError(error: unknown, fallback: string): CheckoutError {
     if (Array.isArray(record.detail)) {
       const firstIssue = record.detail.find((item) => item && typeof item === 'object') as Record<string, unknown> | undefined
       if (firstIssue && typeof firstIssue.msg === 'string' && firstIssue.msg.trim()) {
-      return { title: 'Dados inválidos para pagamento', message: firstIssue.msg, statusCode }
+        return { title: 'Dados inválidos para pagamento', message: firstIssue.msg, statusCode }
       }
     }
 
@@ -256,10 +279,9 @@ export function CreditosCheckout() {
       return null
     }
 
-    return {
-      metodo,
-      valor: numericValue,
-    }
+    if (metodo === 'PIX') return { metodo: 'PIX', valor: numericValue }
+    if (metodo === 'BOLETO') return { metodo: 'BOLETO', valor: numericValue }
+    return { metodo: 'CARTAO', valor: numericValue }
   }
 
   async function iniciar() {
@@ -297,6 +319,7 @@ export function CreditosCheckout() {
         toast.success('Boleto gerado com sucesso.')
       }
     } catch (error) {
+      logPaymentError(error, payload)
       setPedido(null)
       const checkoutError = buildCheckoutError(error, 'Não foi possível gerar o pagamento. Tente novamente em instantes.')
       setPedidoError(checkoutError)
