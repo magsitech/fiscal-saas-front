@@ -520,25 +520,38 @@ export function PerfilPage() {
           </div>
         </div>
 
-        {/* Status e ID */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '10px', flexShrink: 0 }}>
-          <span style={{
-            display: 'inline-flex', alignItems: 'center',
-            padding: '6px 12px', borderRadius: '999px',
-            background: 'color-mix(in srgb, var(--surface-2) 92%, transparent)',
-            border: '1px solid var(--border)',
-            color: 'var(--text-muted)', fontSize: '11px', fontWeight: 700,
+        {/* Situação atual */}
+        <div style={{
+          borderRadius: '20px',
+          border: '1px solid var(--border)',
+          padding: '20px',
+          minWidth: '220px',
+          flexShrink: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0',
+          background: 'color-mix(in srgb, var(--surface-2) 78%, transparent)',
+        }}>
+          <div style={{
+            fontSize: '10px',
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.18em',
+            marginBottom: '10px',
+            color: 'var(--text-dim)',
           }}>
-            {planoAtualLabel}
-          </span>
-          <span style={{
-            display: 'inline-flex', alignItems: 'center',
-            padding: '6px 12px', borderRadius: '999px',
-            background: 'var(--accent-dim)', border: '1px solid var(--accent-glow)',
-            color: 'var(--accent)', fontSize: '11px', fontWeight: 700,
-          }}>
-            {usuario?.ativo ? 'Ativo' : 'Pendente'}
-          </span>
+            Situação atual
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', flexWrap: 'wrap' }}>
+            <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text)' }}>
+              {usuario?.ativo ? 'Ativo' : 'Pendente'}
+            </div>
+            {assinatura?.plano && (
+              <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 10px', borderRadius: '999px', background: 'rgba(0,212,170,0.16)', color: 'var(--accent)', border: '1px solid rgba(0,212,170,0.22)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                {planoAtualLabel}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
