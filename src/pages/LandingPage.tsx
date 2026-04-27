@@ -130,7 +130,7 @@ function buildLandingPaidPlan(plano: PlanoCatalogo): LandingPlan {
         'Cobrança pré-paga por uso',
         ...(excedentePreco > 0 ? [`R$ ${formatPlanoPrice(plano.excedente_preco_inicial)} fixo por consulta`] : []),
         plano.recorrente ? 'Renovação automática mensal' : 'Contratação sob demanda',
-        'Sem assinatura mínima',
+        'Sem desconto por volume',
       ]
 
   return {
