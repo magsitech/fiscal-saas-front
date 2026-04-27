@@ -186,9 +186,9 @@ export interface PedidoCartaoDiretoPayload {
 }
 
 export type IniciarPedidoRequest =
-  | { metodo: 'PIX'; valor: number; tipo?: TipoPedido; descricao?: string }
-  | { metodo: 'BOLETO'; valor: number; tipo?: TipoPedido; descricao?: string }
-  | { metodo: 'CARTAO'; valor: number; tipo?: TipoPedido; descricao?: string; card_installments?: number }
+  | { metodo: 'PIX'; valor: number; tipo?: TipoPedido; descricao?: string; plano?: TipoPlano }
+  | { metodo: 'BOLETO'; valor: number; tipo?: TipoPedido; descricao?: string; plano?: TipoPlano }
+  | { metodo: 'CARTAO'; valor: number; tipo?: TipoPedido; descricao?: string; plano?: TipoPlano; card_installments?: number }
 
 export interface PedidoStatusGatewayInfo {
   gateway_status?: string | null

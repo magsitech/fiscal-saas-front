@@ -161,32 +161,6 @@ export function MeuPlanoPage() {
         )}
       </div>
 
-      {/* Banner: plano pendente de ativação */}
-      {!loading && planoPendente && !showCheckout && (
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap',
-          padding: '18px 24px', borderRadius: '16px',
-          background: 'linear-gradient(135deg, color-mix(in srgb, var(--accent) 12%, var(--surface)), var(--surface))',
-          border: '1px solid color-mix(in srgb, var(--accent) 35%, var(--border))',
-        }}>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text)', marginBottom: '2px' }}>
-              Ative o plano {PLANO_LABEL[planoPendente]}
-            </div>
-            <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-              Você selecionou este plano no cadastro.
-              {PLANO_PRECO[planoPendente] ? ` R$ ${PLANO_PRECO[planoPendente]}/mês.` : ''}
-            </div>
-          </div>
-          <button
-            onClick={() => setShowCheckout(true)}
-            style={{ padding: '10px 22px', borderRadius: '10px', border: 'none', cursor: 'pointer', background: 'var(--accent)', color: '#04110d', fontWeight: 700, fontSize: '13px', fontFamily: 'var(--sans)', whiteSpace: 'nowrap', flexShrink: 0 }}
-          >
-            Ativar agora →
-          </button>
-        </div>
-      )}
-
       {/* Checkout de mensalidade */}
       {!loading && (planoPendente || showCheckout) && planoParaCheckout && valorCheckout > 0 && (
         <MensalidadeCheckout

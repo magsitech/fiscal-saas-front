@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { CSSProperties, ReactNode } from 'react'
+import type { CSSProperties } from 'react'
 import axios from 'axios'
 import {
   Banknote,
@@ -12,7 +12,6 @@ import {
   Landmark,
   QrCode,
   RefreshCw,
-  Sparkles,
   TestTube,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -21,7 +20,6 @@ import { APP_ENV } from '@/config/runtime'
 import type {
   AssinaturaResumo,
   IniciarPedidoRequest,
-  MetodoPagamento,
   PedidoDetalhe,
   TipoPlano,
 } from '@/types'
@@ -29,14 +27,8 @@ import { Card, CardHeader, CardTitle, Spinner } from '@/components/ui'
 
 const POLLING_INTERVAL_MS = 5000
 
-type MetodoAtivo = Extract<MetodoPagamento, 'PIX' | 'BOLETO' | 'CARTAO'>
 type CheckoutError = { title: string; message: string; statusCode?: number | null }
 
-const PAYMENT_OPTIONS: Array<{ id: MetodoAtivo; label: string; note: string; icon: ReactNode }> = [
-  { id: 'PIX', label: 'PIX', note: 'Código PIX e QR Code disponíveis na hora.', icon: <Sparkles size={16} /> },
-  { id: 'BOLETO', label: 'Boleto bancário', note: 'Boleto pronto para abrir e finalizar o pagamento.', icon: <Landmark size={16} /> },
-  { id: 'CARTAO', label: 'Cartão de crédito', note: 'Pagamento em ambiente seguro da AbacatePay.', icon: <CreditCard size={16} /> },
-]
 
 function fmtMoney(value: number) {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -149,7 +141,6 @@ interface Props {
 }
 
 export function MensalidadeCheckout({ plano, valor, sandbox, onSuccess }: Props) {
-  const [metodo, setMetodo] = useState<MetodoAtivo>('PIX')
   const [loading, setLoading] = useState(false)
   const [loadingPedido, setLoadingPedido] = useState(false)
   const [loadingAtivacao, setLoadingAtivacao] = useState(false)
@@ -213,9 +204,10 @@ export function MensalidadeCheckout({ plano, valor, sandbox, onSuccess }: Props)
     activationTriedRef.current = false
 
     const payload: IniciarPedidoRequest = {
-      metodo,
+      metodo: 'CARTAO',
       valor,
       tipo: 'MENSALIDADE',
+      plano,
       descricao: `Mensalidade plano ${plano}`,
     }
 
@@ -223,19 +215,12 @@ export function MensalidadeCheckout({ plano, valor, sandbox, onSuccess }: Props)
       const response = await pedidosApi.iniciar(payload)
       const normalized = normalizePedidoCriadoToDetalhe(response)
       setPedido(normalized)
-      if (metodo === 'PIX') {
-        toast.success('Pagamento PIX gerado.')
-        await carregarPedido(normalized.id, true)
-      } else if (metodo === 'BOLETO') {
-        toast.success('Boleto gerado com sucesso.')
-      } else {
-        if (!normalized.checkout_url) {
-          setPedidoError({ title: 'Link de pagamento indisponível', message: 'Não foi possível gerar o link de pagamento. Tente novamente.', statusCode: null })
-          toast.error('Link de pagamento indisponível.')
-          return
-        }
-        toast.success('Pagamento com cartão gerado.')
+      if (!normalized.checkout_url) {
+        setPedidoError({ title: 'Link de pagamento indisponível', message: 'Não foi possível gerar o link de pagamento. Tente novamente.', statusCode: null })
+        toast.error('Link de pagamento indisponível.')
+        return
       }
+      toast.success('Pagamento com cartão gerado.')
     } catch (error) {
       if (shouldLogDebug) console.error('[mensalidade] Falha ao iniciar pedido', error)
       setPedido(null)
@@ -322,49 +307,15 @@ export function MensalidadeCheckout({ plano, valor, sandbox, onSuccess }: Props)
             </div>
           </div>
 
-          {/* Método */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--text-dim)' }}>
-              Método de pagamento
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }} className="credit-method-row">
-              {PAYMENT_OPTIONS.map((option) => {
-                const active = metodo === option.id
-                return (
-                  <button
-                    key={option.id}
-                    type="button"
-                    onClick={() => setMetodo(option.id)}
-                    style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      gap: '12px', padding: '18px 20px', borderRadius: '20px',
-                      border: `1px solid ${active ? 'var(--accent-glow)' : 'var(--border)'}`,
-                      background: active
-                        ? 'linear-gradient(135deg, var(--accent-dim), color-mix(in srgb, var(--info-dim) 40%, transparent))'
-                        : 'color-mix(in srgb, var(--surface-2) 92%, transparent)',
-                      cursor: 'pointer', textAlign: 'left', fontFamily: 'var(--sans)',
-                    }}
-                  >
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0 }}>
-                      <span style={{
-                        width: '42px', height: '42px', borderRadius: '14px', flexShrink: 0,
-                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                        border: `1px solid ${active ? 'var(--accent-glow)' : 'var(--border)'}`,
-                        background: active ? 'rgba(0,212,170,0.08)' : 'color-mix(in srgb, var(--surface-2) 90%, transparent)',
-                        color: active ? 'var(--accent)' : 'var(--text-dim)',
-                      }}>
-                        {option.icon}
-                      </span>
-                      <span style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                        <span style={{ fontSize: '13px', fontWeight: 600, color: active ? 'var(--text)' : 'var(--text-muted)' }}>{option.label}</span>
-                        <span style={{ fontSize: '11px', color: active ? 'var(--text-muted)' : 'var(--text-dim)' }}>{option.note}</span>
-                      </span>
-                    </span>
-                    <span style={{ width: '10px', height: '10px', borderRadius: '50%', flexShrink: 0, background: active ? 'var(--accent)' : 'var(--border-bright)', boxShadow: active ? '0 0 0 4px rgba(0,212,170,0.15)' : 'none' }} />
-                  </button>
-                )
-              })}
-            </div>
+          {/* Método — apenas cartão */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px 20px', borderRadius: '16px', border: '1px solid var(--accent-glow)', background: 'linear-gradient(135deg, var(--accent-dim), color-mix(in srgb, var(--info-dim) 40%, transparent))' }}>
+            <span style={{ width: '42px', height: '42px', borderRadius: '14px', flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,212,170,0.10)', border: '1px solid var(--accent-glow)', color: 'var(--accent)' }}>
+              <CreditCard size={18} />
+            </span>
+            <span style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>Cartão de crédito</span>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Necessário para renovação automática da assinatura.</span>
+            </span>
           </div>
 
           {/* Gerar pagamento */}
@@ -385,7 +336,7 @@ export function MensalidadeCheckout({ plano, valor, sandbox, onSuccess }: Props)
             }}
           >
             {loading ? <Spinner size={16} /> : <Banknote size={18} />}
-            {loading ? 'Gerando pagamento...' : `Pagar ${fmtMoney(valor)} via ${metodo === 'PIX' ? 'PIX' : metodo === 'BOLETO' ? 'Boleto' : 'Cartão'}`}
+            {loading ? 'Gerando pagamento...' : `Pagar ${fmtMoney(valor)} no cartão`}
           </button>
         </div>
       </Card>
