@@ -123,7 +123,7 @@ function buildLandingPaidPlan(plano: PlanoCatalogo): LandingPlan {
           : 'Excedente com cobrança progressiva',
         'Validação NF-e e NFC-e',
         plano.recorrente ? 'Renovação automática mensal' : 'Contratação sob demanda',
-        'Dashboard e relatórios',
+        plano.id === 'BUSINESS' ? 'Webhook por consulta' : 'Suporte prioritário',
       ]
     : [
         'Validação NF-e e NFC-e',
@@ -650,13 +650,12 @@ export function LandingPage() {
                 </div>
 
                 <div style={{ marginBottom: '18px' }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: '6px', marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: '6px' }}>
                     <span style={{ fontFamily: 'var(--mono)', fontSize: '38px', fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1, color: 'var(--text)' }}>
                       R$ {formatPlanoPrice(plano.preco)}
                     </span>
                     <span style={{ fontSize: '13px', color: 'var(--text-dim)', paddingBottom: '5px' }}>/mês</span>
                   </div>
-                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6, minHeight: '64px' }}>{plano.descricao}</p>
                 </div>
 
                 <div style={{ borderTop: '1px solid var(--border)', paddingTop: '18px', marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '10px', flex: 1 }}>
