@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { endOfDay, format, parseISO, startOfDay, subDays } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { CheckCircle2, CreditCard, Download, ExternalLink, FileText, Info, Landmark, Lock, RefreshCw, Sparkles, Webhook, XCircle } from 'lucide-react'
+import { CheckCircle2, CreditCard, Download, ExternalLink, FileText, Info, Landmark, Lock, RefreshCw, SlidersHorizontal, Sparkles, Webhook, XCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { dashboardApi, pedidosApi, planosApi, webhookApi } from '@/services/api'
 import type { AuditoriaItem, AssinaturaResumo, ExtratoItem, Pedido, PedidoDetalhe, SimuladorResponse, WebhookLog } from '@/types'
@@ -718,6 +718,7 @@ export function ValidacoesPage() {
         {/* Aba: Auditoria — Filtros */}
         {abaAtiva === 'auditoria' && (
         <div className="app-filter-panel">
+          <div className="app-filter-header"><SlidersHorizontal size={12} />Filtros</div>
           <div className="app-filter-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
             <Select label="Status" value={status} onChange={(e) => setStatus(e.target.value)}>
               <option value="">Todos os status</option>
@@ -1015,6 +1016,7 @@ export function ConsumoPage() {
 
         {/* Filtros */}
         <div className="app-filter-panel">
+          <div className="app-filter-header"><SlidersHorizontal size={12} />Filtros</div>
           <div className="app-filter-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
             <Select label="Tipo" value={tipo} onChange={(e) => setTipo(e.target.value)}>
               <option value="">Todos os tipos</option>
@@ -1499,6 +1501,7 @@ export function PagamentosPage() {
         </div>
 
         <div className="app-filter-panel">
+          <div className="app-filter-header"><SlidersHorizontal size={12} />Filtros</div>
           <div className="app-filter-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
             <Select label="Status" value={status} onChange={(e) => setStatus(e.target.value)}>
               <option value="">Todos os status</option>
@@ -1827,24 +1830,42 @@ export function SimuladorPage() {
           <div className="simulator-controls" style={{ display: 'flex', gap: '16px', alignItems: 'stretch' }}>
             <div style={{
               flex: 1,
-              padding: '18px',
+              padding: '20px 24px',
               borderRadius: '22px',
               border: '1px solid var(--border)',
-              background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, transparent), color-mix(in srgb, var(--surface-2) 99%, transparent))',
-              boxShadow: '0 18px 38px rgba(15,23,42,0.08)',
+              background: 'color-mix(in srgb, var(--surface-2) 55%, transparent)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
             }}>
-              <Input
-                label="Quantidade de consultas a simular"
+              <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-dim)' }}>
+                Quantidade de consultas
+              </div>
+              <input
                 type="number"
                 value={qtd}
                 onChange={(e) => setQtd(e.target.value)}
                 min={1}
                 max={100000}
                 className="simulator-input"
-                style={{ minHeight: '56px', fontSize: '18px', fontWeight: 700, fontFamily: 'var(--mono)' }}
+                style={{
+                  width: '100%',
+                  background: 'color-mix(in srgb, var(--surface-2) 94%, transparent)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '14px',
+                  padding: '14px 18px',
+                  fontSize: '22px',
+                  fontWeight: 700,
+                  fontFamily: 'var(--mono)',
+                  color: 'var(--text)',
+                  outline: 'none',
+                  transition: 'border-color 0.15s, box-shadow 0.15s',
+                }}
+                onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.boxShadow = '0 0 0 4px var(--accent-dim)' }}
+                onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none' }}
               />
-              <div style={{ fontSize: '12px', color: 'var(--text-dim)', marginTop: '10px' }}>
-                Informe o volume desejado para calcular o custo incremental nas faixas atuais.
+              <div style={{ fontSize: '12px', color: 'var(--text-dim)', lineHeight: 1.5 }}>
+                Informe o volume desejado para calcular o custo nas faixas atuais.
               </div>
             </div>
             <button

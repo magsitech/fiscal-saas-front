@@ -259,15 +259,35 @@ input, select, textarea { font-family: inherit; }
 }
 
 .app-filter-panel {
-  padding: 22px;
+  padding: 18px 24px 22px;
   border-bottom: 1px solid var(--border);
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 72%, transparent), color-mix(in srgb, var(--surface) 96%, transparent));
+  background: color-mix(in srgb, var(--surface-2) 55%, transparent);
+}
+
+.app-filter-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 16px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.app-filter-header svg {
+  color: var(--text-dim);
+  flex-shrink: 0;
 }
 
 .app-filter-grid {
   align-items: end;
   row-gap: 16px;
+}
+
+:root[data-theme='light'] .app-filter-panel {
+  background: color-mix(in srgb, var(--surface-2) 45%, var(--surface));
 }
 
 .app-action-header {
@@ -335,11 +355,6 @@ input, select, textarea { font-family: inherit; }
 .card-header-responsive button,
 .card-header-responsive a {
   flex-shrink: 0;
-}
-
-:root[data-theme='light'] .app-filter-panel {
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 68%, white), color-mix(in srgb, var(--surface) 98%, white));
 }
 
 .app-dashboard-panel {
