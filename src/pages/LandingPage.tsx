@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { Building2, Check, CreditCard, Eye, EyeOff, Lock, Mail, Phone, User, X } from 'lucide-react'
+import { ArrowRight, Building2, Check, CreditCard, Eye, EyeOff, Lock, Mail, Phone, Sparkles, User, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { PublicNav, scrollToSection } from '@/components/layout/PublicNav'
 import { authApi, planosApi } from '@/services/api'
 import type { PlanoCatalogo, TipoPlano } from '@/types'
-import { buildPlanoFeatures, FALLBACK_PAID_PLANOS, formatPlanoPrice, parsePlanoPrice, sortPlanos } from '@/utils/planos'
+import { FALLBACK_PAID_PLANOS, formatPlanoPrice, parsePlanoPrice, sortPlanos } from '@/utils/planos'
 import { formatBrazilPhone, normalizeBrazilPhone } from '@/utils/phone'
 import { Spinner } from '@/components/ui'
 
@@ -76,32 +76,6 @@ const PILARES = [
   { title: 'Visão de plataforma', description: 'Pensamos no produto com clareza, construímos com disciplina e entregamos uma base sólida para crescer.' },
 ]
 
-const PLANOS = [
-  {
-    id: 'TRIAL', nome: 'Trial', preco: null,
-    descricao: 'Experimente a plataforma sem compromisso. Sem cartão.',
-    features: ['14 dias de acesso completo', 'R$ 50,00 em créditos incluídos', 'Validação NF-e e NFC-e', 'Dashboard e relatórios', 'Sem cartão de crédito'],
-    destaque: false, badge: '14 dias grátis', btnLabel: 'Começar grátis', isTrial: true,
-  },
-  {
-    id: 'BASICO', nome: 'Básico', preco: 29,
-    descricao: 'Ideal para volumes baixos e testes em produção.',
-    features: ['Validação NF-e e NFC-e', 'Cobrança pré-paga por uso', 'R$ 0,22 fixo por consulta', 'Sem desconto por volume', 'Suporte por e-mail'],
-    destaque: false, badge: null, btnLabel: 'Assinar plano Básico', isTrial: false,
-  },
-  {
-    id: 'PRO', nome: 'Pro', preco: 99,
-    descricao: 'Para empresas com volume regular de notas fiscais.',
-    features: ['500 consultas/mês incluídas', 'Excedente com cobrança progressiva', 'Validação NF-e e NFC-e', 'Dashboard e relatórios', 'Suporte prioritário'],
-    destaque: true, badge: 'Mais popular', btnLabel: 'Assinar plano Pro', isTrial: false,
-  },
-  {
-    id: 'BUSINESS', nome: 'Business', preco: 149,
-    descricao: 'Para alto volume com melhor custo no excedente.',
-    features: ['1.000 consultas/mês incluídas', 'Excedente começa na faixa 2 (−18%)', 'Validação NF-e e NFC-e', 'Webhook por consulta', 'Suporte prioritário + SLA'],
-    destaque: false, badge: null, btnLabel: 'Assinar plano Business', isTrial: false,
-  },
-]
 
 type LandingPlan = {
   id: TipoPlano
@@ -109,34 +83,67 @@ type LandingPlan = {
   preco: number | null
   descricao: string
   features: string[]
+  metrics: Array<{ label: string; value: string }>
   destaque: boolean
   badge: string | null
   btnLabel: string
   isTrial: boolean
 }
 
+const TRIAL_HIGHLIGHTS = [
+  '14 dias com acesso completo',
+  'R$ 50,00 em creditos para testar',
+  'Sem cartao de credito',
+]
+
 const TRIAL_PLAN: LandingPlan = {
   id: 'TRIAL',
   nome: 'Trial',
   preco: null,
-  descricao: 'Experimente a plataforma sem compromisso. Sem cartao.',
-  features: ['14 dias de acesso completo', 'R$ 50,00 em creditos incluidos', 'Validacao NF-e e NFC-e', 'Dashboard e relatorios', 'Sem cartao de credito'],
+  descricao: 'Teste o fluxo completo antes de definir sua operacao mensal.',
+  features: ['Validacao NF-e e NFC-e', 'Dashboard com auditoria e relatorios', 'Ativacao imediata, sem cartao'],
+  metrics: [
+    { label: 'Duracao', value: '14 dias' },
+    { label: 'Credito inicial', value: 'R$ 50,00' },
+  ],
   destaque: false,
-  badge: '14 dias gratis',
-  btnLabel: 'Comecar gratis',
+  badge: 'Trial guiado',
+  btnLabel: 'Comecar trial',
   isTrial: true,
 }
 
+function formatPlanoVolume(value: number) {
+  return `${value.toLocaleString('pt-BR')} consultas/mes`
+}
+
+function buildExcedenteMetric(plano: PlanoCatalogo) {
+  const preco = `R$ ${formatPlanoPrice(plano.excedente_preco_inicial)}/consulta`
+  if (plano.excedente_inicia_faixa > 1) return `Faixa ${plano.excedente_inicia_faixa} - ${preco}`
+  return preco
+}
+
 function buildLandingPaidPlan(plano: PlanoCatalogo): LandingPlan {
+  const volumeMetric = plano.franquia_consultas > 0
+    ? { label: 'Franquia', value: formatPlanoVolume(plano.franquia_consultas) }
+    : { label: 'Modelo', value: 'Pre-pago por uso' }
+
   return {
     id: plano.id,
     nome: plano.nome,
     preco: parsePlanoPrice(plano.mensalidade),
     descricao: plano.descricao,
-    features: buildPlanoFeatures(plano),
+    features: [
+      'Validacao NF-e e NFC-e',
+      plano.recorrente ? 'Renovacao automatica mensal' : 'Contratacao sob demanda',
+      plano.franquia_consultas > 0 ? 'Feito para operacao recorrente' : 'Bom para volume inicial',
+    ],
+    metrics: [
+      volumeMetric,
+      { label: 'Excedente', value: buildExcedenteMetric(plano) },
+    ],
     destaque: plano.id === 'PRO',
     badge: plano.id === 'PRO' ? 'Mais popular' : null,
-    btnLabel: `Assinar plano ${plano.nome}`,
+    btnLabel: `Escolher ${plano.nome}`,
     isTrial: false,
   }
 }
@@ -261,6 +268,7 @@ export function LandingPage() {
   const [pjErros, setPjErros] = useState<Record<string, string>>({})
   const [pjLegal, setPjLegal] = useState(false)
   const planos = [TRIAL_PLAN, ...sortPlanos(catalogoPlanos).map(buildLandingPaidPlan)]
+  const paidPlans = planos.filter((plano) => !plano.isTrial)
 
   useEffect(() => {
     let active = true
@@ -519,85 +527,156 @@ export function LandingPage() {
       {/* ── PLANOS ───────────────────────────────────────────────────────── */}
       <SectionDivider />
       <section id="planos" style={{ scrollMarginTop: '60px' }}>
-        <div className="pricing-section pricing-hero" style={{ padding: '56px 40px 40px', textAlign: 'center', maxWidth: '680px', margin: '0 auto' }}>
-          <SectionLabel>Planos e preços</SectionLabel>
+        <div className="pricing-section pricing-hero" style={{ padding: '56px 40px 40px', textAlign: 'center', maxWidth: '760px', margin: '0 auto' }}>
+          <SectionLabel>Planos e precos</SectionLabel>
           <h2 style={{ fontSize: '36px', fontWeight: 700, letterSpacing: '-0.4px', marginBottom: '14px' }}>
-            Comece com 14 dias grátis
+            Escolha o ritmo ideal para a sua operacao
           </h2>
           <p style={{ fontSize: '15px', color: 'var(--text-muted)', lineHeight: 1.7 }}>
-            Todo plano inclui <strong style={{ color: 'var(--text)' }}>14 dias de trial</strong> com{' '}
-            <strong style={{ color: 'var(--accent)' }}>R$ 50,00 em créditos</strong> para testar sem precisar de cartão.
-            Após o trial, escolha o plano que melhor se encaixa no seu volume.
+            Comece no trial para validar o fluxo e, quando o volume estiver claro, avance para um plano mensal com a franquia e o excedente que fazem sentido para a sua rotina.
           </p>
         </div>
 
+        <div style={{ maxWidth: '1160px', margin: '0 auto', padding: '0 40px 28px' }}>
+          <div
+            className="pricing-grid-2"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'minmax(0, 1.35fr) auto',
+              gap: '18px',
+              alignItems: 'center',
+              padding: '24px 26px',
+              borderRadius: '18px',
+              border: selectedPlanId === 'TRIAL' ? '1.5px solid var(--info)' : '1px solid var(--border)',
+              background: 'linear-gradient(135deg, color-mix(in srgb, var(--surface) 90%, transparent), color-mix(in srgb, var(--info-dim) 65%, transparent))',
+              boxShadow: selectedPlanId === 'TRIAL' ? '0 12px 30px rgba(29, 78, 216, 0.12)' : 'var(--shadow-soft)',
+            }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 12px', borderRadius: '999px', background: 'color-mix(in srgb, var(--info) 12%, transparent)', color: 'var(--info)', fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '14px' }}>
+                <Sparkles size={14} />
+                {TRIAL_PLAN.badge}
+              </div>
+              <h3 style={{ fontSize: '28px', fontWeight: 700, lineHeight: 1.15, letterSpacing: '-0.03em', marginBottom: '10px' }}>
+                Teste primeiro. Assine depois.
+              </h3>
+              <p style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.7, maxWidth: '720px', marginBottom: '16px' }}>
+                Explore a plataforma por 14 dias, use os creditos iniciais e veja seu volume real antes de escolher uma mensalidade.
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                {TRIAL_HIGHLIGHTS.map((item) => (
+                  <div key={item} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '9px 12px', borderRadius: '999px', border: '1px solid color-mix(in srgb, var(--info) 18%, var(--border))', background: 'color-mix(in srgb, var(--surface) 92%, transparent)', fontSize: '12px', color: 'var(--text-muted)' }}>
+                    <Check size={14} style={{ color: 'var(--info)', flexShrink: 0 }} />
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => handleCardBtn('TRIAL')}
+              style={{
+                minWidth: '220px',
+                padding: '14px 18px',
+                borderRadius: '12px',
+                border: 'none',
+                background: selectedPlanId === 'TRIAL' ? 'var(--info)' : 'color-mix(in srgb, var(--info) 92%, #ffffff 8%)',
+                color: '#fff',
+                fontSize: '14px',
+                fontWeight: 700,
+                fontFamily: 'var(--sans)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                boxShadow: '0 14px 30px rgba(29, 78, 216, 0.18)',
+              }}
+            >
+              {selectedPlanId === 'TRIAL' ? 'Continuar cadastro' : TRIAL_PLAN.btnLabel}
+              <ArrowRight size={16} />
+            </button>
+          </div>
+        </div>
+
         {/* Plan cards */}
-        <div style={{ maxWidth: '1160px', margin: '0 auto', padding: '0 40px 48px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', alignItems: 'stretch' }} className="pricing-plans-grid">
-          {planos.map(plano => {
+        <div style={{ maxWidth: '1160px', margin: '0 auto', padding: '0 40px 48px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', alignItems: 'stretch' }} className="pricing-plans-grid">
+          {paidPlans.map(plano => {
             const isSelected = selectedPlanId === plano.id
             return (
               <div
                 key={plano.id}
                 style={{
                   background: plano.destaque
-                    ? 'linear-gradient(160deg, color-mix(in srgb, var(--surface) 80%, var(--accent-dim) 20%), var(--surface))'
-                    : 'var(--surface)',
+                    ? 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 86%, var(--accent-dim) 14%), var(--surface))'
+                    : 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, transparent), color-mix(in srgb, var(--surface-2) 80%, transparent))',
                   border: isSelected
                     ? '2px solid var(--accent)'
-                    : plano.isTrial
-                      ? '1.5px dashed var(--border)'
-                      : plano.destaque
-                        ? '2px solid var(--accent-glow)'
-                        : '1px solid var(--border)',
-                  borderRadius: '16px',
-                  padding: '28px',
+                    : plano.destaque
+                      ? '1.5px solid var(--accent-glow)'
+                      : '1px solid var(--border)',
+                  borderRadius: '18px',
+                  padding: '24px',
                   display: 'flex',
                   flexDirection: 'column',
                   position: 'relative',
                   height: '100%',
                   boxSizing: 'border-box',
-                  transition: 'transform .22s ease, border-color .2s, box-shadow .22s ease',
-                  transform: isSelected ? 'scale(1.025)' : 'scale(1)',
-                  boxShadow: isSelected ? '0 8px 32px rgba(0,0,0,0.18)' : 'none',
+                  transition: 'transform .22s ease, border-color .2s, box-shadow .22s ease, background .22s ease',
+                  transform: isSelected ? 'translateY(-4px)' : 'translateY(0)',
+                  boxShadow: isSelected ? '0 18px 34px rgba(0,0,0,0.12)' : 'var(--shadow-soft)',
                   cursor: 'default',
                 }}
                 onMouseEnter={e => {
-                  if (!isSelected) e.currentTarget.style.transform = 'scale(1.025)'
+                  if (!isSelected) e.currentTarget.style.transform = 'translateY(-4px)'
                 }}
                 onMouseLeave={e => {
-                  if (!isSelected) e.currentTarget.style.transform = 'scale(1)'
+                  if (!isSelected) e.currentTarget.style.transform = 'translateY(0)'
                 }}
               >
-                {plano.badge && !isSelected && (
-                  <div style={{ position: 'absolute', top: '-12px', left: '50%', transform: 'translateX(-50%)', background: plano.isTrial ? 'var(--info, #3b82f6)' : 'var(--accent)', color: plano.isTrial ? '#fff' : '#04110d', fontSize: '11px', fontWeight: 700, letterSpacing: '0.5px', padding: '3px 12px', borderRadius: '999px', whiteSpace: 'nowrap' }}>
-                    {plano.badge}
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', marginBottom: '18px' }}>
+                  <div>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '8px' }}>
+                      Plano mensal
+                    </div>
+                    <div style={{ fontSize: '26px', fontWeight: 700, lineHeight: 1.05, color: plano.destaque ? 'var(--accent)' : 'var(--text)' }}>
+                      {plano.nome}
+                    </div>
                   </div>
-                )}
-                {isSelected && (
-                  <div style={{ position: 'absolute', top: '-12px', left: '50%', transform: 'translateX(-50%)', background: 'var(--accent)', color: '#04110d', fontSize: '11px', fontWeight: 700, letterSpacing: '0.5px', padding: '3px 12px', borderRadius: '999px', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <Check size={10} /> Selecionado
-                  </div>
-                )}
+                  {(plano.badge || isSelected) && (
+                    <div style={{ padding: '5px 10px', borderRadius: '999px', background: isSelected ? 'var(--accent)' : 'color-mix(in srgb, var(--accent) 12%, transparent)', color: isSelected ? '#04110d' : 'var(--accent)', fontSize: '11px', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                      {isSelected ? 'Selecionado' : plano.badge}
+                    </div>
+                  )}
+                </div>
 
-                <div style={{ marginBottom: '20px' }}>
-                  <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '8px' }}>{plano.nome}</div>
-                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', marginBottom: '8px' }}>
-                    {plano.preco !== null ? (
-                      <>
-                        <span style={{ fontFamily: 'var(--mono)', fontSize: '38px', fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1, color: plano.destaque ? 'var(--accent)' : 'var(--text)' }}>R$ {formatPlanoPrice(plano.preco)}</span>
-                        <span style={{ fontSize: '13px', color: 'var(--text-dim)', paddingBottom: '5px' }}>/mês</span>
-                      </>
-                    ) : (
-                      <span style={{ fontFamily: 'var(--mono)', fontSize: '38px', fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1, color: 'var(--info, #3b82f6)' }}>Grátis</span>
-                    )}
+                <div style={{ marginBottom: '18px' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: '6px', marginBottom: '10px' }}>
+                    <span style={{ fontFamily: 'var(--mono)', fontSize: '38px', fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1, color: 'var(--text)' }}>
+                      R$ {formatPlanoPrice(plano.preco)}
+                    </span>
+                    <span style={{ fontSize: '13px', color: 'var(--text-dim)', paddingBottom: '5px' }}>/mes</span>
                   </div>
-                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>{plano.descricao}</p>
+                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6, minHeight: '64px' }}>{plano.descricao}</p>
+                </div>
+
+                <div className="pricing-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '18px' }}>
+                  {plano.metrics.map((metric) => (
+                    <div key={metric.label} style={{ padding: '12px 14px', borderRadius: '14px', border: '1px solid var(--border)', background: 'color-mix(in srgb, var(--surface) 82%, transparent)' }}>
+                      <div style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-dim)', marginBottom: '6px' }}>
+                        {metric.label}
+                      </div>
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)', lineHeight: 1.4 }}>
+                        {metric.value}
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
                 <div style={{ borderTop: '1px solid var(--border)', paddingTop: '18px', marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '10px', flex: 1 }}>
                   {plano.features.map(f => (
                     <div key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '13px', color: 'var(--text-muted)' }}>
-                      <Check size={14} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: '1px' }} />
+                      <Check size={14} style={{ color: plano.destaque ? 'var(--accent)' : 'var(--text-dim)', flexShrink: 0, marginTop: '1px' }} />
                       {f}
                     </div>
                   ))}
@@ -607,23 +686,32 @@ export function LandingPage() {
                   type="button"
                   onClick={() => handleCardBtn(plano.id)}
                   style={{
-                    width: '100%', padding: '12px',
-                    background: isSelected ? 'var(--accent)' : plano.isTrial ? 'var(--info, #3b82f6)' : plano.destaque ? 'var(--accent)' : 'var(--surface-2)',
-                    color: isSelected || plano.isTrial || plano.destaque ? (plano.isTrial && !isSelected ? '#fff' : '#04110d') : 'var(--text)',
-                    border: isSelected || plano.isTrial || plano.destaque ? 'none' : '1px solid var(--border)',
-                    borderRadius: '10px', fontSize: '14px', fontWeight: 700,
-                    cursor: 'pointer', fontFamily: 'var(--sans)', transition: 'opacity .15s',
+                    width: '100%',
+                    padding: '13px 14px',
+                    background: isSelected || plano.destaque ? 'var(--accent)' : 'var(--surface-2)',
+                    color: isSelected || plano.destaque ? '#04110d' : 'var(--text)',
+                    border: isSelected || plano.destaque ? 'none' : '1px solid var(--border)',
+                    borderRadius: '12px',
+                    fontSize: '14px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    fontFamily: 'var(--sans)',
+                    transition: 'opacity .15s',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
                   }}
                   onMouseEnter={e => { e.currentTarget.style.opacity = '0.85' }}
                   onMouseLeave={e => { e.currentTarget.style.opacity = '1' }}
                 >
-                  {isSelected ? '↓ Preencher cadastro' : plano.btnLabel}
+                  {isSelected ? 'Continuar cadastro' : plano.btnLabel}
+                  <ArrowRight size={16} />
                 </button>
               </div>
             )
           })}
         </div>
-
         {/* Inline registration form */}
         {selectedPlanId && planoAtual && (
           <div ref={formRef} style={{ maxWidth: '760px', margin: '0 auto 56px', padding: '0 40px', animation: 'fadeSlideDown .25s ease', scrollMarginTop: '80px' }}>
@@ -635,7 +723,7 @@ export function LandingPage() {
                     {planoAtual.isTrial ? 'Comece seu trial grátis' : `Assinar plano ${planoAtual.nome}`}
                   </h2>
                   <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-                    {planoAtual.isTrial ? '14 dias grátis com R$ 50 em créditos. Sem cartão.' : `R$ ${formatPlanoPrice(planoAtual.preco)}/mês · 14 dias de trial incluídos`}
+                    {planoAtual.isTrial ? '14 dias grátis com R$ 50 em créditos. Sem cartão.' : `R$ ${formatPlanoPrice(planoAtual.preco)}/mês - 14 dias de trial incluídos`}
                   </p>
                 </div>
                 <button type="button" onClick={closeForm} style={{ background: 'none', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', transition: 'border-color .15s' }}>
@@ -658,7 +746,7 @@ export function LandingPage() {
                       transition: 'all .15s',
                     }}
                   >
-                    {p.nome}{p.preco !== null ? ` · R$${formatPlanoPrice(p.preco)}` : ' · Grátis'}
+                    {p.nome}{p.preco !== null ? ` - R$${formatPlanoPrice(p.preco)}` : ' - Grátis'}
                   </button>
                 ))}
               </div>
@@ -912,4 +1000,5 @@ function InfoBox({ title, children }: { title: string; children: ReactNode }) {
     </div>
   )
 }
+
 
