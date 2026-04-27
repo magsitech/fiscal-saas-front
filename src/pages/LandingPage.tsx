@@ -113,27 +113,24 @@ const TRIAL_PLAN: LandingPlan = {
 }
 
 
-function buildExcedenteMetric(plano: PlanoCatalogo) {
-  const preco = `R$ ${formatPlanoPrice(plano.excedente_preco_inicial)}/consulta`
-  if (plano.excedente_inicia_faixa > 1) return `Faixa ${plano.excedente_inicia_faixa} - ${preco}`
-  return preco
-}
-
 function buildLandingPaidPlan(plano: PlanoCatalogo): LandingPlan {
+  const excedentePreco = parsePlanoPrice(plano.excedente_preco_inicial)
   const features = plano.franquia_consultas > 0
     ? [
         `${plano.franquia_consultas.toLocaleString('pt-BR')} consultas/mês incluídas`,
-        `Excedente: ${buildExcedenteMetric(plano)}`,
+        plano.excedente_inicia_faixa > 1
+          ? `Excedente começa na faixa ${plano.excedente_inicia_faixa}`
+          : 'Excedente com cobrança progressiva',
         'Validação NF-e e NFC-e',
         plano.recorrente ? 'Renovação automática mensal' : 'Contratação sob demanda',
-        'Feito para operação recorrente',
+        'Dashboard e relatórios',
       ]
     : [
         'Validação NF-e e NFC-e',
         'Cobrança pré-paga por uso',
-        `R$ ${formatPlanoPrice(plano.excedente_preco_inicial)} fixo por consulta`,
+        ...(excedentePreco > 0 ? [`R$ ${formatPlanoPrice(plano.excedente_preco_inicial)} fixo por consulta`] : []),
         plano.recorrente ? 'Renovação automática mensal' : 'Contratação sob demanda',
-        'Bom para volume inicial',
+        'Sem assinatura mínima',
       ]
 
   return {
