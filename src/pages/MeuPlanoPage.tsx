@@ -5,9 +5,10 @@ import { differenceInCalendarDays } from 'date-fns'
 import { AlertTriangle, Ban, Building2, Check, Clock, FlaskConical, Rocket, Star, Zap } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { pedidosApi, planosApi } from '@/services/api'
-import type { AssinaturaResumo, TipoPlano } from '@/types'
+import type { AssinaturaResumo, PlanoCatalogo, TipoPlano } from '@/types'
 import { Skeleton } from '@/components/ui'
 import { MensalidadeCheckout } from '@/components/planos/MensalidadeCheckout'
+import { buildPlanoFeatures, FALLBACK_PAID_PLANOS, formatPlanoPrice, isPaidPlan, PAID_PLAN_IDS, parsePlanoPrice, PLAN_ORDER, sortPlanos } from '@/utils/planos'
 
 const PLANO_LABEL: Record<TipoPlano, string> = {
   TRIAL: 'Trial', BASICO: 'Básico', PRO: 'Pro', BUSINESS: 'Business', CANCELADO: 'Cancelado', INATIVO: 'Inativo',
@@ -57,6 +58,7 @@ function fmtDate(d: string | null | undefined) {
 
 export function MeuPlanoPage() {
   const [assinatura, setAssinatura] = useState<AssinaturaResumo | null>(null)
+  const [catalogoPlanos, setCatalogoPlanos] = useState<PlanoCatalogo[]>(FALLBACK_PAID_PLANOS)
   const [loading, setLoading] = useState(true)
   const [sandbox, setSandbox] = useState(false)
   const [loadingCancelamento, setLoadingCancelamento] = useState(false)
@@ -67,8 +69,11 @@ export function MeuPlanoPage() {
     Promise.all([
       planosApi.assinatura(),
       pedidosApi.config().catch(() => null),
-    ]).then(([a, config]) => {
+      planosApi.listar().catch(() => FALLBACK_PAID_PLANOS),
+    ]).then(([a, config, planos]) => {
+      const planosPagos = sortPlanos(planos.filter((plano) => isPaidPlan(plano.id)))
       setAssinatura(a)
+      setCatalogoPlanos(planosPagos.length > 0 ? planosPagos : FALLBACK_PAID_PLANOS)
       if (config?.sandbox) setSandbox(true)
     }).finally(() => setLoading(false))
   }, [])
@@ -80,18 +85,27 @@ export function MeuPlanoPage() {
     ? Math.max(differenceInCalendarDays(parseISO(assinatura.trial_expira_em), new Date()), 0)
     : null
 
+  const planosDisponiveis = sortPlanos(catalogoPlanos.filter((plano) => isPaidPlan(plano.id)))
+  const PLANO_PRECO: Partial<Record<TipoPlano, number>> = Object.fromEntries(
+    planosDisponiveis.map((item) => [item.id, parsePlanoPrice(item.mensalidade)])
+  ) as Partial<Record<TipoPlano, number>>
+  const PLANO_INFO: Partial<Record<TipoPlano, { descricao: string; features: string[] }>> = Object.fromEntries(
+    planosDisponiveis.map((item) => [item.id, { descricao: item.descricao, features: buildPlanoFeatures(item) }])
+  ) as Partial<Record<TipoPlano, { descricao: string; features: string[] }>>
+
   const planoPendente: TipoPlano | null =
-    assinatura?.plano_selecionado && PLANOS_PAGOS.includes(assinatura.plano_selecionado) && !PLANOS_PAGOS.includes(plano)
+    assinatura?.plano_selecionado && PAID_PLAN_IDS.includes(assinatura.plano_selecionado) && !PAID_PLAN_IDS.includes(plano)
       ? assinatura.plano_selecionado
       : null
 
   const [selectedPlan, setSelectedPlan] = useState<TipoPlano | null>(null)
   const planoParaCheckout = planoPendente ?? selectedPlan
-  const valorCheckout = planoParaCheckout ? (PLANO_PRECO[planoParaCheckout] ?? 0) : 0
+  const planoCheckoutSelecionado = planoParaCheckout ? planosDisponiveis.find((item) => item.id === planoParaCheckout) ?? null : null
+  const valorCheckout = planoCheckoutSelecionado ? parsePlanoPrice(planoCheckoutSelecionado.mensalidade) : 0
 
   const podeCancelar =
     assinatura?.plano_ativo &&
-    PLANOS_PAGOS.includes(plano) &&
+    PAID_PLAN_IDS.includes(plano) &&
     assinatura?.recorrente !== false
 
   async function handleCancelar() {
@@ -263,23 +277,22 @@ export function MeuPlanoPage() {
         <div style={{ ...card, display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div>
             <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)', marginBottom: '4px' }}>
-              {PLANOS_PAGOS.includes(plano) ? 'Alterar plano' : 'Escolher um plano'}
+              {PAID_PLAN_IDS.includes(plano) ? 'Alterar plano' : 'Escolher um plano'}
             </div>
             <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-              {PLANOS_PAGOS.includes(plano)
+              {PAID_PLAN_IDS.includes(plano)
                 ? 'Faça upgrade ou downgrade a qualquer momento. A cobrança é ajustada no próximo ciclo.'
                 : 'Selecione um plano para pagar a mensalidade e ativar sua assinatura.'}
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(175px, 1fr))', gap: '12px' }}>
-            {PLANOS_PAGOS.map((p) => {
-              const isCurrent = p === plano
-              const planoOrder: Record<string, number> = { BASICO: 1, PRO: 2, BUSINESS: 3 }
-              const isUpgrade = (planoOrder[p] ?? 0) > (planoOrder[plano] ?? 0)
-              const cor = PLANO_COLOR[p]
+            {planosDisponiveis.map((p) => {
+              const isCurrent = p.id === plano
+              const isUpgrade = (PLAN_ORDER[p.id] ?? 0) > (PLAN_ORDER[plano] ?? 0)
+              const cor = PLANO_COLOR[p.id]
               return (
                 <div
-                  key={p}
+                  key={p.id}
                   style={{
                     padding: '20px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '12px',
                     border: `1px solid ${isCurrent ? `color-mix(in srgb, ${cor} 40%, var(--border))` : 'var(--border)'}`,
@@ -287,7 +300,7 @@ export function MeuPlanoPage() {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                    <div style={{ fontWeight: 700, fontSize: '15px', color: cor }}>{PLANO_LABEL[p]}</div>
+                    <div style={{ fontWeight: 700, fontSize: '15px', color: cor }}>{p.nome}</div>
                     {isCurrent && (
                       <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '999px', background: `color-mix(in srgb, ${cor} 16%, transparent)`, color: cor, border: `1px solid color-mix(in srgb, ${cor} 30%, transparent)`, letterSpacing: '0.06em' }}>
                         ATUAL
@@ -295,15 +308,15 @@ export function MeuPlanoPage() {
                     )}
                   </div>
                   <div style={{ fontFamily: 'var(--mono)', fontSize: '20px', fontWeight: 700, color: 'var(--text)', lineHeight: 1 }}>
-                    R$ {PLANO_PRECO[p]}<span style={{ fontSize: '12px', fontWeight: 400, color: 'var(--text-dim)', marginLeft: '3px' }}>/mês</span>
+                    R$ {PLANO_PRECO[p.id]}<span style={{ fontSize: '12px', fontWeight: 400, color: 'var(--text-dim)', marginLeft: '3px' }}>/mês</span>
                   </div>
-                  {PLANO_INFO[p] && (
+                  {PLANO_INFO[p.id] && (
                     <>
                       <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-                        {PLANO_INFO[p]!.descricao}
+                        {PLANO_INFO[p.id]!.descricao}
                       </div>
                       <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        {PLANO_INFO[p]!.features.map((f) => (
+                        {PLANO_INFO[p.id]!.features.map((f) => (
                           <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: '7px', fontSize: '12px', color: 'var(--text-muted)' }}>
                             <Check size={13} style={{ color: cor, flexShrink: 0, marginTop: '1px' }} />
                             {f}
@@ -315,14 +328,14 @@ export function MeuPlanoPage() {
                   {!isCurrent && (
                     <button
                       type="button"
-                      onClick={() => setSelectedPlan(p)}
+                      onClick={() => setSelectedPlan(p.id)}
                       style={{
                         marginTop: '4px', padding: '9px 0', borderRadius: '10px', border: 'none', cursor: 'pointer',
                         background: `color-mix(in srgb, ${cor} 18%, transparent)`,
                         color: cor, fontFamily: 'var(--sans)', fontSize: '12px', fontWeight: 700,
                       }}
                     >
-                      {PLANOS_PAGOS.includes(plano) ? (isUpgrade ? 'Fazer upgrade' : 'Fazer downgrade') : 'Selecionar'}
+                      {PAID_PLAN_IDS.includes(plano) ? (isUpgrade ? 'Fazer upgrade' : 'Fazer downgrade') : 'Selecionar'}
                     </button>
                   )}
                 </div>
@@ -407,3 +420,4 @@ export function MeuPlanoPage() {
     </div>
   )
 }
+

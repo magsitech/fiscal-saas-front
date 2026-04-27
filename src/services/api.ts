@@ -20,6 +20,7 @@ import type {
   Pedido,
   PedidoDetalhe,
   PedidosConfig,
+  PlanoCatalogo,
   RedefinirSenhaPayload,
   RegisterPayload,
   ReenviarConfirmacaoPayload,
@@ -67,6 +68,21 @@ function unwrapList<T>(payload: unknown): T[] {
     if (Array.isArray(list)) return list as T[]
   }
   return []
+}
+
+function parseTipoPlano(value: unknown): TipoPlano | null {
+  const normalized = String(value ?? '').trim().toUpperCase()
+  if (
+    normalized === 'TRIAL' ||
+    normalized === 'BASICO' ||
+    normalized === 'PRO' ||
+    normalized === 'BUSINESS' ||
+    normalized === 'CANCELADO' ||
+    normalized === 'INATIVO'
+  ) {
+    return normalized as TipoPlano
+  }
+  return null
 }
 
 function normalizeDashboardResumo(payload: unknown): DashboardResumo {
@@ -162,9 +178,9 @@ function normalizeExtratoItem(payload: unknown): ExtratoItem {
 function normalizeAssinaturaResumo(payload: unknown): AssinaturaResumo {
   const raw = unwrapPayload<Record<string, unknown>>(payload)
   return {
-    plano: String(raw.plano ?? 'TRIAL') as TipoPlano,
+    plano: parseTipoPlano(raw.plano) ?? 'TRIAL',
     plano_ativo: raw.plano_ativo != null ? Boolean(raw.plano_ativo) : true,
-    plano_selecionado: typeof raw.plano_selecionado === 'string' ? raw.plano_selecionado as TipoPlano : null,
+    plano_selecionado: parseTipoPlano(raw.plano_selecionado),
     trial_expira_em: typeof raw.trial_expira_em === 'string' ? raw.trial_expira_em : null,
     trial_ativo: Boolean(raw.trial_ativo),
     assinatura_inicio: typeof raw.assinatura_inicio === 'string' ? raw.assinatura_inicio : null,
@@ -179,7 +195,24 @@ function normalizeAssinaturaResumo(payload: unknown): AssinaturaResumo {
     franquia_usada: raw.franquia_usada != null ? Number(raw.franquia_usada) : null,
     franquia_limite: raw.franquia_limite != null ? Number(raw.franquia_limite) : null,
     franquia_restante: raw.franquia_restante != null ? Number(raw.franquia_restante) : null,
-    proximo_plano: typeof raw.proximo_plano === 'string' ? raw.proximo_plano as TipoPlano : null,
+    proximo_plano: parseTipoPlano(raw.proximo_plano),
+  }
+}
+
+function normalizePlanoCatalogo(payload: unknown): PlanoCatalogo | null {
+  const raw = unwrapPayload<Record<string, unknown>>(payload)
+  const id = parseTipoPlano(raw.id ?? raw.plano)
+  if (!id) return null
+
+  return {
+    id,
+    nome: typeof raw.nome === 'string' ? raw.nome : id,
+    mensalidade: String(raw.mensalidade ?? '0'),
+    recorrente: Boolean(raw.recorrente),
+    franquia_consultas: Number(raw.franquia_consultas ?? 0),
+    excedente_inicia_faixa: Number(raw.excedente_inicia_faixa ?? 0),
+    excedente_preco_inicial: String(raw.excedente_preco_inicial ?? '0'),
+    descricao: typeof raw.descricao === 'string' ? raw.descricao : '',
   }
 }
 
@@ -491,6 +524,14 @@ export const pedidosApi = {
 }
 
 export const planosApi = {
+  listar: async (): Promise<PlanoCatalogo[]> => {
+    if (USE_MOCK_API) return []
+    const { data } = await http.get<PlanoCatalogo[]>('/planos')
+    return unwrapList<Record<string, unknown>>(data)
+      .map(normalizePlanoCatalogo)
+      .filter((plano): plano is PlanoCatalogo => plano !== null)
+  },
+
   assinatura: async (): Promise<AssinaturaResumo | null> => {
     if (USE_MOCK_API) return null
     try {

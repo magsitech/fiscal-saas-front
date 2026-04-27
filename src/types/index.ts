@@ -265,6 +265,17 @@ export interface ConsultarNotaResponse {
 
 export type TipoPlano = 'TRIAL' | 'BASICO' | 'PRO' | 'BUSINESS' | 'CANCELADO' | 'INATIVO'
 
+export interface PlanoCatalogo {
+  id: TipoPlano
+  nome: string
+  mensalidade: string
+  recorrente: boolean
+  franquia_consultas: number
+  excedente_inicia_faixa: number
+  excedente_preco_inicial: string
+  descricao: string
+}
+
 export interface AssinaturaResumo {
   plano: TipoPlano
   plano_ativo: boolean
