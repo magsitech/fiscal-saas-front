@@ -92,29 +92,26 @@ type LandingPlan = {
 
 const TRIAL_HIGHLIGHTS = [
   '14 dias com acesso completo',
-  'R$ 50,00 em creditos para testar',
-  'Sem cartao de credito',
+  'R$ 50,00 em créditos para testar',
+  'Sem cartão de crédito',
 ]
 
 const TRIAL_PLAN: LandingPlan = {
   id: 'TRIAL',
   nome: 'Trial',
   preco: null,
-  descricao: 'Teste o fluxo completo antes de definir sua operacao mensal.',
-  features: ['Validacao NF-e e NFC-e', 'Dashboard com auditoria e relatorios', 'Ativacao imediata, sem cartao'],
+  descricao: 'Teste o fluxo completo antes de definir sua operação mensal.',
+  features: ['Validação NF-e e NFC-e', 'Dashboard com auditoria e relatórios', 'Ativação imediata, sem cartão'],
   metrics: [
-    { label: 'Duracao', value: '14 dias' },
-    { label: 'Credito inicial', value: 'R$ 50,00' },
+    { label: 'Duração', value: '14 dias' },
+    { label: 'Crédito inicial', value: 'R$ 50,00' },
   ],
   destaque: false,
   badge: 'Trial guiado',
-  btnLabel: 'Comecar trial',
+  btnLabel: 'Começar trial',
   isTrial: true,
 }
 
-function formatPlanoVolume(value: number) {
-  return `${value.toLocaleString('pt-BR')} consultas/mes`
-}
 
 function buildExcedenteMetric(plano: PlanoCatalogo) {
   const preco = `R$ ${formatPlanoPrice(plano.excedente_preco_inicial)}/consulta`
@@ -123,24 +120,29 @@ function buildExcedenteMetric(plano: PlanoCatalogo) {
 }
 
 function buildLandingPaidPlan(plano: PlanoCatalogo): LandingPlan {
-  const volumeMetric = plano.franquia_consultas > 0
-    ? { label: 'Franquia', value: formatPlanoVolume(plano.franquia_consultas) }
-    : { label: 'Modelo', value: 'Pre-pago por uso' }
+  const features = plano.franquia_consultas > 0
+    ? [
+        `${plano.franquia_consultas.toLocaleString('pt-BR')} consultas/mês incluídas`,
+        `Excedente: ${buildExcedenteMetric(plano)}`,
+        'Validação NF-e e NFC-e',
+        plano.recorrente ? 'Renovação automática mensal' : 'Contratação sob demanda',
+        'Feito para operação recorrente',
+      ]
+    : [
+        'Validação NF-e e NFC-e',
+        'Cobrança pré-paga por uso',
+        `R$ ${formatPlanoPrice(plano.excedente_preco_inicial)} fixo por consulta`,
+        plano.recorrente ? 'Renovação automática mensal' : 'Contratação sob demanda',
+        'Bom para volume inicial',
+      ]
 
   return {
     id: plano.id,
     nome: plano.nome,
     preco: parsePlanoPrice(plano.mensalidade),
     descricao: plano.descricao,
-    features: [
-      'Validacao NF-e e NFC-e',
-      plano.recorrente ? 'Renovacao automatica mensal' : 'Contratacao sob demanda',
-      plano.franquia_consultas > 0 ? 'Feito para operacao recorrente' : 'Bom para volume inicial',
-    ],
-    metrics: [
-      volumeMetric,
-      { label: 'Excedente', value: buildExcedenteMetric(plano) },
-    ],
+    features,
+    metrics: [],
     destaque: plano.id === 'PRO',
     badge: plano.id === 'PRO' ? 'Mais popular' : null,
     btnLabel: `Escolher ${plano.nome}`,
@@ -528,9 +530,9 @@ export function LandingPage() {
       <SectionDivider />
       <section id="planos" style={{ scrollMarginTop: '60px' }}>
         <div className="pricing-section pricing-hero" style={{ padding: '56px 40px 40px', textAlign: 'center', maxWidth: '760px', margin: '0 auto' }}>
-          <SectionLabel>Planos e precos</SectionLabel>
+          <SectionLabel>Planos e preços</SectionLabel>
           <h2 style={{ fontSize: '36px', fontWeight: 700, letterSpacing: '-0.4px', marginBottom: '14px' }}>
-            Escolha o ritmo ideal para a sua operacao
+            Escolha o ritmo ideal para a sua operação
           </h2>
           <p style={{ fontSize: '15px', color: 'var(--text-muted)', lineHeight: 1.7 }}>
             Comece no trial para validar o fluxo e, quando o volume estiver claro, avance para um plano mensal com a franquia e o excedente que fazem sentido para a sua rotina.
@@ -561,7 +563,7 @@ export function LandingPage() {
                 Teste primeiro. Assine depois.
               </h3>
               <p style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.7, maxWidth: '720px', marginBottom: '16px' }}>
-                Explore a plataforma por 14 dias, use os creditos iniciais e veja seu volume real antes de escolher uma mensalidade.
+                Explore a plataforma por 14 dias, use os créditos iniciais e veja seu volume real antes de escolher uma mensalidade.
               </p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
                 {TRIAL_HIGHLIGHTS.map((item) => (
@@ -655,22 +657,9 @@ export function LandingPage() {
                     <span style={{ fontFamily: 'var(--mono)', fontSize: '38px', fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1, color: 'var(--text)' }}>
                       R$ {formatPlanoPrice(plano.preco)}
                     </span>
-                    <span style={{ fontSize: '13px', color: 'var(--text-dim)', paddingBottom: '5px' }}>/mes</span>
+                    <span style={{ fontSize: '13px', color: 'var(--text-dim)', paddingBottom: '5px' }}>/mês</span>
                   </div>
                   <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6, minHeight: '64px' }}>{plano.descricao}</p>
-                </div>
-
-                <div className="pricing-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '18px' }}>
-                  {plano.metrics.map((metric) => (
-                    <div key={metric.label} style={{ padding: '12px 14px', borderRadius: '14px', border: '1px solid var(--border)', background: 'color-mix(in srgb, var(--surface) 82%, transparent)' }}>
-                      <div style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-dim)', marginBottom: '6px' }}>
-                        {metric.label}
-                      </div>
-                      <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)', lineHeight: 1.4 }}>
-                        {metric.value}
-                      </div>
-                    </div>
-                  ))}
                 </div>
 
                 <div style={{ borderTop: '1px solid var(--border)', paddingTop: '18px', marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '10px', flex: 1 }}>

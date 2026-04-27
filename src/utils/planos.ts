@@ -15,13 +15,13 @@ export const PLAN_ORDER: Partial<Record<TipoPlano, number>> = {
 export const FALLBACK_PAID_PLANOS: PlanoCatalogo[] = [
   {
     id: 'BASICO',
-    nome: 'Basico',
+    nome: 'Básico',
     mensalidade: '29.00',
     recorrente: true,
     franquia_consultas: 0,
     excedente_inicia_faixa: 0,
     excedente_preco_inicial: '0.22',
-    descricao: 'Ideal para volumes baixos e testes em producao.',
+    descricao: 'Ideal para volumes baixos.',
   },
   {
     id: 'PRO',
@@ -66,23 +66,23 @@ export function buildPlanoFeatures(plano: Pick<PlanoCatalogo, 'franquia_consulta
   const features: string[] = []
 
   if (plano.franquia_consultas > 0) {
-    features.push(`${fmtInt(plano.franquia_consultas)} consultas/mes incluidas`)
+    features.push(`${fmtInt(plano.franquia_consultas)} consultas/mês incluídas`)
   } else {
-    features.push('Cobranca pre-paga por uso')
+    features.push('Cobrança pré-paga por uso')
   }
 
-  features.push('Validacao NF-e e NFC-e')
+  features.push('Validação NF-e e NFC-e')
 
   if (parsePlanoPrice(plano.excedente_preco_inicial) > 0) {
     features.push(`Excedente a partir de R$ ${formatPlanoPrice(plano.excedente_preco_inicial)}/consulta`)
   }
 
-  if (plano.excedente_inicia_faixa > 0) {
-    features.push(`Excedente inicia na faixa ${fmtInt(plano.excedente_inicia_faixa)}`)
+  if (plano.excedente_inicia_faixa > 1) {
+    features.push(`Excedente começa na faixa ${fmtInt(plano.excedente_inicia_faixa)}`)
   }
 
   if (plano.recorrente) {
-    features.push('Renovacao automatica mensal')
+    features.push('Renovação automática mensal')
   }
 
   return features
