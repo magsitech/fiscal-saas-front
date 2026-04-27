@@ -89,9 +89,15 @@ export function MeuPlanoPage() {
   const PLANO_PRECO: Partial<Record<TipoPlano, number>> = Object.fromEntries(
     planosDisponiveis.map((item) => [item.id, parsePlanoPrice(item.mensalidade)])
   ) as Partial<Record<TipoPlano, number>>
-  const PLANO_INFO: Partial<Record<TipoPlano, { descricao: string; features: string[] }>> = Object.fromEntries(
-    planosDisponiveis.map((item) => [item.id, { descricao: item.descricao, features: buildPlanoFeatures(item) }])
-  ) as Partial<Record<TipoPlano, { descricao: string; features: string[] }>>
+  const PLANO_EXTRAS: Partial<Record<TipoPlano, string[]>> = {
+    PRO: ['Suporte prioritário'],
+    BUSINESS: ['Webhook por consulta', 'Suporte prioritário + SLA'],
+  }
+  const PLANO_INFO: Partial<Record<TipoPlano, { features: string[] }>> = Object.fromEntries(
+    planosDisponiveis.map((item) => [item.id, {
+      features: [...buildPlanoFeatures(item), ...(PLANO_EXTRAS[item.id] ?? [])],
+    }])
+  ) as Partial<Record<TipoPlano, { features: string[] }>>
 
   const planoPendente: TipoPlano | null =
     assinatura?.plano_selecionado && PAID_PLAN_IDS.includes(assinatura.plano_selecionado) && !PAID_PLAN_IDS.includes(plano)
@@ -312,9 +318,6 @@ export function MeuPlanoPage() {
                   </div>
                   {PLANO_INFO[p.id] && (
                     <>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-                        {PLANO_INFO[p.id]!.descricao}
-                      </div>
                       <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                         {PLANO_INFO[p.id]!.features.map((f) => (
                           <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: '7px', fontSize: '12px', color: 'var(--text-muted)' }}>
