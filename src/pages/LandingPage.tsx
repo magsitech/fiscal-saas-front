@@ -3,7 +3,9 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { Building2, Check, CreditCard, Eye, EyeOff, Lock, Mail, Phone, User, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { PublicNav, scrollToSection } from '@/components/layout/PublicNav'
-import { authApi } from '@/services/api'
+import { authApi, planosApi } from '@/services/api'
+import type { PlanoCatalogo, TipoPlano } from '@/types'
+import { buildPlanoFeatures, FALLBACK_PAID_PLANOS, formatPlanoPrice, parsePlanoPrice, sortPlanos } from '@/utils/planos'
 import { formatBrazilPhone, normalizeBrazilPhone } from '@/utils/phone'
 import { Spinner } from '@/components/ui'
 
@@ -100,6 +102,44 @@ const PLANOS = [
     destaque: false, badge: null, btnLabel: 'Assinar plano Business', isTrial: false,
   },
 ]
+
+type LandingPlan = {
+  id: TipoPlano
+  nome: string
+  preco: number | null
+  descricao: string
+  features: string[]
+  destaque: boolean
+  badge: string | null
+  btnLabel: string
+  isTrial: boolean
+}
+
+const TRIAL_PLAN: LandingPlan = {
+  id: 'TRIAL',
+  nome: 'Trial',
+  preco: null,
+  descricao: 'Experimente a plataforma sem compromisso. Sem cartao.',
+  features: ['14 dias de acesso completo', 'R$ 50,00 em creditos incluidos', 'Validacao NF-e e NFC-e', 'Dashboard e relatorios', 'Sem cartao de credito'],
+  destaque: false,
+  badge: '14 dias gratis',
+  btnLabel: 'Comecar gratis',
+  isTrial: true,
+}
+
+function buildLandingPaidPlan(plano: PlanoCatalogo): LandingPlan {
+  return {
+    id: plano.id,
+    nome: plano.nome,
+    preco: parsePlanoPrice(plano.mensalidade),
+    descricao: plano.descricao,
+    features: buildPlanoFeatures(plano),
+    destaque: plano.id === 'PRO',
+    badge: plano.id === 'PRO' ? 'Mais popular' : null,
+    btnLabel: `Assinar plano ${plano.nome}`,
+    isTrial: false,
+  }
+}
 
 const FAIXAS = [
   { range: '1 - 500', base: 'R$ 0,19', fixed: 'R$ 0,03', final: 'R$ 0,22', pct: 100 },
@@ -205,9 +245,10 @@ export function LandingPage() {
   const location = useLocation()
   const [searchParams] = useSearchParams()
   const formRef = useRef<HTMLDivElement>(null)
+  const [catalogoPlanos, setCatalogoPlanos] = useState<PlanoCatalogo[]>(FALLBACK_PAID_PLANOS)
 
   // Pricing form state
-  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null)
+  const [selectedPlanId, setSelectedPlanId] = useState<TipoPlano | null>(null)
   const [tipoCadastro, setTipoCadastro] = useState<TipoCadastro | null>(null)
   const [loading, setLoading] = useState(false)
   const [showPass, setShowPass] = useState(false)
@@ -219,12 +260,28 @@ export function LandingPage() {
   const [pjForm, setPjForm] = useState({ razao_social: '', cnpj: '', responsavel: '', email: '', telefone: '', senha: '', confirmar: '' })
   const [pjErros, setPjErros] = useState<Record<string, string>>({})
   const [pjLegal, setPjLegal] = useState(false)
+  const planos = [TRIAL_PLAN, ...sortPlanos(catalogoPlanos).map(buildLandingPaidPlan)]
 
   useEffect(() => {
-    const plano = searchParams.get('plano')
+    let active = true
+
+    planosApi.listar()
+      .then((data) => {
+        if (!active || data.length === 0) return
+        setCatalogoPlanos(sortPlanos(data.filter((plano) => plano.id === 'BASICO' || plano.id === 'PRO' || plano.id === 'BUSINESS')))
+      })
+      .catch(() => null)
+
+    return () => {
+      active = false
+    }
+  }, [])
+
+  useEffect(() => {
+    const plano = searchParams.get('plano')?.trim().toUpperCase() as TipoPlano | undefined
     const path = location.pathname
 
-    if (plano && PLANOS.some(p => p.id === plano)) {
+    if (plano && planos.some(p => p.id === plano)) {
       setTimeout(() => {
         scrollToSection('planos')
         openForm(plano)
@@ -236,14 +293,14 @@ export function LandingPage() {
     } else if (path === '/contato') {
       setTimeout(() => scrollToSection('contato'), 150)
     }
-  }, [])
+  }, [catalogoPlanos, location.pathname, searchParams])
 
-  function openForm(planId: string) {
+  function openForm(planId: TipoPlano) {
     setSelectedPlanId(planId)
     setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
   }
 
-  function handleCardBtn(planId: string) {
+  function handleCardBtn(planId: TipoPlano) {
     if (selectedPlanId === planId) {
       formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     } else {
@@ -337,7 +394,7 @@ export function LandingPage() {
     </button>
   )
 
-  const planoAtual = PLANOS.find(p => p.id === selectedPlanId)
+  const planoAtual = planos.find(p => p.id === selectedPlanId)
 
   return (
     <div style={{ background: 'var(--bg)', color: 'var(--text)', fontFamily: 'var(--sans)', minHeight: '100vh' }}>
@@ -476,7 +533,7 @@ export function LandingPage() {
 
         {/* Plan cards */}
         <div style={{ maxWidth: '1160px', margin: '0 auto', padding: '0 40px 48px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', alignItems: 'stretch' }} className="pricing-plans-grid">
-          {PLANOS.map(plano => {
+          {planos.map(plano => {
             const isSelected = selectedPlanId === plano.id
             return (
               <div
@@ -527,7 +584,7 @@ export function LandingPage() {
                   <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', marginBottom: '8px' }}>
                     {plano.preco !== null ? (
                       <>
-                        <span style={{ fontFamily: 'var(--mono)', fontSize: '38px', fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1, color: plano.destaque ? 'var(--accent)' : 'var(--text)' }}>R$ {plano.preco}</span>
+                        <span style={{ fontFamily: 'var(--mono)', fontSize: '38px', fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1, color: plano.destaque ? 'var(--accent)' : 'var(--text)' }}>R$ {formatPlanoPrice(plano.preco)}</span>
                         <span style={{ fontSize: '13px', color: 'var(--text-dim)', paddingBottom: '5px' }}>/mês</span>
                       </>
                     ) : (
@@ -578,7 +635,7 @@ export function LandingPage() {
                     {planoAtual.isTrial ? 'Comece seu trial grátis' : `Assinar plano ${planoAtual.nome}`}
                   </h2>
                   <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-                    {planoAtual.isTrial ? '14 dias grátis com R$ 50 em créditos. Sem cartão.' : `R$ ${planoAtual.preco}/mês · 14 dias de trial incluídos`}
+                    {planoAtual.isTrial ? '14 dias grátis com R$ 50 em créditos. Sem cartão.' : `R$ ${formatPlanoPrice(planoAtual.preco)}/mês · 14 dias de trial incluídos`}
                   </p>
                 </div>
                 <button type="button" onClick={closeForm} style={{ background: 'none', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', transition: 'border-color .15s' }}>
@@ -588,7 +645,7 @@ export function LandingPage() {
 
               <div style={{ padding: '16px 32px', borderBottom: '1px solid var(--border)', display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
                 <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-dim)', marginRight: '4px' }}>Plano:</span>
-                {PLANOS.map(p => (
+                {planos.map(p => (
                   <button
                     key={p.id}
                     type="button"
@@ -601,7 +658,7 @@ export function LandingPage() {
                       transition: 'all .15s',
                     }}
                   >
-                    {p.nome}{p.preco !== null ? ` · R$${p.preco}` : ' · Grátis'}
+                    {p.nome}{p.preco !== null ? ` · R$${formatPlanoPrice(p.preco)}` : ' · Grátis'}
                   </button>
                 ))}
               </div>
@@ -855,3 +912,4 @@ function InfoBox({ title, children }: { title: string; children: ReactNode }) {
     </div>
   )
 }
+
