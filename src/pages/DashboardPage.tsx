@@ -278,11 +278,11 @@ export function DashboardPage() {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', flexWrap: 'wrap' }}>
                 <div style={{ fontSize: '16px', fontWeight: 600 }} className="dashboard-summary-panel-value">
-                  {resumo?.saldo_status ?? 'Sem saldo'}
+                  {resumo?.situacao_atual ?? resumo?.saldo_status ?? 'Sem saldo'}
                 </div>
-                {assinatura?.plano && (
+                {(resumo?.plano_status ?? assinatura?.plano) && (
                   <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 10px', borderRadius: '999px', background: 'rgba(0,212,170,0.16)', color: 'var(--accent)', border: '1px solid rgba(0,212,170,0.22)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                    {PLANO_LABEL[assinatura.plano] ?? assinatura.plano}
+                    {PLANO_LABEL[resumo?.plano_status ?? assinatura?.plano ?? ''] ?? (resumo?.plano_status ?? assinatura?.plano)}
                   </span>
                 )}
               </div>

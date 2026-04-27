@@ -45,7 +45,6 @@ export function MeuPlanoPage() {
   const [sandbox, setSandbox] = useState(false)
   const [loadingCancelamento, setLoadingCancelamento] = useState(false)
   const [confirmandoCancelamento, setConfirmandoCancelamento] = useState(false)
-  const [showCheckout, setShowCheckout] = useState(false)
 
   useEffect(() => {
     Promise.all([
@@ -69,7 +68,8 @@ export function MeuPlanoPage() {
       ? assinatura.plano_selecionado
       : null
 
-  const planoParaCheckout = planoPendente ?? (showCheckout ? plano : null)
+  const [selectedPlan, setSelectedPlan] = useState<TipoPlano | null>(null)
+  const planoParaCheckout = planoPendente ?? selectedPlan
   const valorCheckout = planoParaCheckout ? (PLANO_PRECO[planoParaCheckout] ?? 0) : 0
 
   const podeCancelar =
@@ -95,7 +95,7 @@ export function MeuPlanoPage() {
 
   function handleCheckoutSuccess(novaAssinatura: AssinaturaResumo) {
     setAssinatura(novaAssinatura)
-    setShowCheckout(false)
+    setSelectedPlan(null)
   }
 
   const card: React.CSSProperties = {
@@ -162,33 +162,81 @@ export function MeuPlanoPage() {
       </div>
 
       {/* Checkout de mensalidade */}
-      {!loading && (planoPendente || showCheckout) && planoParaCheckout && valorCheckout > 0 && (
-        <MensalidadeCheckout
-          plano={planoParaCheckout}
-          valor={valorCheckout}
-          sandbox={sandbox}
-          onSuccess={handleCheckoutSuccess}
-        />
+      {!loading && planoParaCheckout && valorCheckout > 0 && (
+        <>
+          {selectedPlan && !planoPendente && (
+            <button
+              type="button"
+              onClick={() => setSelectedPlan(null)}
+              style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '10px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+            >
+              ← Voltar
+            </button>
+          )}
+          <MensalidadeCheckout
+            plano={planoParaCheckout}
+            valor={valorCheckout}
+            sandbox={sandbox}
+            onSuccess={handleCheckoutSuccess}
+          />
+        </>
       )}
 
-      {/* CTA: plano Trial sem plano selecionado — escolher plano */}
-      {!loading && !planoPendente && !showCheckout && (plano === 'TRIAL' || plano === 'INATIVO') && (
-        <div style={{ ...card, display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>Escolher um plano</div>
-          <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.7 }}>
-            Selecione um dos planos abaixo para fazer o pagamento e ativar sua assinatura.
+      {/* Grade de planos — todos os estados */}
+      {!loading && !planoParaCheckout && (
+        <div style={{ ...card, display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div>
+            <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)', marginBottom: '4px' }}>
+              {PLANOS_PAGOS.includes(plano) ? 'Alterar plano' : 'Escolher um plano'}
+            </div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+              {PLANOS_PAGOS.includes(plano)
+                ? 'Faça upgrade ou downgrade a qualquer momento. A cobrança é ajustada no próximo ciclo.'
+                : 'Selecione um plano para pagar a mensalidade e ativar sua assinatura.'}
+            </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px' }}>
-            {PLANOS_PAGOS.map((p) => (
-              <button
-                key={p}
-                onClick={() => { setShowCheckout(true); setAssinatura(prev => prev ? { ...prev, plano_selecionado: p } : null) }}
-                style={{ padding: '16px', borderRadius: '14px', border: '1px solid var(--border)', background: 'color-mix(in srgb, var(--surface-2) 90%, transparent)', cursor: 'pointer', fontFamily: 'var(--sans)', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '6px' }}
-              >
-                <div style={{ fontWeight: 700, fontSize: '14px', color: PLANO_COLOR[p] }}>{PLANO_LABEL[p]}</div>
-                <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>R$ {PLANO_PRECO[p]}/mês</div>
-              </button>
-            ))}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(175px, 1fr))', gap: '12px' }}>
+            {PLANOS_PAGOS.map((p) => {
+              const isCurrent = p === plano
+              const planoOrder: Record<string, number> = { BASICO: 1, PRO: 2, BUSINESS: 3 }
+              const isUpgrade = (planoOrder[p] ?? 0) > (planoOrder[plano] ?? 0)
+              const cor = PLANO_COLOR[p]
+              return (
+                <div
+                  key={p}
+                  style={{
+                    padding: '20px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '12px',
+                    border: `1px solid ${isCurrent ? `color-mix(in srgb, ${cor} 40%, var(--border))` : 'var(--border)'}`,
+                    background: isCurrent ? `color-mix(in srgb, ${cor} 8%, var(--surface))` : 'color-mix(in srgb, var(--surface-2) 90%, transparent)',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                    <div style={{ fontWeight: 700, fontSize: '15px', color: cor }}>{PLANO_LABEL[p]}</div>
+                    {isCurrent && (
+                      <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '999px', background: `color-mix(in srgb, ${cor} 16%, transparent)`, color: cor, border: `1px solid color-mix(in srgb, ${cor} 30%, transparent)`, letterSpacing: '0.06em' }}>
+                        ATUAL
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: '20px', fontWeight: 700, color: 'var(--text)', lineHeight: 1 }}>
+                    R$ {PLANO_PRECO[p]}<span style={{ fontSize: '12px', fontWeight: 400, color: 'var(--text-dim)', marginLeft: '3px' }}>/mês</span>
+                  </div>
+                  {!isCurrent && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPlan(p)}
+                      style={{
+                        marginTop: '4px', padding: '9px 0', borderRadius: '10px', border: 'none', cursor: 'pointer',
+                        background: `color-mix(in srgb, ${cor} 18%, transparent)`,
+                        color: cor, fontFamily: 'var(--sans)', fontSize: '12px', fontWeight: 700,
+                      }}
+                    >
+                      {PLANOS_PAGOS.includes(plano) ? (isUpgrade ? 'Fazer upgrade' : 'Fazer downgrade') : 'Selecionar'}
+                    </button>
+                  )}
+                </div>
+              )
+            })}
           </div>
         </div>
       )}

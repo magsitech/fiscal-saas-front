@@ -79,6 +79,8 @@ function normalizeDashboardResumo(payload: unknown): DashboardResumo {
         ? raw.expira_em
         : null,
     saldo_status: String(raw.saldo_status ?? raw.status ?? 'SEM_SALDO') as DashboardResumo['saldo_status'],
+    situacao_atual: String(raw.situacao_atual ?? raw.saldo_status ?? raw.status ?? 'SEM_SALDO'),
+    plano_status: String(raw.plano_status ?? raw.plano ?? ''),
     consultas_periodo: Number(raw.consultas_periodo ?? raw.consultas_no_periodo ?? 0),
     gasto_periodo: String(raw.gasto_periodo ?? '0.00'),
     consultas_hoje: Number(raw.consultas_hoje ?? 0),

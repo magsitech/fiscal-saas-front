@@ -97,6 +97,8 @@ export interface DashboardResumo {
   saldo_disponivel: string
   saldo_expira_em: string | null
   saldo_status: 'ATIVO' | 'SEM_SALDO'
+  situacao_atual: 'ATIVO' | 'INATIVO' | 'CANCELADO' | 'SEM_SALDO' | 'TRIAL' | string
+  plano_status: TipoPlano | string
   consultas_periodo: number
   gasto_periodo: string
   consultas_hoje: number

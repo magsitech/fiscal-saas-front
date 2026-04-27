@@ -505,10 +505,14 @@ function buildResumo(db: MockDb): DashboardResumo {
     return item.tipo === 'DEBITO' && localDateKey(item.criado_em) === localDateKey(new Date())
   })
 
+  const saldoStatus = db.saldo.status
+
   return {
     saldo_disponivel: db.saldo.saldo_disponivel,
     saldo_expira_em: db.saldo.expira_em,
-    saldo_status: db.saldo.status,
+    saldo_status: saldoStatus,
+    situacao_atual: saldoStatus === 'ATIVO' ? 'ATIVO' : 'SEM_SALDO',
+    plano_status: '',
     consultas_periodo: db.saldo.consultas_no_periodo,
     gasto_periodo: totalDebitos(db.extrato).toFixed(2),
     consultas_hoje: countToday(db.auditoria),
