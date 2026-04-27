@@ -40,6 +40,16 @@ const PAGE_META: Record<string, { title: string; description: string; chips: str
     description: 'Confira dados da conta, mantenha as informações atualizadas e gerencie o acesso.',
     chips: ['Cadastro', 'Segurança', 'Sessão'],
   },
+  '/app/meu-plano': {
+    title: 'Meu Plano',
+    description: 'Gerencie sua assinatura, acompanhe o plano atual e escolha a opção mais adequada para continuar usando os serviços.',
+    chips: ['Assinatura', 'Planos', 'Mensalidade'],
+  },
+  '/app/documentacao': {
+    title: 'Documentação',
+    description: 'Consulte endpoints, autenticação, exemplos de integração e formatos de resposta para usar a API.',
+    chips: ['API', 'Integração', 'Exemplos'],
+  },
 }
 
 export function AppLayout() {

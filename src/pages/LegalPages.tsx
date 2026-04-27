@@ -142,6 +142,7 @@ const TERMS_SECTIONS: LegalSection[] = [
     paragraphs: [
       'A compra de créditos ocorre por pedido gerado no backend do ValidaeNota. A liberação do fluxo depende da confirmação oficial do pagamento pelo backend, inclusive quando a cobrança for emitida por PIX ou boleto.',
       'A criação da cobrança não significa pagamento concluído. Créditos somente serão disponibilizados quando o pedido for confirmado como pago pela fonte oficial processada pelo backend.',
+      'A existência de saldo disponível não autoriza, por si só, a utilização dos serviços da plataforma. Para acessar e utilizar os serviços disponibilizados pelo ValidaeNota, o cliente deve manter um plano ativo; caso não haja plano ativo, os serviços poderão permanecer indisponíveis mesmo que exista saldo na conta.',
     ],
   },
   {
@@ -225,7 +226,7 @@ export function TermsOfServicePage() {
       eyebrow="Documento Legal"
       title="Termos de Uso"
       subtitle="Estes termos regulam o acesso e a utilização da plataforma ValidaeNota, incluindo cadastro, uso operacional, compra de créditos, segurança da conta e regras gerais do serviço."
-      updatedAt="22 de abril de 2026"
+      updatedAt="27 de abril de 2026"
       sections={TERMS_SECTIONS}
       accentIcon={<FileText size={24} />}
     />
