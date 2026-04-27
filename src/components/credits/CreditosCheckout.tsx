@@ -13,6 +13,7 @@ import {
   QrCode,
   RefreshCw,
   Sparkles,
+  TestTube,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { pedidosApi } from '@/services/api'
@@ -48,6 +49,7 @@ function isFinalStatus(status: string) {
 function normalizePedidoCriadoToDetalhe(response: Awaited<ReturnType<typeof pedidosApi.iniciar>>): PedidoDetalhe {
   return {
     id: response.pedido_id,
+    tipo: 'CREDITO' as const,
     metodo: response.metodo,
     valor: response.valor,
     status: response.status,
@@ -233,11 +235,16 @@ async function copyToClipboard(text: string, successMessage: string, onCopied?: 
   onCopied?.()
 }
 
-export function CreditosCheckout() {
+interface CreditosCheckoutProps {
+  sandbox?: boolean
+}
+
+export function CreditosCheckout({ sandbox = false }: CreditosCheckoutProps) {
   const [metodo, setMetodo] = useState<MetodoAtivo>('PIX')
   const [valor, setValor] = useState('100')
   const [loading, setLoading] = useState(false)
   const [loadingPedido, setLoadingPedido] = useState(false)
+  const [loadingSimulacao, setLoadingSimulacao] = useState(false)
   const [pedido, setPedido] = useState<PedidoDetalhe | null>(null)
   const [pedidoError, setPedidoError] = useState<CheckoutError | null>(null)
   const [copiedPix, setCopiedPix] = useState(false)
@@ -347,6 +354,19 @@ export function CreditosCheckout() {
     })
   }
 
+  async function simularPagamento() {
+    if (!pedido?.id) return
+    setLoadingSimulacao(true)
+    try {
+      await pedidosApi.simularPagamento(pedido.id)
+      toast.success('Pagamento simulado. Aguardando confirmação...')
+    } catch {
+      toast.error('Falha ao simular pagamento.')
+    } finally {
+      setLoadingSimulacao(false)
+    }
+  }
+
   function resetNovoPedido() {
     setPedido(null)
     setPedidoError(null)
@@ -390,6 +410,12 @@ export function CreditosCheckout() {
 
   return (
     <div style={{ maxWidth: '860px', display: 'flex', flexDirection: 'column', gap: '28px' }}>
+      {sandbox && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 18px', borderRadius: '12px', background: 'color-mix(in srgb, var(--warn) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--warn) 30%, var(--border))', fontSize: '13px', color: 'var(--warn, #ca8a04)' }}>
+          <TestTube size={15} style={{ flexShrink: 0 }} />
+          <span><strong>Ambiente de testes.</strong> Os pagamentos não são reais.</span>
+        </div>
+      )}
       <Card>
         <CardHeader>
           <CardTitle>Compra de créditos</CardTitle>
@@ -671,6 +697,13 @@ export function CreditosCheckout() {
                       </a>
                     )}
                   </div>
+                )}
+
+                {sandbox && !isFinalStatus(pedido.status) && (
+                  <button type="button" onClick={() => void simularPagamento()} disabled={loadingSimulacao} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px', borderRadius: '10px', border: '1px solid color-mix(in srgb, var(--warn) 35%, var(--border))', background: 'color-mix(in srgb, var(--warn) 8%, transparent)', color: 'var(--warn, #ca8a04)', fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 700, cursor: loadingSimulacao ? 'not-allowed' : 'pointer', opacity: loadingSimulacao ? 0.6 : 1 }}>
+                    {loadingSimulacao ? <Spinner size={14} /> : <TestTube size={14} />}
+                    Simular pagamento (sandbox)
+                  </button>
                 )}
 
                 {pedido.metodo === 'CARTAO' && (

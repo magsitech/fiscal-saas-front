@@ -1,6 +1,7 @@
 export type TipoCliente = 'PF' | 'PJ'
 export type ModeloNotaFiscal = '55' | '65'
 export type MetodoPagamento = 'PIX' | 'BOLETO' | 'CARTAO'
+export type TipoPedido = 'CREDITO' | 'MENSALIDADE'
 export type GatewayPayload = Record<string, unknown> | string | null
 export type StatusPedido =
   | 'PENDENTE'
@@ -15,6 +16,7 @@ export type StatusAuditoria =
   | 'AUTORIZADA'
   | 'CANCELADA'
   | 'DENEGADA'
+  | 'DADOS_INCONSISTENTES'
   | 'ERRO'
   | 'CACHE_HIT'
 
@@ -63,6 +65,11 @@ export interface AtualizarPerfilPayload {
   nome?: string
   nome_fantasia?: string | null
   telefone?: string | null
+}
+
+export interface AlterarSenhaPayload {
+  senha_atual: string
+  nova_senha: string
 }
 
 export interface Cliente {
@@ -179,9 +186,9 @@ export interface PedidoCartaoDiretoPayload {
 }
 
 export type IniciarPedidoRequest =
-  | { metodo: 'PIX'; valor: number }
-  | { metodo: 'BOLETO'; valor: number }
-  | { metodo: 'CARTAO'; valor: number; card_installments?: number }
+  | { metodo: 'PIX'; valor: number; tipo?: TipoPedido; descricao?: string }
+  | { metodo: 'BOLETO'; valor: number; tipo?: TipoPedido; descricao?: string }
+  | { metodo: 'CARTAO'; valor: number; tipo?: TipoPedido; descricao?: string; card_installments?: number }
 
 export interface PedidoStatusGatewayInfo {
   gateway_status?: string | null
@@ -202,6 +209,7 @@ export interface PedidoPagamentoData {
 
 export interface PedidoBase extends PedidoStatusGatewayInfo, PedidoPagamentoData {
   id: string
+  tipo: TipoPedido
   metodo: MetodoPagamento
   valor: string
   status: StatusPedido
@@ -253,19 +261,23 @@ export interface ConsultarNotaResponse {
   dados_nf: Record<string, unknown> | null
 }
 
-export type TipoPlano = 'TRIAL' | 'BASICO' | 'PRO' | 'BUSINESS' | 'CANCELADO'
+export type TipoPlano = 'TRIAL' | 'BASICO' | 'PRO' | 'BUSINESS' | 'CANCELADO' | 'INATIVO'
 
 export interface AssinaturaResumo {
   plano: TipoPlano
+  plano_ativo: boolean
+  plano_selecionado: TipoPlano | null
   trial_expira_em: string | null
   trial_ativo: boolean
   assinatura_inicio: string | null
   ciclo_inicio: string | null
   ciclo_expira_em: string | null
+  recorrente: boolean | null
+  expiracao_em: string | null
   franquia_usada: number | null
   franquia_limite: number | null
   franquia_restante: number | null
-  proximo_plano: string | null
+  proximo_plano: TipoPlano | null
 }
 
 export interface ApiKeyInfo {
@@ -277,4 +289,20 @@ export interface ApiKeyInfo {
 
 export interface ApiKeyCreateResponse extends ApiKeyInfo {
   chave: string
+}
+
+export interface AtivarPlanoPayload {
+  plano: TipoPlano
+  pedido_id?: string | null
+}
+
+export interface WebhookLog {
+  id: string
+  log_auditoria_id: string
+  url: string
+  tentativa: number
+  status_http: number | null
+  sucesso: boolean
+  erro: string | null
+  criado_em: string
 }

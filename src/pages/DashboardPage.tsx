@@ -1,12 +1,67 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { differenceInCalendarDays, format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { Zap } from 'lucide-react'
 import { dashboardApi, planosApi, saldoApi } from '@/services/api'
-import type { AssinaturaResumo, DashboardResumo, SaldoResumo } from '@/types'
+import type { AssinaturaResumo, DashboardResumo, SaldoResumo, TipoPlano } from '@/types'
 import { Card, Skeleton } from '@/components/ui'
 
 const PLANO_LABEL: Record<string, string> = {
-  BASICO: 'Básico', PRO: 'Pro', BUSINESS: 'Business', TRIAL: 'Trial', CANCELADO: 'Cancelado',
+  BASICO: 'Básico', PRO: 'Pro', BUSINESS: 'Business', TRIAL: 'Trial', CANCELADO: 'Cancelado', INATIVO: 'Inativo',
+}
+
+const PLANO_PRECO: Record<string, number> = {
+  BASICO: 29, PRO: 99, BUSINESS: 149,
+}
+
+const PLANOS_PAGOS: TipoPlano[] = ['BASICO', 'PRO', 'BUSINESS']
+
+function PlanoAtivacaoBanner({ plano, onAtivar }: { plano: TipoPlano; onAtivar: () => void }) {
+  const preco = PLANO_PRECO[plano]
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap',
+      padding: '18px 24px', borderRadius: '16px',
+      background: 'linear-gradient(135deg, color-mix(in srgb, var(--accent) 12%, var(--surface)), var(--surface))',
+      border: '1px solid color-mix(in srgb, var(--accent) 35%, var(--border))',
+      boxShadow: '0 4px 20px color-mix(in srgb, var(--accent) 8%, transparent)',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <div style={{
+          width: '40px', height: '40px', borderRadius: '12px', flexShrink: 0,
+          background: 'color-mix(in srgb, var(--accent) 16%, transparent)',
+          border: '1px solid color-mix(in srgb, var(--accent) 30%, transparent)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)',
+        }}>
+          <Zap size={18} />
+        </div>
+        <div>
+          <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)', marginBottom: '2px' }}>
+            Ative o plano {PLANO_LABEL[plano] ?? plano}
+          </div>
+          <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+            Você selecionou este plano no cadastro.
+            {preco ? ` R$ ${preco}/mês — ` : ' '}
+            Pague a mensalidade para ativar agora.
+          </div>
+        </div>
+      </div>
+      <button
+        onClick={onAtivar}
+        style={{
+          padding: '10px 22px', borderRadius: '10px', border: 'none', cursor: 'pointer',
+          background: 'var(--accent)', color: '#04110d', fontWeight: 700, fontSize: '13px',
+          fontFamily: 'var(--sans)', whiteSpace: 'nowrap', flexShrink: 0,
+          transition: 'opacity .15s',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.opacity = '0.85' }}
+        onMouseLeave={e => { e.currentTarget.style.opacity = '1' }}
+      >
+        Ativar agora →
+      </button>
+    </div>
+  )
 }
 
 const FAIXAS = [
@@ -74,10 +129,18 @@ function KpiCard({
 }
 
 export function DashboardPage() {
+  const navigate = useNavigate()
   const [resumo, setResumo] = useState<DashboardResumo | null>(null)
   const [saldo, setSaldo] = useState<SaldoResumo | null>(null)
   const [assinatura, setAssinatura] = useState<AssinaturaResumo | null>(null)
   const [loading, setLoading] = useState(true)
+
+  const planoPendente =
+    assinatura?.plano_selecionado &&
+    PLANOS_PAGOS.includes(assinatura.plano_selecionado) &&
+    !PLANOS_PAGOS.includes(assinatura.plano)
+      ? assinatura.plano_selecionado
+      : null
 
   useEffect(() => {
     Promise.all([
@@ -138,6 +201,14 @@ export function DashboardPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
+
+      {/* ── Banner de ativação de plano ── */}
+      {!loading && planoPendente && (
+        <PlanoAtivacaoBanner
+          plano={planoPendente}
+          onAtivar={() => navigate('/app/meu-plano')}
+        />
+      )}
 
       {/* ── Hero financeiro ── */}
       <section

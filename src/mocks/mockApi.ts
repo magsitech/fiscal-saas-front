@@ -288,6 +288,7 @@ const DEFAULT_EXTRATO: ExtratoItem[] = [
 const DEFAULT_PEDIDOS: Pedido[] = [
   {
     id: 'ped_001',
+    tipo: 'CREDITO',
     metodo: 'PIX',
     valor: '1000.00',
     status: 'PAGO',
@@ -308,6 +309,7 @@ const DEFAULT_PEDIDOS: Pedido[] = [
   },
   {
     id: 'ped_002',
+    tipo: 'CREDITO',
     metodo: 'BOLETO',
     valor: '500.00',
     status: 'AGUARDANDO_PAGAMENTO',
@@ -328,6 +330,7 @@ const DEFAULT_PEDIDOS: Pedido[] = [
   },
   {
     id: 'ped_003',
+    tipo: 'CREDITO',
     metodo: 'PIX',
     valor: '250.00',
     status: 'AGUARDANDO_PAGAMENTO',
@@ -348,6 +351,7 @@ const DEFAULT_PEDIDOS: Pedido[] = [
   },
   {
     id: 'ped_004',
+    tipo: 'CREDITO',
     metodo: 'CARTAO',
     valor: '750.00',
     status: 'CANCELADO',
@@ -368,6 +372,7 @@ const DEFAULT_PEDIDOS: Pedido[] = [
   },
   {
     id: 'ped_005',
+    tipo: 'CREDITO',
     metodo: 'BOLETO',
     valor: '300.00',
     status: 'EXPIRADO',
@@ -709,6 +714,7 @@ export const mockPedidosApi = {
     const metodo = payload.metodo
     const novoPedido: Pedido = {
       id: `ped_${now}`,
+      tipo: payload.tipo ?? 'CREDITO',
       metodo,
       valor: payload.valor.toFixed(2),
       status: 'AGUARDANDO_PAGAMENTO',

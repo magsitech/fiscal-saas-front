@@ -407,9 +407,10 @@ export function PerfilPage() {
     const e: Record<string, string> = {}
     if (!senha.atual) e.atual = 'Campo obrigatório'
     if (senha.nova.length < 8) e.nova = 'Mínimo de 8 caracteres'
-    if (!/[A-Z]/.test(senha.nova)) e.nova = 'Deve ter ao menos uma letra maiúscula'
-    if (!/\d/.test(senha.nova)) e.nova = 'Deve ter ao menos um número'
-    if (senha.nova !== senha.confirmar) e.confirmar = 'As senhas não coincidem'
+    else if (!/[A-Z]/.test(senha.nova)) e.nova = 'Deve ter ao menos uma letra maiúscula'
+    else if (!/\d/.test(senha.nova)) e.nova = 'Deve ter ao menos um número'
+    else if (!/[^A-Za-z0-9]/.test(senha.nova)) e.nova = 'Deve ter ao menos um símbolo'
+    if (!e.nova && senha.nova !== senha.confirmar) e.confirmar = 'As senhas não coincidem'
     setSenhaErros(e)
     return Object.keys(e).length === 0
   }
@@ -419,11 +420,18 @@ export function PerfilPage() {
     if (!validarSenha()) return
     setSavingSenha(true)
     try {
-      await new Promise((resolve) => setTimeout(resolve, 800))
+      await authApi.alterarSenha({ senha_atual: senha.atual, nova_senha: senha.nova })
       setSenha({ atual: '', nova: '', confirmar: '' })
+      setSenhaErros({})
       toast.success('Senha alterada com sucesso!')
-    } catch { toast.error('Senha atual incorreta') }
-    finally { setSavingSenha(false) }
+    } catch (err) {
+      const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      if ((err as { response?: { status?: number } })?.response?.status === 401) {
+        setSenhaErros({ atual: 'Senha atual incorreta' })
+      } else {
+        toast.error(detail ?? 'Erro ao alterar senha')
+      }
+    } finally { setSavingSenha(false) }
   }
 
   async function gerarApiKey() {

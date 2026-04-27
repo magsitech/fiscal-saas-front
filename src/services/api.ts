@@ -1,8 +1,10 @@
 import axios from 'axios'
 import type {
+  AlterarSenhaPayload,
   ApiKeyCreateResponse,
   ApiKeyInfo,
   AssinaturaResumo,
+  AtivarPlanoPayload,
   AuditoriaItem,
   AtualizarPerfilPayload,
   Cliente,
@@ -17,6 +19,7 @@ import type {
   LoginPayload,
   Pedido,
   PedidoDetalhe,
+  PedidosConfig,
   RedefinirSenhaPayload,
   RegisterPayload,
   ReenviarConfirmacaoPayload,
@@ -26,6 +29,7 @@ import type {
   TipoPlano,
   TokenResponse,
   UfConsulta,
+  WebhookLog,
 } from '@/types'
 import { API_BASE_URL, USE_MOCK_API } from '@/config/runtime'
 import { clearAuthTokens, getAccessToken, getRefreshToken, setAuthTokens } from '@/utils/authStorage'
@@ -157,15 +161,23 @@ function normalizeAssinaturaResumo(payload: unknown): AssinaturaResumo {
   const raw = unwrapPayload<Record<string, unknown>>(payload)
   return {
     plano: String(raw.plano ?? 'TRIAL') as TipoPlano,
+    plano_ativo: raw.plano_ativo != null ? Boolean(raw.plano_ativo) : true,
+    plano_selecionado: typeof raw.plano_selecionado === 'string' ? raw.plano_selecionado as TipoPlano : null,
     trial_expira_em: typeof raw.trial_expira_em === 'string' ? raw.trial_expira_em : null,
     trial_ativo: Boolean(raw.trial_ativo),
     assinatura_inicio: typeof raw.assinatura_inicio === 'string' ? raw.assinatura_inicio : null,
     ciclo_inicio: typeof raw.ciclo_inicio === 'string' ? raw.ciclo_inicio : null,
-    ciclo_expira_em: typeof raw.ciclo_expira_em === 'string' ? raw.ciclo_expira_em : null,
+    ciclo_expira_em: typeof raw.ciclo_expira_em === 'string'
+      ? raw.ciclo_expira_em
+      : typeof raw.expiracao_em === 'string'
+        ? raw.expiracao_em
+        : null,
+    recorrente: raw.recorrente != null ? Boolean(raw.recorrente) : null,
+    expiracao_em: typeof raw.expiracao_em === 'string' ? raw.expiracao_em : null,
     franquia_usada: raw.franquia_usada != null ? Number(raw.franquia_usada) : null,
     franquia_limite: raw.franquia_limite != null ? Number(raw.franquia_limite) : null,
     franquia_restante: raw.franquia_restante != null ? Number(raw.franquia_restante) : null,
-    proximo_plano: typeof raw.proximo_plano === 'string' ? raw.proximo_plano : null,
+    proximo_plano: typeof raw.proximo_plano === 'string' ? raw.proximo_plano as TipoPlano : null,
   }
 }
 
@@ -188,6 +200,7 @@ function normalizePedidoBase(raw: Record<string, unknown>) {
 
   return {
     id: String(raw.id ?? raw.pedido_id ?? ''),
+    tipo: (raw.tipo === 'MENSALIDADE' ? 'MENSALIDADE' : 'CREDITO') as Pedido['tipo'],
     metodo: normalizeMetodo(raw.metodo ?? raw.metodo_pagamento),
     valor: String(raw.valor ?? '0.00'),
     status: String(raw.status ?? 'PENDENTE') as Pedido['status'],
@@ -378,6 +391,11 @@ export const authApi = {
     })
     return data
   },
+
+  alterarSenha: async (payload: AlterarSenhaPayload) => {
+    const { data } = await http.patch<{ mensagem: string }>('/clientes/me/senha', payload)
+    return data
+  },
 }
 
 export const saldoApi = {
@@ -432,6 +450,11 @@ export const dashboardApi = {
 }
 
 export const pedidosApi = {
+  config: async (): Promise<PedidosConfig> => {
+    const { data } = await http.get<PedidosConfig>('/pedidos/config')
+    return unwrapPayload<PedidosConfig>(data)
+  },
+
   iniciar: async (payload: IniciarPedidoRequest) => {
     if (USE_MOCK_API) {
       const { mockPedidosApi } = await loadMockApi()
@@ -458,6 +481,11 @@ export const pedidosApi = {
     const { data } = await http.get<PedidoDetalhe>(`/pedidos/${pedidoId}`)
     return normalizePedidoDetalhe(data)
   },
+
+  simularPagamento: async (pedidoId: string) => {
+    const { data } = await http.post<PedidoDetalhe>(`/pedidos/${pedidoId}/simular-pagamento`)
+    return normalizePedidoDetalhe(data)
+  },
 }
 
 export const planosApi = {
@@ -469,6 +497,22 @@ export const planosApi = {
     } catch {
       return null
     }
+  },
+
+  ativar: async (payload: AtivarPlanoPayload): Promise<AssinaturaResumo> => {
+    const { data } = await http.post<AssinaturaResumo>('/planos/assinatura', payload)
+    return normalizeAssinaturaResumo(data)
+  },
+
+  cancelar: async (): Promise<void> => {
+    await http.delete('/planos/assinatura')
+  },
+}
+
+export const webhookApi = {
+  logs: async (params?: { log_auditoria_id?: string; limit?: number; offset?: number }): Promise<WebhookLog[]> => {
+    const { data } = await http.get<WebhookLog[]>('/webhooks/logs', { params })
+    return unwrapList<WebhookLog>(data)
   },
 }
 

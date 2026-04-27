@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { endOfDay, format, parseISO, startOfDay, subDays } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { CreditCard, Download, ExternalLink, Landmark, RefreshCw, Sparkles } from 'lucide-react'
+import { CheckCircle2, CreditCard, Download, ExternalLink, FileText, Info, Landmark, Lock, RefreshCw, Sparkles, Webhook, XCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { dashboardApi, pedidosApi } from '@/services/api'
-import type { AuditoriaItem, ExtratoItem, Pedido, PedidoDetalhe, SimuladorResponse } from '@/types'
+import { dashboardApi, pedidosApi, planosApi, webhookApi } from '@/services/api'
+import type { AuditoriaItem, AssinaturaResumo, ExtratoItem, Pedido, PedidoDetalhe, SimuladorResponse, WebhookLog } from '@/types'
 import { CreditosCheckout } from '@/components/credits/CreditosCheckout'
 import {
   Badge,
@@ -338,6 +338,192 @@ function Pagination({
   )
 }
 
+// ─── Tooltip balloon ─────────────────────────────────────────
+function InfoTooltip({ text }: { text: string }) {
+  const [visible, setVisible] = useState(false)
+  return (
+    <span
+      style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}
+      onMouseEnter={() => setVisible(true)}
+      onMouseLeave={() => setVisible(false)}
+      onFocus={() => setVisible(true)}
+      onBlur={() => setVisible(false)}
+    >
+      <Info size={13} style={{ color: 'var(--text-dim)', cursor: 'default', flexShrink: 0 }} />
+      {visible && (
+        <span style={{
+          position: 'absolute', bottom: 'calc(100% + 8px)', left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'var(--surface)', border: '1px solid var(--border)',
+          borderRadius: '10px', padding: '8px 12px',
+          fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5,
+          whiteSpace: 'nowrap', boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
+          zIndex: 50, pointerEvents: 'none',
+        }}>
+          {text}
+          <span style={{
+            position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)',
+            width: 0, height: 0,
+            borderLeft: '6px solid transparent', borderRight: '6px solid transparent',
+            borderTop: '6px solid var(--border)',
+          }} />
+        </span>
+      )}
+    </span>
+  )
+}
+
+// ─── Webhook logs (aba interna) ───────────────────────────────
+const WEBHOOK_PAGE_SIZE = 50
+
+function WebhookLogsTab({ isBusinessPlan }: { isBusinessPlan: boolean }) {
+  const [logs, setLogs] = useState<WebhookLog[]>([])
+  const [loading, setLoading] = useState(false)
+  const [offset, setOffset] = useState(0)
+  const [hasMore, setHasMore] = useState(true)
+  const loadedRef = useRef(false)
+
+  useEffect(() => {
+    if (!isBusinessPlan || loadedRef.current) return
+    loadedRef.current = true
+    setLoading(true)
+    webhookApi.logs({ limit: WEBHOOK_PAGE_SIZE, offset: 0 })
+      .then(data => { setLogs(data); setHasMore(data.length === WEBHOOK_PAGE_SIZE) })
+      .catch(() => null)
+      .finally(() => setLoading(false))
+  }, [isBusinessPlan])
+
+  async function carregarMais() {
+    const newOffset = offset + WEBHOOK_PAGE_SIZE
+    setLoading(true)
+    try {
+      const data = await webhookApi.logs({ limit: WEBHOOK_PAGE_SIZE, offset: newOffset })
+      setLogs(prev => [...prev, ...data])
+      setHasMore(data.length === WEBHOOK_PAGE_SIZE)
+      setOffset(newOffset)
+    } catch { null } finally { setLoading(false) }
+  }
+
+  if (loading && logs.length === 0) {
+    return (
+      <div style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-12 w-full" />)}
+      </div>
+    )
+  }
+
+  if (logs.length === 0) {
+    return <Empty message="Nenhum log de webhook encontrado." />
+  }
+
+  return (
+    <>
+      <div className="app-data-desktop app-table-shell">
+        <Table fixed>
+          <colgroup>
+            <col style={{ width: '10%' }} />
+            <col style={{ width: '32%' }} />
+            <col style={{ width: '10%' }} />
+            <col style={{ width: '9%' }} />
+            <col style={{ width: '20%' }} />
+            <col style={{ width: '19%' }} />
+          </colgroup>
+          <thead>
+            <tr>
+              <Th>Status</Th>
+              <Th>URL</Th>
+              <Th><div style={{ textAlign: 'right' }}>Tentativa</div></Th>
+              <Th><div style={{ textAlign: 'right' }}>HTTP</div></Th>
+              <Th>Auditoria</Th>
+              <Th><div style={{ textAlign: 'right' }}>Data</div></Th>
+            </tr>
+          </thead>
+          <tbody>
+            {logs.map(log => (
+              <TrHover key={log.id}>
+                <Td>
+                  {log.sucesso ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '3px 9px', borderRadius: '999px', fontSize: '11px', fontWeight: 700, background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--accent-glow)' }}>
+                      <CheckCircle2 size={11} />OK
+                    </span>
+                  ) : (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '3px 9px', borderRadius: '999px', fontSize: '11px', fontWeight: 700, background: 'color-mix(in srgb, var(--danger) 10%, transparent)', color: 'var(--danger)', border: '1px solid color-mix(in srgb, var(--danger) 30%, var(--border))' }}>
+                      <XCircle size={11} />Falha
+                    </span>
+                  )}
+                </Td>
+                <Td>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: '11px', color: 'var(--text-muted)', wordBreak: 'break-all' }}>
+                    {log.url}
+                  </span>
+                </Td>
+                <Td><div style={{ textAlign: 'right', fontFamily: 'var(--mono)', fontSize: '13px' }}>#{log.tentativa}</div></Td>
+                <Td>
+                  <div style={{ textAlign: 'right' }}>
+                    {log.status_http != null ? (
+                      <span style={{ fontFamily: 'var(--mono)', fontSize: '13px', fontWeight: 600, color: log.status_http >= 200 && log.status_http < 300 ? 'var(--accent)' : 'var(--danger)' }}>
+                        {log.status_http}
+                      </span>
+                    ) : <span style={{ color: 'var(--text-dim)', fontSize: '13px' }}>—</span>}
+                  </div>
+                </Td>
+                <Td>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: '11px', color: 'var(--text-dim)' }}>
+                    {log.log_auditoria_id.slice(0, 8)}…
+                  </span>
+                </Td>
+                <Td>
+                  <div style={{ textAlign: 'right', fontSize: '12px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                    {format(parseISO(log.criado_em), 'dd/MM/yyyy HH:mm:ss', { locale: ptBR })}
+                  </div>
+                </Td>
+              </TrHover>
+            ))}
+          </tbody>
+        </Table>
+      </div>
+
+      {/* Mobile */}
+      <div className="app-data-mobile" style={{ padding: '16px' }}>
+        <div className="app-mobile-card-list">
+          {logs.map(log => (
+            <div key={log.id} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                {log.sucesso ? (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '3px 9px', borderRadius: '999px', fontSize: '11px', fontWeight: 700, background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--accent-glow)' }}>
+                    <CheckCircle2 size={11} />OK
+                  </span>
+                ) : (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '3px 9px', borderRadius: '999px', fontSize: '11px', fontWeight: 700, background: 'color-mix(in srgb, var(--danger) 10%, transparent)', color: 'var(--danger)', border: '1px solid color-mix(in srgb, var(--danger) 30%, var(--border))' }}>
+                    <XCircle size={11} />Falha
+                  </span>
+                )}
+                {log.status_http != null && (
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: '12px', fontWeight: 600, color: log.status_http >= 200 && log.status_http < 300 ? 'var(--accent)' : 'var(--danger)' }}>
+                    HTTP {log.status_http}
+                  </span>
+                )}
+              </div>
+              <MobileField label="URL" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '11px', wordBreak: 'break-all' }}>{log.url}</span>} />
+              <MobileField label="Tentativa" value={`#${log.tentativa}`} />
+              <MobileField label="Auditoria" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '11px' }}>{log.log_auditoria_id.slice(0, 8)}…</span>} />
+              <MobileField label="Data" value={format(parseISO(log.criado_em), 'dd/MM/yyyy HH:mm', { locale: ptBR })} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {hasMore && (
+        <div style={{ padding: '16px 28px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'center' }}>
+          <Button variant="ghost" onClick={carregarMais} loading={loading}>
+            Carregar mais
+          </Button>
+        </div>
+      )}
+    </>
+  )
+}
+
 export function ValidacoesPage() {
   const [items, setItems] = useState<AuditoriaItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -346,6 +532,13 @@ export function ValidacoesPage() {
   const [periodo, setPeriodo] = useState<PeriodoFiltro>('7d')
   const [inicio, setInicio] = useState(toInputDate(subDays(new Date(), 6)))
   const [fim, setFim] = useState(toInputDate(new Date()))
+  const [assinatura, setAssinatura] = useState<AssinaturaResumo | null>(null)
+  const [abaAtiva, setAbaAtiva] = useState<'auditoria' | 'webhooks'>('auditoria')
+  const isBusinessPlan = assinatura?.plano === 'BUSINESS'
+
+  useEffect(() => {
+    planosApi.assinatura().then(setAssinatura).catch(() => null)
+  }, [])
 
   useEffect(() => {
     setLoading(true)
@@ -425,74 +618,123 @@ export function ValidacoesPage() {
         overflow: 'hidden',
         boxShadow: '0 16px 40px rgba(0,0,0,0.10)',
       }}>
-        {/* Header */}
+        {/* Header com tabs */}
         <div style={{
-          display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between',
-          gap: '16px', padding: '24px 28px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          gap: '16px', padding: '20px 28px',
           borderBottom: '1px solid var(--border)',
           flexWrap: 'wrap',
         }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
-            <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
-              Histórico de auditoria fiscal
-            </div>
-            <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.55 }}>
-              Filtre por status, período e exporte o resultado atual.
-            </div>
+          {/* Tabs */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'color-mix(in srgb, var(--surface-2) 90%, transparent)', border: '1px solid var(--border)', borderRadius: '14px', padding: '4px' }}>
+            {/* Tab Auditoria */}
+            <button
+              type="button"
+              onClick={() => setAbaAtiva('auditoria')}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '7px',
+                padding: '8px 16px', borderRadius: '10px', border: 'none',
+                background: abaAtiva === 'auditoria' ? 'var(--surface)' : 'transparent',
+                color: abaAtiva === 'auditoria' ? 'var(--text)' : 'var(--text-muted)',
+                fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: abaAtiva === 'auditoria' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+                transition: 'all 0.15s',
+              }}
+            >
+              <FileText size={14} />
+              Auditoria
+            </button>
+
+            {/* Tab Webhooks */}
+            <button
+              type="button"
+              onClick={() => { if (isBusinessPlan) setAbaAtiva('webhooks') }}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '7px',
+                padding: '8px 16px', borderRadius: '10px', border: 'none',
+                background: abaAtiva === 'webhooks' ? 'var(--surface)' : 'transparent',
+                color: abaAtiva === 'webhooks' ? 'var(--text)' : 'var(--text-dim)',
+                fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 700,
+                cursor: isBusinessPlan ? 'pointer' : 'default',
+                boxShadow: abaAtiva === 'webhooks' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+                transition: 'all 0.15s',
+                opacity: isBusinessPlan ? 1 : 0.7,
+              }}
+            >
+              <Webhook size={14} />
+              Logs de Webhook
+              {!isBusinessPlan && (
+                <>
+                  <Lock size={12} style={{ color: 'var(--text-dim)', flexShrink: 0 }} />
+                  <InfoTooltip text="Disponível apenas no plano Business" />
+                </>
+              )}
+            </button>
           </div>
 
-          {/* Botão Exportar CSV */}
-          <button
-            type="button"
-            onClick={handleExport}
-            disabled={exportDisabled}
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: '8px',
-              padding: '11px 20px', borderRadius: '14px',
-              border: '1px solid var(--border)',
-              background: exportDisabled
-                ? 'color-mix(in srgb, var(--surface-2) 70%, transparent)'
-                : 'color-mix(in srgb, var(--surface-2) 92%, transparent)',
-              color: exportDisabled ? 'var(--text-dim)' : 'var(--text)',
-              fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 700,
-              cursor: exportDisabled ? 'not-allowed' : 'pointer',
-              opacity: exportDisabled ? 0.55 : 1,
-              transition: 'border-color 0.15s, box-shadow 0.15s, transform 0.1s',
-              whiteSpace: 'nowrap', flexShrink: 0,
-            }}
-            onMouseEnter={e => {
-              if (!exportDisabled) {
-                e.currentTarget.style.borderColor = 'var(--border-bright)'
-                e.currentTarget.style.transform = 'translateY(-1px)'
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.10)'
-              }
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.borderColor = 'var(--border)'
-              e.currentTarget.style.transform = 'translateY(0)'
-              e.currentTarget.style.boxShadow = 'none'
-            }}
-            onMouseDown={e => { e.currentTarget.style.transform = 'translateY(0)' }}
-          >
-            <Download size={14} />
-            Exportar CSV
-          </button>
+          {/* Botão Exportar CSV — só na aba auditoria */}
+          {abaAtiva === 'auditoria' && (
+            <button
+              type="button"
+              onClick={handleExport}
+              disabled={exportDisabled}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '8px',
+                padding: '11px 20px', borderRadius: '14px',
+                border: '1px solid var(--border)',
+                background: exportDisabled
+                  ? 'color-mix(in srgb, var(--surface-2) 70%, transparent)'
+                  : 'color-mix(in srgb, var(--surface-2) 92%, transparent)',
+                color: exportDisabled ? 'var(--text-dim)' : 'var(--text)',
+                fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 700,
+                cursor: exportDisabled ? 'not-allowed' : 'pointer',
+                opacity: exportDisabled ? 0.55 : 1,
+                transition: 'border-color 0.15s, box-shadow 0.15s, transform 0.1s',
+                whiteSpace: 'nowrap', flexShrink: 0,
+              }}
+              onMouseEnter={e => {
+                if (!exportDisabled) {
+                  e.currentTarget.style.borderColor = 'var(--border-bright)'
+                  e.currentTarget.style.transform = 'translateY(-1px)'
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.10)'
+                }
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = 'var(--border)'
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.boxShadow = 'none'
+              }}
+              onMouseDown={e => { e.currentTarget.style.transform = 'translateY(0)' }}
+            >
+              <Download size={14} />
+              Exportar CSV
+            </button>
+          )}
         </div>
 
-        {/* Filtros */}
+        {/* Aba: Webhooks */}
+        {abaAtiva === 'webhooks' && (
+          <WebhookLogsTab isBusinessPlan={isBusinessPlan} />
+        )}
+
+        {/* Aba: Auditoria — Filtros */}
+        {abaAtiva === 'auditoria' && (
         <div className="app-filter-panel">
           <div className="app-filter-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
             <Select label="Status" value={status} onChange={(e) => setStatus(e.target.value)}>
               <option value="">Todos os status</option>
-              {['AUTORIZADA', 'CANCELADA', 'DENEGADA', 'PENDENTE', 'PROCESSANDO', 'ERRO', 'CACHE_HIT'].map((s) => (
-                <option key={s} value={s}>{s === 'CACHE_HIT' ? 'Cache' : s}</option>
+              {['AUTORIZADA', 'CANCELADA', 'DENEGADA', 'DADOS_INCONSISTENTES', 'PENDENTE', 'PROCESSANDO', 'ERRO', 'CACHE_HIT'].map((s) => (
+                <option key={s} value={s}>{s === 'CACHE_HIT' ? 'Cache' : s === 'DADOS_INCONSISTENTES' ? 'Dados inconsistentes' : s}</option>
               ))}
             </Select>
             <DateFilters periodo={periodo} onPeriodoChange={setPeriodo} inicio={inicio} onInicioChange={setInicio} fim={fim} onFimChange={setFim} />
           </div>
         </div>
+        )}
 
-        {/* Tabela desktop */}
+        {/* Tabela desktop — só auditoria */}
+        {abaAtiva === 'auditoria' && (
         <div className="app-data-desktop app-table-shell">
           <Table fixed>
             <colgroup>
@@ -582,8 +824,10 @@ export function ValidacoesPage() {
             onPageChange={setPage}
           />
         </div>
+        )}
 
-        {/* Cards mobile */}
+        {/* Cards mobile — só auditoria */}
+        {abaAtiva === 'auditoria' && (
         <div className="app-data-mobile" style={{ padding: '16px' }}>
           <div className="app-mobile-card-list">
             {loading ? (
@@ -619,6 +863,7 @@ export function ValidacoesPage() {
           </div>
           <Pagination page={safePage} totalPages={totalPages} totalItems={filteredItems.length} label="Auditoria" onPageChange={setPage} />
         </div>
+        )}
       </div>
     </div>
   )
@@ -969,8 +1214,10 @@ export function PagamentosPage() {
   const [periodo, setPeriodo] = useState<PeriodoFiltro>('30d')
   const [inicio, setInicio] = useState(toInputDate(subDays(new Date(), 29)))
   const [fim, setFim] = useState(toInputDate(new Date()))
+  const [sandbox, setSandbox] = useState(false)
 
   useEffect(() => {
+    pedidosApi.config().then(cfg => setSandbox(cfg.sandbox)).catch(() => null)
     pedidosApi.listar().then(setItems).finally(() => setLoading(false))
   }, [])
 
@@ -1043,6 +1290,12 @@ export function PagamentosPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+      {sandbox && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 18px', borderRadius: '12px', background: 'color-mix(in srgb, var(--warn) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--warn) 30%, var(--border))', fontSize: '13px', color: 'var(--warn, #ca8a04)' }}>
+          <Sparkles size={15} style={{ flexShrink: 0 }} />
+          <span><strong>Ambiente de testes.</strong> Os pagamentos exibidos aqui não são reais.</span>
+        </div>
+      )}
       {pedidoSelecionado && (
         <Card>
           <CardHeader className="card-header-responsive">
@@ -1808,5 +2061,11 @@ export function SimuladorPage() {
 }
 
 export function CreditosPage() {
-  return <CreditosCheckout />
+  const [sandbox, setSandbox] = useState(false)
+
+  useEffect(() => {
+    pedidosApi.config().then(cfg => setSandbox(cfg.sandbox)).catch(() => null)
+  }, [])
+
+  return <CreditosCheckout sandbox={sandbox} />
 }
