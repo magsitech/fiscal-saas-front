@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { differenceInCalendarDays } from 'date-fns'
-import { AlertTriangle, Ban, Building2, Clock, Rocket, Star, Zap } from 'lucide-react'
+import { AlertTriangle, Ban, Building2, Check, Clock, Rocket, Star, Zap } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { pedidosApi, planosApi } from '@/services/api'
 import type { AssinaturaResumo, TipoPlano } from '@/types'
@@ -15,6 +15,22 @@ const PLANO_LABEL: Record<TipoPlano, string> = {
 
 const PLANO_PRECO: Partial<Record<TipoPlano, number>> = {
   BASICO: 29, PRO: 99, BUSINESS: 149,
+}
+
+const PLANO_INFO: Partial<Record<TipoPlano, { descricao: string; features: string[]; badge?: string }>> = {
+  BASICO: {
+    descricao: 'Ideal para volumes baixos.',
+    features: ['Validação NF-e e NFC-e', 'Cobrança pré-paga por uso', 'R$ 0,22 fixo por consulta', 'Sem desconto por volume', 'Suporte por e-mail'],
+  },
+  PRO: {
+    descricao: 'Para empresas com volume regular de notas fiscais.',
+    features: ['500 consultas/mês incluídas', 'Excedente com cobrança progressiva', 'Validação NF-e e NFC-e', 'Dashboard e relatórios', 'Suporte prioritário'],
+    badge: 'Mais popular',
+  },
+  BUSINESS: {
+    descricao: 'Para alto volume com melhor custo no excedente.',
+    features: ['1.000 consultas/mês incluídas', 'Excedente começa na faixa 2 (−18%)', 'Validação NF-e e NFC-e', 'Webhook por consulta', 'Suporte prioritário + SLA'],
+  },
 }
 
 const PLANOS_PAGOS: TipoPlano[] = ['BASICO', 'PRO', 'BUSINESS']
@@ -221,6 +237,21 @@ export function MeuPlanoPage() {
                   <div style={{ fontFamily: 'var(--mono)', fontSize: '20px', fontWeight: 700, color: 'var(--text)', lineHeight: 1 }}>
                     R$ {PLANO_PRECO[p]}<span style={{ fontSize: '12px', fontWeight: 400, color: 'var(--text-dim)', marginLeft: '3px' }}>/mês</span>
                   </div>
+                  {PLANO_INFO[p] && (
+                    <>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                        {PLANO_INFO[p]!.descricao}
+                      </div>
+                      <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {PLANO_INFO[p]!.features.map((f) => (
+                          <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: '7px', fontSize: '12px', color: 'var(--text-muted)' }}>
+                            <Check size={13} style={{ color: cor, flexShrink: 0, marginTop: '1px' }} />
+                            {f}
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
                   {!isCurrent && (
                     <button
                       type="button"

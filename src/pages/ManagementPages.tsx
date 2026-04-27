@@ -187,20 +187,17 @@ function DateFilters({
   onFimChange: (value: string) => void
 }) {
   return (
-    <div
-      className="grid gap-3"
-      style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', width: '100%' }}
-    >
-      <Select value={periodo} onChange={(e) => onPeriodoChange(e.target.value as PeriodoFiltro)}>
+    <>
+      <Select label="Período" value={periodo} onChange={(e) => onPeriodoChange(e.target.value as PeriodoFiltro)}>
         <option value="all">Todo o período</option>
         <option value="today">Hoje</option>
         <option value="7d">Últimos 7 dias</option>
         <option value="30d">Últimos 30 dias</option>
         <option value="custom">Intervalo personalizado</option>
       </Select>
-      <Input type="date" value={inicio} onChange={(e) => onInicioChange(e.target.value)} disabled={periodo !== 'custom'} />
-      <Input type="date" value={fim} onChange={(e) => onFimChange(e.target.value)} disabled={periodo !== 'custom'} />
-    </div>
+      <Input label="De" type="date" value={inicio} onChange={(e) => onInicioChange(e.target.value)} disabled={periodo !== 'custom'} />
+      <Input label="Até" type="date" value={fim} onChange={(e) => onFimChange(e.target.value)} disabled={periodo !== 'custom'} />
+    </>
   )
 }
 
