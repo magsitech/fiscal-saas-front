@@ -605,7 +605,20 @@ export function CreditosCheckout({ sandbox = false }: CreditosCheckoutProps) {
                           <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: copiedPix ? '#7ef3c5' : 'var(--accent)' }}>{copiedPix ? 'OK' : 'PIX'}</span>
                         </button>
                       )}
-
+                      {sandbox && !isFinalStatus(pedido.status) && (
+                        <button type="button" onClick={() => void simularPagamento()} disabled={loadingSimulacao} style={actionButtonStyle('accent', loadingSimulacao)}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <span style={{ width: '34px', height: '34px', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,212,170,0.14)', color: 'var(--accent)', border: '1px solid color-mix(in srgb, var(--accent-glow) 70%, transparent)' }}>
+                              {loadingSimulacao ? <Spinner size={15} /> : <TestTube size={15} />}
+                            </span>
+                            <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
+                              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>Concluir transação</span>
+                              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Simula confirmação do pagamento (sandbox)</span>
+                            </span>
+                          </span>
+                          <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--accent)' }}>SIM</span>
+                        </button>
+                      )}
                     </div>
 
                     {pixCodeAvailable ? (
@@ -676,6 +689,20 @@ export function CreditosCheckout({ sandbox = false }: CreditosCheckoutProps) {
                           <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--accent)' }}><ExternalLink size={12} /></span>
                         </a>
                       )}
+                      {sandbox && !isFinalStatus(pedido.status) && (
+                        <button type="button" onClick={() => void simularPagamento()} disabled={loadingSimulacao} style={actionButtonStyle('accent', loadingSimulacao)}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <span style={{ width: '34px', height: '34px', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,212,170,0.14)', color: 'var(--accent)', border: '1px solid color-mix(in srgb, var(--accent-glow) 70%, transparent)' }}>
+                              {loadingSimulacao ? <Spinner size={15} /> : <TestTube size={15} />}
+                            </span>
+                            <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
+                              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>Concluir transação</span>
+                              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Simula confirmação do pagamento (sandbox)</span>
+                            </span>
+                          </span>
+                          <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--accent)' }}>SIM</span>
+                        </button>
+                      )}
                     </div>
                   </>
                 )}
@@ -697,13 +724,6 @@ export function CreditosCheckout({ sandbox = false }: CreditosCheckoutProps) {
                       </a>
                     )}
                   </div>
-                )}
-
-                {sandbox && !isFinalStatus(pedido.status) && (
-                  <button type="button" onClick={() => void simularPagamento()} disabled={loadingSimulacao} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px', borderRadius: '10px', border: '1px solid color-mix(in srgb, var(--warn) 35%, var(--border))', background: 'color-mix(in srgb, var(--warn) 8%, transparent)', color: 'var(--warn, #ca8a04)', fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 700, cursor: loadingSimulacao ? 'not-allowed' : 'pointer', opacity: loadingSimulacao ? 0.6 : 1 }}>
-                    {loadingSimulacao ? <Spinner size={14} /> : <TestTube size={14} />}
-                    Simular pagamento (sandbox)
-                  </button>
                 )}
 
                 {pedido.metodo === 'CARTAO' && (
