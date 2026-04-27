@@ -151,7 +151,7 @@ input, select, textarea { font-family: inherit; }
   width: 100%;
   overflow: visible;
   flex: 1 0 auto;
-  padding-bottom: 32px;
+  padding: 36px 32px 40px;
 }
 
 .app-workspace > footer {

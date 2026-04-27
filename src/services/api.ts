@@ -509,6 +509,11 @@ export const planosApi = {
   cancelar: async (): Promise<void> => {
     await http.delete('/planos/assinatura')
   },
+
+  ativarTrial: async (): Promise<AssinaturaResumo> => {
+    const { data } = await http.post<AssinaturaResumo>('/planos/trial')
+    return normalizeAssinaturaResumo(data)
+  },
 }
 
 export const webhookApi = {

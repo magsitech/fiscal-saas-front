@@ -85,7 +85,7 @@ export function AppLayout() {
           </div>
         )}
 
-        <main ref={mainRef} className="flex-1 p-8 app-main">
+        <main ref={mainRef} className="app-main">
           <div className="app-content-stack">
             <button
               type="button"

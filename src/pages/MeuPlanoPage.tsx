@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { differenceInCalendarDays } from 'date-fns'
-import { AlertTriangle, Ban, Building2, Check, Clock, Rocket, Star, Zap } from 'lucide-react'
+import { AlertTriangle, Ban, Building2, Check, Clock, FlaskConical, Rocket, Star, Zap } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { pedidosApi, planosApi } from '@/services/api'
 import type { AssinaturaResumo, TipoPlano } from '@/types'
@@ -61,6 +61,7 @@ export function MeuPlanoPage() {
   const [sandbox, setSandbox] = useState(false)
   const [loadingCancelamento, setLoadingCancelamento] = useState(false)
   const [confirmandoCancelamento, setConfirmandoCancelamento] = useState(false)
+  const [loadingTrial, setLoadingTrial] = useState(false)
 
   useEffect(() => {
     Promise.all([
@@ -109,10 +110,26 @@ export function MeuPlanoPage() {
     }
   }
 
+  async function handleAtivarTrial() {
+    setLoadingTrial(true)
+    try {
+      const updated = await planosApi.ativarTrial()
+      setAssinatura(updated)
+      toast.success('Trial de 14 dias ativado com sucesso!')
+    } catch (err: unknown) {
+      const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      toast.error(detail ?? 'Não foi possível ativar o trial.')
+    } finally {
+      setLoadingTrial(false)
+    }
+  }
+
   function handleCheckoutSuccess(novaAssinatura: AssinaturaResumo) {
     setAssinatura(novaAssinatura)
     setSelectedPlan(null)
   }
+
+  const podeAtivarTrial = !loading && (plano === 'INATIVO' || plano === 'CANCELADO') && !assinatura?.trial_ativo
 
   const card: React.CSSProperties = {
     background: 'var(--surface)',
@@ -176,6 +193,49 @@ export function MeuPlanoPage() {
           </div>
         )}
       </div>
+
+      {/* Trial gratuito para inativos/cancelados */}
+      {podeAtivarTrial && (
+        <div style={{
+          ...card,
+          border: '1px solid color-mix(in srgb, var(--info) 28%, var(--border))',
+          background: `color-mix(in srgb, var(--info) 5%, var(--surface))`,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+            <div style={{
+              width: '44px', height: '44px', borderRadius: '14px', flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'color-mix(in srgb, var(--info) 14%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--info) 28%, transparent)',
+              color: 'var(--info)',
+            }}>
+              <FlaskConical size={20} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)', marginBottom: '4px' }}>
+                Teste grátis por 14 dias
+              </div>
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                Ative o trial e explore a plataforma sem custo. Após o período, escolha um plano para continuar.
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleAtivarTrial}
+              disabled={loadingTrial}
+              style={{
+                flexShrink: 0, padding: '10px 22px', borderRadius: '12px', border: 'none',
+                background: 'var(--info)', color: '#fff',
+                fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 700,
+                cursor: loadingTrial ? 'not-allowed' : 'pointer',
+                opacity: loadingTrial ? 0.7 : 1,
+              }}
+            >
+              {loadingTrial ? 'Ativando...' : 'Ativar trial'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Checkout de mensalidade */}
       {!loading && planoParaCheckout && valorCheckout > 0 && (
