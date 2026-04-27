@@ -215,7 +215,7 @@ export function MensalidadeCheckout({ plano, valor, sandbox, onSuccess }: Props)
       const response = await pedidosApi.iniciar(payload)
       const normalized = normalizePedidoCriadoToDetalhe(response)
       setPedido(normalized)
-      if (!normalized.checkout_url) {
+      if (!sandbox && !normalized.checkout_url) {
         setPedidoError({ title: 'Link de pagamento indisponível', message: 'Não foi possível gerar o link de pagamento. Tente novamente.', statusCode: null })
         toast.error('Link de pagamento indisponível.')
         return
@@ -456,7 +456,7 @@ export function MensalidadeCheckout({ plano, valor, sandbox, onSuccess }: Props)
                 )}
 
                 {/* Cartão */}
-                {pedido.metodo === 'CARTAO' && pedido.checkout_url && (
+                {pedido.metodo === 'CARTAO' && !sandbox && pedido.checkout_url && (
                   <a href={pedido.checkout_url} target="_blank" rel="noopener noreferrer" style={actionButtonStyle('accent')}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <span style={{ width: '34px', height: '34px', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,212,170,0.14)', color: 'var(--accent)', border: '1px solid color-mix(in srgb, var(--accent-glow) 70%, transparent)' }}>
@@ -467,12 +467,18 @@ export function MensalidadeCheckout({ plano, valor, sandbox, onSuccess }: Props)
                     <ExternalLink size={12} style={{ color: 'var(--accent)' }} />
                   </a>
                 )}
-
-                {/* Sandbox: simular pagamento */}
-                {sandbox && !isFinalStatus(pedido.status) && (
-                  <button type="button" onClick={simularPagamento} disabled={loadingSimulacao} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px 20px', borderRadius: '14px', border: '1px dashed color-mix(in srgb, var(--warn) 50%, var(--border))', background: 'color-mix(in srgb, var(--warn) 8%, transparent)', color: 'var(--warn, #ca8a04)', fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 600, cursor: loadingSimulacao ? 'not-allowed' : 'pointer', opacity: loadingSimulacao ? 0.6 : 1 }}>
-                    {loadingSimulacao ? <Spinner size={14} /> : <TestTube size={14} />}
-                    Simular pagamento (sandbox)
+                {pedido.metodo === 'CARTAO' && sandbox && !isFinalStatus(pedido.status) && (
+                  <button type="button" onClick={simularPagamento} disabled={loadingSimulacao} style={actionButtonStyle('accent', loadingSimulacao)}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <span style={{ width: '34px', height: '34px', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,212,170,0.14)', color: 'var(--accent)', border: '1px solid color-mix(in srgb, var(--accent-glow) 70%, transparent)' }}>
+                        {loadingSimulacao ? <Spinner size={15} /> : <TestTube size={15} />}
+                      </span>
+                      <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
+                        <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>Concluir transação</span>
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Simula confirmação do pagamento (sandbox)</span>
+                      </span>
+                    </span>
+                    <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--accent)' }}>SIM</span>
                   </button>
                 )}
 
