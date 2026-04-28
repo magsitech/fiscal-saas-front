@@ -924,7 +924,7 @@ export function LandingPage() {
             <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.7 }}>O custo acompanha o volume acumulado. Conforme o uso cresce, o valor unitário diminui automaticamente.</p>
           </InfoBox>
           <InfoBox title="Créditos pré-pagos">
-            <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.7 }}>O excedente é descontado do saldo pré-pago. Recarregue via PIX ou boleto, com saldo válido por 30 dias.</p>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.7 }}>O excedente é descontado do saldo pré-pago. Recarregue via PIX, boleto ou cartão com saldo válido por 180 dias.</p>
           </InfoBox>
         </div>
       </section>
