@@ -469,7 +469,7 @@ export function LandingPage() {
 
         <SectionDivider />
         <div className="landing-section" style={{ padding: '56px 40px', maxWidth: '1040px', margin: '0 auto' }}>
-          <SectionHeader label="Vantagens" title="Por que escolher o validaeNota" />
+          <SectionHeader label="Vantagens" title="Por que escolher o ValidaENota" />
           <div className="landing-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginTop: '36px' }}>
             {VANTAGENS.map(v => (
               <div key={v.title} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '22px' }}>
@@ -496,7 +496,7 @@ export function LandingPage() {
                   Infraestrutura fiscal criada por quem sentiu a operação travar
                 </h2>
                 <p style={{ fontSize: '16px', color: 'var(--text-muted)', lineHeight: 1.8, maxWidth: '540px', margin: 0 }}>
-                  O ValidaeNota nasceu de um problema real: consultas fiscais lentas, inconsistentes e difíceis de acompanhar quando a empresa mais precisa de previsibilidade.
+                  O ValidaENota nasceu de um problema real: consultas fiscais lentas, inconsistentes e difíceis de acompanhar quando a empresa mais precisa de previsibilidade.
                 </p>
               </div>
 
@@ -976,7 +976,7 @@ export function LandingPage() {
       {/* ── FOOTER ───────────────────────────────────────────────────────── */}
       <footer style={{ borderTop: '1px solid var(--border)', padding: '28px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <span style={{ fontSize: '12px', color: 'var(--text-dim)', textAlign: 'center', lineHeight: 1.6 }}>
-          © 2026 validaENota. Plataforma de validação fiscal brasileira.
+          © 2026 ValidaENota. Plataforma de validação fiscal brasileira.
           <br />
           MAGSI TECH CONSULTORIA EM TECNOLOGIA DA INFORMACAO LTDA - CNPJ: 66.328.989/0001-75
         </span>
