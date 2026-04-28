@@ -12,7 +12,7 @@ export function scrollToSection(id: string) {
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
-export function PublicNav() {
+export function PublicNav({ compact = false }: { compact?: boolean }) {
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [active, setActive] = useState<Section>('home')
@@ -81,11 +81,13 @@ export function PublicNav() {
                 pointerEvents: 'auto',
               }}
             >
-              <div className="landing-nav-links" style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                {SECTIONS.map(id => (
-                  <PublicNavButton key={id} label={LABELS[id]} active={active === id} onClick={() => go(id)} />
-                ))}
-              </div>
+              {!compact && (
+                <div className="landing-nav-links" style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                  {SECTIONS.map(id => (
+                    <PublicNavButton key={id} label={LABELS[id]} active={active === id} onClick={() => go(id)} />
+                  ))}
+                </div>
+              )}
 
               <div className="landing-nav-cta">
                 <button
@@ -129,27 +131,48 @@ export function PublicNav() {
           className="public-nav-mobile app-mobile-only"
           style={{ position: 'relative', width: '100%', minHeight: '38px' }}
         >
-          <button
-            type="button"
-            onClick={() => setMobileOpen(v => !v)}
-            style={{
-              border: '1px solid var(--border)',
-              background: 'var(--surface-2)',
-              color: 'var(--text)',
-              borderRadius: '999px',
-              padding: '9px 14px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              fontSize: '13px',
-              fontWeight: 700,
-              transition: 'background .15s',
-            }}
-            aria-label={mobileOpen ? 'Fechar menu' : 'Abrir menu'}
-          >
-            {mobileOpen ? <X size={16} /> : <Menu size={16} />}
-            Área do Cliente
-          </button>
+          {compact ? (
+            <button
+              type="button"
+              onClick={goLogin}
+              style={{
+                border: 'none',
+                background: 'var(--accent)',
+                color: '#04110d',
+                borderRadius: '8px',
+                padding: '9px 14px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                fontSize: '13px',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Área do Cliente
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setMobileOpen(v => !v)}
+              style={{
+                border: '1px solid var(--border)',
+                background: 'var(--surface-2)',
+                color: 'var(--text)',
+                borderRadius: '999px',
+                padding: '9px 14px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '13px',
+                fontWeight: 700,
+                transition: 'background .15s',
+              }}
+              aria-label={mobileOpen ? 'Fechar menu' : 'Abrir menu'}
+            >
+              {mobileOpen ? <X size={16} /> : <Menu size={16} />}
+              Área do Cliente
+            </button>
+          )}
 
           <div style={{ position: 'absolute', right: 0, top: 0 }}>
             <ThemeToggle />
@@ -157,7 +180,7 @@ export function PublicNav() {
         </div>
       </nav>
 
-      {mobileOpen && (
+      {!compact && mobileOpen && (
         <div
           className="app-mobile-only"
           style={{
