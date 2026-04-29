@@ -5,7 +5,7 @@ import { differenceInCalendarDays } from 'date-fns'
 import { AlertTriangle, Ban, Building2, Check, Clock, FlaskConical, Rocket, Star, Zap } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { pedidosApi, planosApi } from '@/services/api'
-import type { AssinaturaResumo, PlanoCatalogo, TipoPlano } from '@/types'
+import type { AssinaturaResumo, PlanoCatalogo, TipoPlano, UpgradePreview } from '@/types'
 import { Skeleton } from '@/components/ui'
 import { MensalidadeCheckout } from '@/components/planos/MensalidadeCheckout'
 import { buildPlanoFeatures, FALLBACK_PAID_PLANOS, formatPlanoPrice, isPaidPlan, PAID_PLAN_IDS, parsePlanoPrice, PLAN_ORDER, sortPlanos } from '@/utils/planos'
@@ -13,28 +13,6 @@ import { buildPlanoFeatures, FALLBACK_PAID_PLANOS, formatPlanoPrice, isPaidPlan,
 const PLANO_LABEL: Record<TipoPlano, string> = {
   TRIAL: 'Trial', BASICO: 'Básico', PRO: 'Pro', BUSINESS: 'Business', CANCELADO: 'Cancelado', INATIVO: 'Inativo',
 }
-
-const PLANO_PRECO: Partial<Record<TipoPlano, number>> = {
-  BASICO: 29, PRO: 99, BUSINESS: 149,
-}
-
-const PLANO_INFO: Partial<Record<TipoPlano, { descricao: string; features: string[]; badge?: string }>> = {
-  BASICO: {
-    descricao: 'Ideal para volumes baixos.',
-    features: ['Validação NF-e e NFC-e', 'Cobrança pré-paga por uso', 'R$ 0,22 fixo por consulta', 'Sem desconto por volume', 'Suporte por e-mail'],
-  },
-  PRO: {
-    descricao: 'Para empresas com volume regular de notas fiscais.',
-    features: ['500 consultas/mês incluídas', 'Excedente com cobrança progressiva', 'Validação NF-e e NFC-e', 'Dashboard e relatórios', 'Suporte prioritário'],
-    badge: 'Mais popular',
-  },
-  BUSINESS: {
-    descricao: 'Para alto volume com melhor custo no excedente.',
-    features: ['1.000 consultas/mês incluídas', 'Excedente começa na faixa 2 (−18%)', 'Validação NF-e e NFC-e', 'Webhook por consulta', 'Suporte prioritário + SLA'],
-  },
-}
-
-const PLANOS_PAGOS: TipoPlano[] = ['BASICO', 'PRO', 'BUSINESS']
 
 const PLANO_ICON: Record<TipoPlano, React.ReactNode> = {
   TRIAL: <Clock size={18} />, BASICO: <Star size={18} />, PRO: <Zap size={18} />,
@@ -64,6 +42,9 @@ export function MeuPlanoPage() {
   const [loadingCancelamento, setLoadingCancelamento] = useState(false)
   const [confirmandoCancelamento, setConfirmandoCancelamento] = useState(false)
   const [loadingTrial, setLoadingTrial] = useState(false)
+  const [upgradePreviewData, setUpgradePreviewData] = useState<{ plano: TipoPlano; preview: UpgradePreview } | null>(null)
+  const [loadingPreview, setLoadingPreview] = useState(false)
+  const [upgradeConfirmed, setUpgradeConfirmed] = useState(false)
 
   useEffect(() => {
     Promise.all([
@@ -105,9 +86,13 @@ export function MeuPlanoPage() {
       : null
 
   const [selectedPlan, setSelectedPlan] = useState<TipoPlano | null>(null)
-  const planoParaCheckout = planoPendente ?? selectedPlan
+  const isSelectedUpgrade = selectedPlan ? (PLAN_ORDER[selectedPlan] ?? 0) > (PLAN_ORDER[plano] ?? 0) : false
+  const isInUpgradePreviewMode = selectedPlan !== null && isSelectedUpgrade && !upgradeConfirmed
+  const planoParaCheckout = planoPendente ?? (selectedPlan && (!isSelectedUpgrade || upgradeConfirmed) ? selectedPlan : null)
   const planoCheckoutSelecionado = planoParaCheckout ? planosDisponiveis.find((item) => item.id === planoParaCheckout) ?? null : null
-  const valorCheckout = planoCheckoutSelecionado ? parsePlanoPrice(planoCheckoutSelecionado.mensalidade) : 0
+  const valorCheckout = upgradeConfirmed && upgradePreviewData
+    ? parsePlanoPrice(upgradePreviewData.preview.valor_a_cobrar)
+    : planoCheckoutSelecionado ? parsePlanoPrice(planoCheckoutSelecionado.mensalidade) : 0
 
   const podeCancelar =
     assinatura?.plano_ativo &&
@@ -144,9 +129,31 @@ export function MeuPlanoPage() {
     }
   }
 
+  async function handleSelectPlan(planId: TipoPlano) {
+    const isUpgrade = (PLAN_ORDER[planId] ?? 0) > (PLAN_ORDER[plano] ?? 0) && PAID_PLAN_IDS.includes(plano)
+    setSelectedPlan(planId)
+    setUpgradeConfirmed(false)
+    setUpgradePreviewData(null)
+    if (isUpgrade) {
+      setLoadingPreview(true)
+      try {
+        const preview = await planosApi.upgradePreview(planId)
+        setUpgradePreviewData({ plano: planId, preview })
+      } catch (err: unknown) {
+        const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+        toast.error(detail ?? 'Não foi possível calcular o valor do upgrade.')
+        setSelectedPlan(null)
+      } finally {
+        setLoadingPreview(false)
+      }
+    }
+  }
+
   function handleCheckoutSuccess(novaAssinatura: AssinaturaResumo) {
     setAssinatura(novaAssinatura)
     setSelectedPlan(null)
+    setUpgradePreviewData(null)
+    setUpgradeConfirmed(false)
   }
 
   const podeAtivarTrial = !loading && (plano === 'INATIVO' || plano === 'CANCELADO') && !assinatura?.trial_ativo
@@ -263,7 +270,14 @@ export function MeuPlanoPage() {
           {selectedPlan && !planoPendente && (
             <button
               type="button"
-              onClick={() => setSelectedPlan(null)}
+              onClick={() => {
+                if (upgradeConfirmed) {
+                  setUpgradeConfirmed(false)
+                } else {
+                  setSelectedPlan(null)
+                  setUpgradePreviewData(null)
+                }
+              }}
               style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '10px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
             >
               ← Voltar
@@ -278,8 +292,83 @@ export function MeuPlanoPage() {
         </>
       )}
 
+      {/* Upgrade preview */}
+      {!loading && isInUpgradePreviewMode && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <button
+            type="button"
+            onClick={() => { setSelectedPlan(null); setUpgradePreviewData(null) }}
+            style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '10px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+          >
+            ← Voltar
+          </button>
+
+          <div style={card}>
+            {loadingPreview ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-5 w-full" />)}
+              </div>
+            ) : upgradePreviewData ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  <div style={{
+                    width: '44px', height: '44px', borderRadius: '14px', flexShrink: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: `color-mix(in srgb, ${PLANO_COLOR[upgradePreviewData.plano]} 14%, transparent)`,
+                    border: `1px solid color-mix(in srgb, ${PLANO_COLOR[upgradePreviewData.plano]} 28%, transparent)`,
+                    color: PLANO_COLOR[upgradePreviewData.plano],
+                  }}>
+                    {PLANO_ICON[upgradePreviewData.plano]}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.16em', color: 'var(--text-dim)', marginBottom: '4px' }}>
+                      Resumo do upgrade
+                    </div>
+                    <div style={{ fontSize: '18px', fontWeight: 800, color: PLANO_COLOR[upgradePreviewData.plano], lineHeight: 1 }}>
+                      Plano {PLANO_LABEL[upgradePreviewData.plano]}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(155px, 1fr))', gap: '12px' }}>
+                  {[
+                    { label: 'A pagar agora', value: formatPlanoPrice(upgradePreviewData.preview.valor_a_cobrar) },
+                    { label: 'Dias restantes', value: `${upgradePreviewData.preview.dias_restantes} dia${upgradePreviewData.preview.dias_restantes !== 1 ? 's' : ''}` },
+                    { label: 'Nova franquia', value: `${fmt(upgradePreviewData.preview.franquia_novo_plano)} consultas` },
+                    { label: 'Já consumido', value: `${fmt(upgradePreviewData.preview.franquia_atual_usada)} consultas` },
+                    { label: 'Ciclo mantido até', value: fmtDate(upgradePreviewData.preview.expiracao_mantida) },
+                  ].map(({ label, value }) => (
+                    <div key={label} style={{ padding: '14px 16px', borderRadius: '12px', background: 'color-mix(in srgb, var(--surface-2) 92%, transparent)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <div style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.13em', color: 'var(--text-dim)' }}>{label}</div>
+                      <div style={{ fontFamily: 'var(--mono)', fontSize: '14px', fontWeight: 600, color: 'var(--text)' }}>{value}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6, padding: '12px 16px', borderRadius: '12px', background: 'color-mix(in srgb, var(--surface-2) 85%, transparent)', border: '1px solid var(--border)' }}>
+                  Você paga apenas o proporcional aos dias restantes do ciclo atual. A data de vencimento e o consumo de franquia já realizado são preservados na nova assinatura.
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setUpgradeConfirmed(true)}
+                  style={{
+                    padding: '16px 24px', borderRadius: '16px', border: 'none',
+                    background: `color-mix(in srgb, ${PLANO_COLOR[upgradePreviewData.plano]} 18%, transparent)`,
+                    color: PLANO_COLOR[upgradePreviewData.plano],
+                    fontFamily: 'var(--sans)', fontSize: '14px', fontWeight: 700, cursor: 'pointer',
+                  }}
+                >
+                  Confirmar upgrade — {formatPlanoPrice(upgradePreviewData.preview.valor_a_cobrar)}
+                </button>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      )}
+
       {/* Grade de planos — todos os estados */}
-      {!loading && !planoParaCheckout && (
+      {!loading && !planoParaCheckout && !isInUpgradePreviewMode && (
         <div style={{ ...card, display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div>
             <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)', marginBottom: '4px' }}>
@@ -331,7 +420,7 @@ export function MeuPlanoPage() {
                   {!isCurrent && (
                     <button
                       type="button"
-                      onClick={() => setSelectedPlan(p.id)}
+                      onClick={() => void handleSelectPlan(p.id)}
                       style={{
                         marginTop: '4px', padding: '9px 0', borderRadius: '10px', border: 'none', cursor: 'pointer',
                         background: `color-mix(in srgb, ${cor} 18%, transparent)`,

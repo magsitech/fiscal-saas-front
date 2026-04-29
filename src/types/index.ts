@@ -309,6 +309,14 @@ export interface AtivarPlanoPayload {
   pedido_id?: string | null
 }
 
+export interface UpgradePreview {
+  valor_a_cobrar: string
+  dias_restantes: number
+  franquia_novo_plano: number
+  franquia_atual_usada: number
+  expiracao_mantida: string
+}
+
 export interface WebhookLog {
   id: string
   log_auditoria_id: string

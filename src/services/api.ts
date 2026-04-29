@@ -6,6 +6,7 @@ import type {
   AssinaturaResumo,
   AtivarPlanoPayload,
   AuditoriaItem,
+  UpgradePreview,
   AtualizarPerfilPayload,
   Cliente,
   ConfirmarEmailResponse,
@@ -196,6 +197,17 @@ function normalizeAssinaturaResumo(payload: unknown): AssinaturaResumo {
     franquia_limite: raw.franquia_limite != null ? Number(raw.franquia_limite) : null,
     franquia_restante: raw.franquia_restante != null ? Number(raw.franquia_restante) : null,
     proximo_plano: parseTipoPlano(raw.proximo_plano),
+  }
+}
+
+function normalizeUpgradePreview(payload: unknown): UpgradePreview {
+  const raw = unwrapPayload<Record<string, unknown>>(payload)
+  return {
+    valor_a_cobrar: String(raw.valor_a_cobrar ?? '0.00'),
+    dias_restantes: Number(raw.dias_restantes ?? 0),
+    franquia_novo_plano: Number(raw.franquia_novo_plano ?? 0),
+    franquia_atual_usada: Number(raw.franquia_atual_usada ?? 0),
+    expiracao_mantida: typeof raw.expiracao_mantida === 'string' ? raw.expiracao_mantida : '',
   }
 }
 
@@ -554,6 +566,11 @@ export const planosApi = {
   ativarTrial: async (): Promise<AssinaturaResumo> => {
     const { data } = await http.post<AssinaturaResumo>('/planos/trial')
     return normalizeAssinaturaResumo(data)
+  },
+
+  upgradePreview: async (plano: TipoPlano): Promise<UpgradePreview> => {
+    const { data } = await http.get<UpgradePreview>('/planos/upgrade/preview', { params: { plano } })
+    return normalizeUpgradePreview(data)
   },
 }
 
