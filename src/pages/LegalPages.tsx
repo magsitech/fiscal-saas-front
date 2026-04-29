@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, FileText, ShieldCheck } from 'lucide-react'
+import { FileText, ShieldCheck } from 'lucide-react'
 import { PublicNav } from '@/components/layout/PublicNav'
 
 type LegalSection = {
@@ -23,35 +22,11 @@ function LegalLayout({
   sections: LegalSection[]
   accentIcon: ReactNode
 }) {
-  const navigate = useNavigate()
-
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)', fontFamily: 'var(--sans)' }}>
-      <PublicNav />
+      <PublicNav compact />
 
       <main style={{ maxWidth: '940px', margin: '0 auto', padding: '56px 24px 96px', display: 'flex', flexDirection: 'column', gap: '28px' }}>
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          style={{
-            width: 'fit-content',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '10px 14px',
-            borderRadius: '999px',
-            border: '1px solid var(--border)',
-            background: 'var(--surface)',
-            color: 'var(--text)',
-            fontSize: '13px',
-            fontWeight: 700,
-            cursor: 'pointer',
-          }}
-        >
-          <ArrowLeft size={14} />
-          Voltar
-        </button>
-
         <section
           style={{
             background: 'linear-gradient(145deg, color-mix(in srgb, var(--surface) 82%, var(--accent-dim) 18%), var(--surface))',
@@ -142,6 +117,7 @@ const TERMS_SECTIONS: LegalSection[] = [
     paragraphs: [
       'A compra de créditos ocorre por pedido gerado no backend do ValidaeNota. A liberação do fluxo depende da confirmação oficial do pagamento pelo backend, inclusive quando a cobrança for emitida por PIX ou boleto.',
       'A criação da cobrança não significa pagamento concluído. Créditos somente serão disponibilizados quando o pedido for confirmado como pago pela fonte oficial processada pelo backend.',
+      'A existência de saldo disponível não autoriza, por si só, a utilização dos serviços da plataforma. Para acessar e utilizar os serviços disponibilizados pelo ValidaeNota, o cliente deve manter um plano ativo; caso não haja plano ativo, os serviços poderão permanecer indisponíveis mesmo que exista saldo na conta.',
     ],
   },
   {
@@ -225,7 +201,7 @@ export function TermsOfServicePage() {
       eyebrow="Documento Legal"
       title="Termos de Uso"
       subtitle="Estes termos regulam o acesso e a utilização da plataforma ValidaeNota, incluindo cadastro, uso operacional, compra de créditos, segurança da conta e regras gerais do serviço."
-      updatedAt="22 de abril de 2026"
+      updatedAt="27 de abril de 2026"
       sections={TERMS_SECTIONS}
       accentIcon={<FileText size={24} />}
     />

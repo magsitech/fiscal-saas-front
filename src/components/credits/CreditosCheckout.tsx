@@ -409,7 +409,7 @@ export function CreditosCheckout({ sandbox = false }: CreditosCheckoutProps) {
   const boletoPaymentUrl = pedido?.metodo === 'BOLETO' ? getBoletoPaymentUrl(pedido) : null
 
   return (
-    <div style={{ maxWidth: '860px', display: 'flex', flexDirection: 'column', gap: '28px' }}>
+    <div style={{ width: '100%', maxWidth: '860px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '28px' }}>
       {sandbox && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 18px', borderRadius: '12px', background: 'color-mix(in srgb, var(--warn) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--warn) 30%, var(--border))', fontSize: '13px', color: 'var(--warn, #ca8a04)' }}>
           <TestTube size={15} style={{ flexShrink: 0 }} />

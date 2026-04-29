@@ -409,10 +409,11 @@ export function LandingPage() {
 
       {/* ── HOME ─────────────────────────────────────────────────────────── */}
       <section id="home" style={{ scrollMarginTop: '60px' }}>
-        <div
-          className="landing-section landing-hero"
-          style={{ padding: '80px 40px 64px', textAlign: 'center', maxWidth: '860px', margin: '0 auto' }}
-        >
+        <div className="landing-hero-shell">
+          <div
+            className="landing-section landing-hero"
+            style={{ padding: '80px 40px 64px', textAlign: 'center', maxWidth: '860px', margin: '0 auto' }}
+          >
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', padding: '5px 14px', borderRadius: '20px', border: '1px solid var(--accent-glow)', background: 'var(--accent-dim)', color: 'var(--accent)', fontSize: '12px', fontWeight: 700, marginBottom: '24px', letterSpacing: '.4px' }}>
             <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--accent)', animation: 'pulse 2s infinite', display: 'inline-block' }} />
             Plataforma fiscal B2B
@@ -445,6 +446,7 @@ export function LandingPage() {
               Ver planos →
             </button>
           </div>
+          </div>
         </div>
 
         <SectionDivider />
@@ -467,7 +469,7 @@ export function LandingPage() {
 
         <SectionDivider />
         <div className="landing-section" style={{ padding: '56px 40px', maxWidth: '1040px', margin: '0 auto' }}>
-          <SectionHeader label="Vantagens" title="Por que escolher o validaeNota" />
+          <SectionHeader label="Vantagens" title="Por que escolher o ValidaENota" />
           <div className="landing-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginTop: '36px' }}>
             {VANTAGENS.map(v => (
               <div key={v.title} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '22px' }}>
@@ -484,39 +486,58 @@ export function LandingPage() {
 
       {/* ── SOBRE ────────────────────────────────────────────────────────── */}
       <SectionDivider />
-      <section id="sobre" style={{ scrollMarginTop: '60px' }}>
-        <div style={{ padding: '64px 40px 40px', maxWidth: '860px', margin: '0 auto', textAlign: 'center' }}>
-          <SectionLabel>Sobre</SectionLabel>
-          <h2 style={{ fontSize: '36px', fontWeight: 700, letterSpacing: '-0.4px', marginBottom: '16px' }}>
-            Criamos infraestrutura fiscal para dar mais clareza e confiança às empresas
-          </h2>
-          <p style={{ fontSize: '16px', color: 'var(--text-muted)', lineHeight: 1.8, maxWidth: '700px', margin: '0 auto' }}>
-            Nascemos de um problema real: a burocracia travando empresas todos os dias.
-          </p>
-        </div>
+      <section id="sobre" className="about-section-shell" style={{ scrollMarginTop: '60px' }}>
+        <div className="landing-section" style={{ maxWidth: '1120px', margin: '0 auto', padding: '72px 40px 72px' }}>
+          <div className="about-section-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 0.9fr) minmax(0, 1.1fr)', gap: '28px', alignItems: 'stretch' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '28px' }}>
+              <div>
+                <SectionLabel>Sobre</SectionLabel>
+                <h2 style={{ fontSize: '38px', fontWeight: 700, lineHeight: 1.08, letterSpacing: '-0.4px', marginBottom: '18px', maxWidth: '520px' }}>
+                  Infraestrutura fiscal criada por quem sentiu a operação travar
+                </h2>
+                <p style={{ fontSize: '16px', color: 'var(--text-muted)', lineHeight: 1.8, maxWidth: '540px', margin: 0 }}>
+                  O ValidaENota nasceu de um problema real: consultas fiscais lentas, inconsistentes e difíceis de acompanhar quando a empresa mais precisa de previsibilidade.
+                </p>
+              </div>
 
-        <div style={{ maxWidth: '960px', margin: '0 auto', padding: '0 40px 40px' }}>
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px', padding: '30px', boxShadow: 'var(--shadow)' }}>
-            <div style={{ display: 'grid', gap: '18px' }}>
-              {[
-                'Depois de lidar de perto com a lentidão, as inconsistências e a complexidade dos serviços da SEFAZ, especialmente no Rio de Janeiro, decidimos parar de aceitar o "jeito que sempre foi feito" e construir algo melhor.',
-                'Somos uma startup focada em infraestrutura fiscal moderna.',
-                'Criamos soluções que validam dados de notas fiscais de terceiros com precisão, velocidade e confiabilidade, reduzindo erros, evitando inconsistências e trazendo mais segurança para operações fiscais. Nosso foco é claro: garantir que os dados estejam corretos antes que se tornem um problema.',
-                'Pensamos como produto, construímos como engenharia e entregamos como plataforma.',
-                'Hoje, ajudamos empresas a operar com mais confiança e previsibilidade. E estamos só começando. Nosso próximo passo é escalar essa transformação para todo o Brasil.',
-              ].map((text, i) => (
-                <p key={i} style={{ fontSize: '15px', color: 'var(--text-muted)', lineHeight: 1.85, margin: 0 }}>{text}</p>
-              ))}
+              <div style={{ borderRadius: '22px', overflow: 'hidden', border: '1px solid color-mix(in srgb, var(--accent) 18%, var(--border))', background: 'var(--surface)', boxShadow: 'var(--shadow-soft)' }}>
+                <img
+                  src="/about-rio-sugarloaf.png"
+                  alt="Ilustração do Pão de Açúcar no Rio de Janeiro"
+                  style={{ display: 'block', width: '100%', height: 'auto' }}
+                />
+              </div>
+            </div>
+
+            <div style={{ background: 'linear-gradient(135deg, color-mix(in srgb, var(--surface) 88%, transparent), color-mix(in srgb, var(--accent-dim) 58%, transparent))', border: '1px solid color-mix(in srgb, var(--accent) 18%, var(--border))', borderRadius: '22px', padding: '30px', boxShadow: 'var(--shadow)', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', width: 'fit-content', padding: '7px 12px', borderRadius: '999px', background: 'var(--accent-dim)', border: '1px solid var(--accent-glow)', color: 'var(--accent)', fontSize: '11px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                <Sparkles size={14} />
+                Nossa missão
+              </div>
+
+              <div style={{ display: 'grid', gap: '16px' }}>
+                {[
+                  'Depois de lidar de perto com a lentidão, as inconsistências e a complexidade dos serviços da SEFAZ, especialmente no Rio de Janeiro, decidimos construir uma base mais clara para consultas fiscais.',
+                  'Criamos soluções que validam dados de notas fiscais de terceiros com precisão, rastreabilidade e confiabilidade, reduzindo erros antes que eles virem retrabalho.',
+                  'Pensamos como produto, construímos como engenharia e entregamos como plataforma para ajudar empresas a operar com mais confiança e previsibilidade.',
+                ].map((text, i) => (
+                  <p key={i} style={{ fontSize: '15px', color: 'var(--text-muted)', lineHeight: 1.8, margin: 0 }}>{text}</p>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
 
-        <div style={{ maxWidth: '1040px', margin: '0 auto', padding: '0 40px 64px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
-            {PILARES.map(item => (
-              <div key={item.title} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '24px' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '10px' }}>{item.title}</h3>
-                <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.7, margin: 0 }}>{item.description}</p>
+          <div className="about-pillars-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '16px', marginTop: '18px' }}>
+            {PILARES.map((item, index) => (
+              <div key={item.title} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '22px', boxShadow: 'var(--shadow-soft)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ width: '34px', height: '34px', borderRadius: '10px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'var(--accent-dim)', border: '1px solid var(--accent-glow)', color: 'var(--accent)', fontFamily: 'var(--mono)', fontSize: '12px', fontWeight: 700 }}>
+                  0{index + 1}
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '8px' }}>{item.title}</h3>
+                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.7, margin: 0 }}>{item.description}</p>
+                </div>
+                <ArrowRight size={15} style={{ marginTop: 'auto', color: 'var(--text-dim)' }} />
               </div>
             ))}
           </div>
@@ -903,7 +924,7 @@ export function LandingPage() {
             <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.7 }}>O custo acompanha o volume acumulado. Conforme o uso cresce, o valor unitário diminui automaticamente.</p>
           </InfoBox>
           <InfoBox title="Créditos pré-pagos">
-            <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.7 }}>O excedente é descontado do saldo pré-pago. Recarregue via PIX ou boleto, com saldo válido por 30 dias.</p>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.7 }}>O excedente é descontado do saldo pré-pago. Recarregue via PIX, boleto ou cartão com saldo válido por 180 dias.</p>
           </InfoBox>
         </div>
       </section>
@@ -955,7 +976,7 @@ export function LandingPage() {
       {/* ── FOOTER ───────────────────────────────────────────────────────── */}
       <footer style={{ borderTop: '1px solid var(--border)', padding: '28px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <span style={{ fontSize: '12px', color: 'var(--text-dim)', textAlign: 'center', lineHeight: 1.6 }}>
-          © 2026 validaENota. Plataforma de validação fiscal brasileira.
+          © 2026 ValidaENota. Plataforma de validação fiscal brasileira.
           <br />
           MAGSI TECH CONSULTORIA EM TECNOLOGIA DA INFORMACAO LTDA - CNPJ: 66.328.989/0001-75
         </span>

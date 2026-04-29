@@ -167,7 +167,7 @@ export function MeuPlanoPage() {
   }
 
   return (
-    <div style={{ maxWidth: '720px', display: 'flex', flexDirection: 'column', gap: '28px' }}>
+    <div style={{ width: '100%', maxWidth: '720px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '28px' }}>
 
       {/* Hero */}
       <div style={{
@@ -427,7 +427,7 @@ export function MeuPlanoPage() {
                         color: cor, fontFamily: 'var(--sans)', fontSize: '12px', fontWeight: 700,
                       }}
                     >
-                      {PAID_PLAN_IDS.includes(plano) ? (isUpgrade ? 'Fazer upgrade' : 'Fazer downgrade') : 'Selecionar'}
+                      Selecionar {p.nome}
                     </button>
                   )}
                 </div>

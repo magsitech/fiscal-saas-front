@@ -40,6 +40,16 @@ const PAGE_META: Record<string, { title: string; description: string; chips: str
     description: 'Confira dados da conta, mantenha as informações atualizadas e gerencie o acesso.',
     chips: ['Cadastro', 'Segurança', 'Sessão'],
   },
+  '/app/meu-plano': {
+    title: 'Meu Plano',
+    description: 'Gerencie sua assinatura, acompanhe o plano atual e escolha a opção mais adequada para continuar usando os serviços.',
+    chips: ['Assinatura', 'Planos', 'Mensalidade'],
+  },
+  '/app/documentacao': {
+    title: 'Documentação',
+    description: 'Consulte endpoints, autenticação, exemplos de integração e formatos de resposta para usar a API.',
+    chips: ['API', 'Integração', 'Exemplos'],
+  },
 }
 
 export function AppLayout() {
@@ -172,7 +182,7 @@ export function AppLayout() {
             background: 'color-mix(in srgb, var(--surface) 94%, transparent)',
           }}
         >
-          © 2026 validaENota. Plataforma de validação fiscal brasileira.
+          © 2026 ValidaENota. Plataforma de validação fiscal brasileira.
           <br />
           MAGSI TECH CONSULTORIA EM TECNOLOGIA DA INFORMACAO LTDA - CNPJ: 66.328.989/0001-75
         </footer>
