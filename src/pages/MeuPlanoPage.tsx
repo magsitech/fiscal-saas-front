@@ -251,14 +251,20 @@ export function MeuPlanoPage() {
               {PLANO_LABEL[plano] ?? plano}
             </div>
           )}
-          {!loading && assinatura?.trial_ativo && diasTrial !== null && (
-            <div style={{ marginTop: '10px', fontSize: '13px', color: 'var(--text-muted)' }}>
-              {diasTrial > 0
-                ? `Período de teste expira em ${diasTrial} dia${diasTrial !== 1 ? 's' : ''} (${fmtDate(assinatura.trial_expira_em)})`
-                : 'Período de teste expirado'}
+          {!loading && assinatura?.trial_ativo && (
+            <div style={{ marginTop: '10px', fontSize: '13px' }}>
+              {diasTrial !== null && diasTrial === 0 ? (
+                <span style={{ color: 'var(--danger, #ef4444)', fontWeight: 600 }}>Seu trial encerrou — escolha um plano agora e continue aproveitando todos os recursos sem interrupção!</span>
+              ) : (
+                <span style={{ color: 'var(--info, #38bdf8)', fontWeight: 600 }}>
+                  {diasTrial !== null
+                    ? `Seu trial termina em ${diasTrial} dia${diasTrial !== 1 ? 's' : ''} — escolha um plano agora e não perca nenhum recurso!`
+                    : `Aproveite ao máximo! Escolha um plano e não perca nenhum recurso.`}
+                </span>
+              )}
             </div>
           )}
-          {!loading && assinatura?.recorrente === false && assinatura.plano_ativo && assinatura.expiracao_em && (
+          {!loading && assinatura?.recorrente === false && !assinatura.trial_ativo && assinatura.plano_ativo && assinatura.expiracao_em && (
             <div style={{ marginTop: '10px', fontSize: '13px', color: 'var(--warn, #ca8a04)' }}>
               Renovação cancelada — ativo até {fmtDate(assinatura.expiracao_em)}
             </div>
