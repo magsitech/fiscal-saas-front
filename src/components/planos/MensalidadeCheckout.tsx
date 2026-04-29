@@ -138,9 +138,10 @@ interface Props {
   valor: number
   sandbox: boolean
   onSuccess: (assinatura: AssinaturaResumo) => void
+  skipActivation?: boolean
 }
 
-export function MensalidadeCheckout({ plano, valor, sandbox, onSuccess }: Props) {
+export function MensalidadeCheckout({ plano, valor, sandbox, onSuccess, skipActivation = false }: Props) {
   const [loading, setLoading] = useState(false)
   const [loadingPedido, setLoadingPedido] = useState(false)
   const [loadingAtivacao, setLoadingAtivacao] = useState(false)
@@ -182,7 +183,15 @@ export function MensalidadeCheckout({ plano, valor, sandbox, onSuccess }: Props)
     activationTriedRef.current = true
     setLoadingAtivacao(true)
     try {
-      const assinatura = await planosApi.ativar({ plano, pedido_id: pedidoId })
+      let assinatura: AssinaturaResumo
+      if (skipActivation) {
+        // upgrade/downgrade: back-end activates automatically on payment confirmation
+        const updated = await planosApi.assinatura()
+        if (!updated) throw new Error('Não foi possível obter a assinatura atualizada.')
+        assinatura = updated
+      } else {
+        assinatura = await planosApi.ativar({ plano, pedido_id: pedidoId })
+      }
       toast.success('Plano ativado com sucesso!')
       onSuccess(assinatura)
     } catch (error) {

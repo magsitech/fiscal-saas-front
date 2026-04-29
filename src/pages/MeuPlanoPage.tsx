@@ -45,6 +45,7 @@ export function MeuPlanoPage() {
   const [upgradePreviewData, setUpgradePreviewData] = useState<{ plano: TipoPlano; preview: UpgradePreview } | null>(null)
   const [loadingPreview, setLoadingPreview] = useState(false)
   const [upgradeConfirmed, setUpgradeConfirmed] = useState(false)
+  const [loadingDowngrade, setLoadingDowngrade] = useState(false)
 
   useEffect(() => {
     Promise.all([
@@ -86,18 +87,46 @@ export function MeuPlanoPage() {
       : null
 
   const [selectedPlan, setSelectedPlan] = useState<TipoPlano | null>(null)
-  const isSelectedUpgrade = selectedPlan ? (PLAN_ORDER[selectedPlan] ?? 0) > (PLAN_ORDER[plano] ?? 0) : false
-  const isInUpgradePreviewMode = selectedPlan !== null && isSelectedUpgrade && !upgradeConfirmed
-  const planoParaCheckout = planoPendente ?? (selectedPlan && (!isSelectedUpgrade || upgradeConfirmed) ? selectedPlan : null)
-  const planoCheckoutSelecionado = planoParaCheckout ? planosDisponiveis.find((item) => item.id === planoParaCheckout) ?? null : null
+
+  // Only treat as upgrade/downgrade when already on a paid plan
+  const isSelectedUpgrade = selectedPlan !== null
+    && (PLAN_ORDER[selectedPlan] ?? 0) > (PLAN_ORDER[plano] ?? 0)
+    && PAID_PLAN_IDS.includes(plano)
+  const isSelectedDowngrade = selectedPlan !== null
+    && (PLAN_ORDER[selectedPlan] ?? 0) < (PLAN_ORDER[plano] ?? 0)
+    && PAID_PLAN_IDS.includes(plano)
+
+  const isInUpgradePreviewMode = isSelectedUpgrade && !upgradeConfirmed
+  // Downgrade preview shows until the user confirms (which triggers direct API call, no checkout)
+  const isInDowngradePreviewMode = isSelectedDowngrade
+
+  const planoParaCheckout = planoPendente ?? (
+    selectedPlan && (
+      (!isSelectedUpgrade && !isSelectedDowngrade) ||
+      (isSelectedUpgrade && upgradeConfirmed)
+    ) ? selectedPlan : null
+  )
+  const planoCheckoutSelecionado = planoParaCheckout
+    ? planosDisponiveis.find((item) => item.id === planoParaCheckout) ?? null
+    : null
   const valorCheckout = upgradeConfirmed && upgradePreviewData
     ? parsePlanoPrice(upgradePreviewData.preview.valor_a_cobrar)
     : planoCheckoutSelecionado ? parsePlanoPrice(planoCheckoutSelecionado.mensalidade) : 0
+
+  const downgradeTargetCatalog = isInDowngradePreviewMode && selectedPlan
+    ? planosDisponiveis.find(p => p.id === selectedPlan) ?? null
+    : null
 
   const podeCancelar =
     assinatura?.plano_ativo &&
     PAID_PLAN_IDS.includes(plano) &&
     assinatura?.recorrente !== false
+
+  function resetPlanSelection() {
+    setSelectedPlan(null)
+    setUpgradePreviewData(null)
+    setUpgradeConfirmed(false)
+  }
 
   async function handleCancelar() {
     setLoadingCancelamento(true)
@@ -130,10 +159,14 @@ export function MeuPlanoPage() {
   }
 
   async function handleSelectPlan(planId: TipoPlano) {
-    const isUpgrade = (PLAN_ORDER[planId] ?? 0) > (PLAN_ORDER[plano] ?? 0) && PAID_PLAN_IDS.includes(plano)
+    const targetOrder = PLAN_ORDER[planId] ?? 0
+    const currentOrder = PLAN_ORDER[plano] ?? 0
+    const isUpgrade = targetOrder > currentOrder && PAID_PLAN_IDS.includes(plano)
+
     setSelectedPlan(planId)
     setUpgradeConfirmed(false)
     setUpgradePreviewData(null)
+
     if (isUpgrade) {
       setLoadingPreview(true)
       try {
@@ -147,13 +180,28 @@ export function MeuPlanoPage() {
         setLoadingPreview(false)
       }
     }
+    // downgrade: no API call — preview uses catalog data already loaded
+  }
+
+  async function handleDowngradeConfirm() {
+    if (!selectedPlan) return
+    setLoadingDowngrade(true)
+    try {
+      const updated = await planosApi.ativar({ plano: selectedPlan, pedido_id: null })
+      setAssinatura(updated)
+      toast.success(`Downgrade agendado. O plano ${PLANO_LABEL[selectedPlan]} entrará em vigor na próxima renovação.`)
+      resetPlanSelection()
+    } catch (err: unknown) {
+      const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      toast.error(detail ?? 'Não foi possível agendar o downgrade.')
+    } finally {
+      setLoadingDowngrade(false)
+    }
   }
 
   function handleCheckoutSuccess(novaAssinatura: AssinaturaResumo) {
     setAssinatura(novaAssinatura)
-    setSelectedPlan(null)
-    setUpgradePreviewData(null)
-    setUpgradeConfirmed(false)
+    resetPlanSelection()
   }
 
   const podeAtivarTrial = !loading && (plano === 'INATIVO' || plano === 'CANCELADO') && !assinatura?.trial_ativo
@@ -164,6 +212,13 @@ export function MeuPlanoPage() {
     borderRadius: '20px',
     padding: '28px',
     boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
+  }
+
+  const backButtonStyle: React.CSSProperties = {
+    alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: '6px',
+    padding: '8px 14px', borderRadius: '10px', border: '1px solid var(--border)',
+    background: 'transparent', color: 'var(--text-muted)',
+    fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
   }
 
   return (
@@ -264,21 +319,17 @@ export function MeuPlanoPage() {
         </div>
       )}
 
-      {/* Checkout de mensalidade */}
+      {/* Checkout de mensalidade (nova assinatura ou upgrade confirmado) */}
       {!loading && planoParaCheckout && valorCheckout > 0 && (
         <>
           {selectedPlan && !planoPendente && (
             <button
               type="button"
               onClick={() => {
-                if (upgradeConfirmed) {
-                  setUpgradeConfirmed(false)
-                } else {
-                  setSelectedPlan(null)
-                  setUpgradePreviewData(null)
-                }
+                if (upgradeConfirmed) setUpgradeConfirmed(false)
+                else resetPlanSelection()
               }}
-              style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '10px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+              style={backButtonStyle}
             >
               ← Voltar
             </button>
@@ -287,6 +338,7 @@ export function MeuPlanoPage() {
             plano={planoParaCheckout}
             valor={valorCheckout}
             sandbox={sandbox}
+            skipActivation={upgradeConfirmed}
             onSuccess={handleCheckoutSuccess}
           />
         </>
@@ -295,14 +347,9 @@ export function MeuPlanoPage() {
       {/* Upgrade preview */}
       {!loading && isInUpgradePreviewMode && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <button
-            type="button"
-            onClick={() => { setSelectedPlan(null); setUpgradePreviewData(null) }}
-            style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '10px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', fontFamily: 'var(--sans)', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
-          >
+          <button type="button" onClick={resetPlanSelection} style={backButtonStyle}>
             ← Voltar
           </button>
-
           <div style={card}>
             {loadingPreview ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -367,8 +414,79 @@ export function MeuPlanoPage() {
         </div>
       )}
 
+      {/* Downgrade preview — sem pagamento, apenas agendamento para o próximo ciclo */}
+      {!loading && isInDowngradePreviewMode && selectedPlan && downgradeTargetCatalog && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <button type="button" onClick={resetPlanSelection} style={backButtonStyle}>
+            ← Voltar
+          </button>
+          <div style={card}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <div style={{
+                  width: '44px', height: '44px', borderRadius: '14px', flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: `color-mix(in srgb, ${PLANO_COLOR[selectedPlan]} 14%, transparent)`,
+                  border: `1px solid color-mix(in srgb, ${PLANO_COLOR[selectedPlan]} 28%, transparent)`,
+                  color: PLANO_COLOR[selectedPlan],
+                }}>
+                  {PLANO_ICON[selectedPlan]}
+                </div>
+                <div>
+                  <div style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.16em', color: 'var(--text-dim)', marginBottom: '4px' }}>
+                    Resumo do downgrade
+                  </div>
+                  <div style={{ fontSize: '18px', fontWeight: 800, color: PLANO_COLOR[selectedPlan], lineHeight: 1 }}>
+                    Plano {PLANO_LABEL[selectedPlan]}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(155px, 1fr))', gap: '12px' }}>
+                {[
+                  { label: 'Nova mensalidade', value: formatPlanoPrice(downgradeTargetCatalog.mensalidade) },
+                  {
+                    label: 'Nova franquia',
+                    value: downgradeTargetCatalog.franquia_consultas > 0
+                      ? `${fmt(downgradeTargetCatalog.franquia_consultas)} consultas`
+                      : 'Pré-pago por uso',
+                  },
+                  { label: 'Franquia atual usada', value: `${fmt(assinatura?.franquia_usada)} consultas` },
+                  { label: 'Mudança em', value: fmtDate(assinatura?.ciclo_expira_em) },
+                ].map(({ label, value }) => (
+                  <div key={label} style={{ padding: '14px 16px', borderRadius: '12px', background: 'color-mix(in srgb, var(--surface-2) 92%, transparent)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <div style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.13em', color: 'var(--text-dim)' }}>{label}</div>
+                    <div style={{ fontFamily: 'var(--mono)', fontSize: '14px', fontWeight: 600, color: 'var(--text)' }}>{value}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6, padding: '12px 16px', borderRadius: '12px', background: 'color-mix(in srgb, var(--surface-2) 85%, transparent)', border: '1px solid var(--border)' }}>
+                Nenhum valor será cobrado agora. O downgrade entra em vigor na próxima renovação automática ({fmtDate(assinatura?.ciclo_expira_em)}), quando o novo plano será ativado dentro da recorrência.
+              </div>
+
+              <button
+                type="button"
+                onClick={() => void handleDowngradeConfirm()}
+                disabled={loadingDowngrade}
+                style={{
+                  padding: '16px 24px', borderRadius: '16px', border: 'none',
+                  background: `color-mix(in srgb, ${PLANO_COLOR[selectedPlan]} 18%, transparent)`,
+                  color: PLANO_COLOR[selectedPlan],
+                  fontFamily: 'var(--sans)', fontSize: '14px', fontWeight: 700,
+                  cursor: loadingDowngrade ? 'not-allowed' : 'pointer',
+                  opacity: loadingDowngrade ? 0.7 : 1,
+                }}
+              >
+                {loadingDowngrade ? 'Agendando...' : `Confirmar downgrade para ${PLANO_LABEL[selectedPlan]}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Grade de planos — todos os estados */}
-      {!loading && !planoParaCheckout && !isInUpgradePreviewMode && (
+      {!loading && !planoParaCheckout && !isInUpgradePreviewMode && !isInDowngradePreviewMode && (
         <div style={{ ...card, display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div>
             <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)', marginBottom: '4px' }}>
@@ -376,14 +494,17 @@ export function MeuPlanoPage() {
             </div>
             <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
               {PAID_PLAN_IDS.includes(plano)
-                ? 'Faça upgrade ou downgrade a qualquer momento. A cobrança é ajustada no próximo ciclo.'
+                ? 'Faça upgrade ou downgrade a qualquer momento.'
                 : 'Selecione um plano para pagar a mensalidade e ativar sua assinatura.'}
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(175px, 1fr))', gap: '12px' }}>
             {planosDisponiveis.map((p) => {
               const isCurrent = p.id === plano
-              const isUpgrade = (PLAN_ORDER[p.id] ?? 0) > (PLAN_ORDER[plano] ?? 0)
+              const targetOrder = PLAN_ORDER[p.id] ?? 0
+              const currentOrder = PLAN_ORDER[plano] ?? 0
+              const isUpgrade = targetOrder > currentOrder && PAID_PLAN_IDS.includes(plano)
+              const isDowngrade = targetOrder < currentOrder && PAID_PLAN_IDS.includes(plano)
               const cor = PLANO_COLOR[p.id]
               return (
                 <div
@@ -406,28 +527,26 @@ export function MeuPlanoPage() {
                     R$ {PLANO_PRECO[p.id]}<span style={{ fontSize: '12px', fontWeight: 400, color: 'var(--text-dim)', marginLeft: '3px' }}>/mês</span>
                   </div>
                   {PLANO_INFO[p.id] && (
-                    <>
-                      <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        {PLANO_INFO[p.id]!.features.map((f) => (
-                          <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: '7px', fontSize: '12px', color: 'var(--text-muted)' }}>
-                            <Check size={13} style={{ color: cor, flexShrink: 0, marginTop: '1px' }} />
-                            {f}
-                          </li>
-                        ))}
-                      </ul>
-                    </>
+                    <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
+                      {PLANO_INFO[p.id]!.features.map((f) => (
+                        <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: '7px', fontSize: '12px', color: 'var(--text-muted)' }}>
+                          <Check size={13} style={{ color: cor, flexShrink: 0, marginTop: '1px' }} />
+                          {f}
+                        </li>
+                      ))}
+                    </ul>
                   )}
                   {!isCurrent && (
                     <button
                       type="button"
                       onClick={() => void handleSelectPlan(p.id)}
                       style={{
-                        marginTop: '4px', padding: '9px 0', borderRadius: '10px', border: 'none', cursor: 'pointer',
+                        marginTop: 'auto', padding: '9px 0', borderRadius: '10px', border: 'none', cursor: 'pointer',
                         background: `color-mix(in srgb, ${cor} 18%, transparent)`,
                         color: cor, fontFamily: 'var(--sans)', fontSize: '12px', fontWeight: 700,
                       }}
                     >
-                      Selecionar {p.nome}
+                      {isUpgrade ? 'Fazer upgrade' : isDowngrade ? 'Fazer downgrade' : 'Selecionar'}
                     </button>
                   )}
                 </div>
@@ -512,4 +631,3 @@ export function MeuPlanoPage() {
     </div>
   )
 }
-
