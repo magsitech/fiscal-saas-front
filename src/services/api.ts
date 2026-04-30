@@ -6,6 +6,7 @@ import type {
   AssinaturaResumo,
   AtivarPlanoPayload,
   AuditoriaItem,
+  FaixaPreco,
   UpgradePreview,
   AtualizarPerfilPayload,
   Cliente,
@@ -208,6 +209,18 @@ function normalizeUpgradePreview(payload: unknown): UpgradePreview {
     franquia_novo_plano: Number(raw.franquia_novo_plano ?? 0),
     franquia_atual_usada: Number(raw.franquia_atual_usada ?? 0),
     expiracao_mantida: typeof raw.expiracao_mantida === 'string' ? raw.expiracao_mantida : '',
+  }
+}
+
+function normalizeFaixaPreco(payload: unknown): FaixaPreco | null {
+  const raw = unwrapPayload<Record<string, unknown>>(payload)
+  if (!raw.id_faixa) return null
+  return {
+    id_faixa: String(raw.id_faixa),
+    limite_superior: raw.limite_superior != null ? Number(raw.limite_superior) : null,
+    preco_base: String(raw.preco_base ?? '0'),
+    adicional_fixo: String(raw.adicional_fixo ?? '0'),
+    ordem: Number(raw.ordem ?? 0),
   }
 }
 
@@ -571,6 +584,16 @@ export const planosApi = {
   upgradePreview: async (plano: TipoPlano): Promise<UpgradePreview> => {
     const { data } = await http.get<UpgradePreview>('/planos/upgrade/preview', { params: { plano } })
     return normalizeUpgradePreview(data)
+  },
+}
+
+export const faixasApi = {
+  listar: async (): Promise<FaixaPreco[]> => {
+    const { data } = await http.get<FaixaPreco[]>('/faixas-preco')
+    return unwrapList<Record<string, unknown>>(data)
+      .map(normalizeFaixaPreco)
+      .filter((f): f is FaixaPreco => f !== null)
+      .sort((a, b) => a.ordem - b.ordem)
   },
 }
 

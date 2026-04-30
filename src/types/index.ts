@@ -265,6 +265,14 @@ export interface ConsultarNotaResponse {
 
 export type TipoPlano = 'TRIAL' | 'BASICO' | 'PRO' | 'BUSINESS' | 'CANCELADO' | 'INATIVO'
 
+export interface FaixaPreco {
+  id_faixa: string
+  limite_superior: number | null
+  preco_base: string
+  adicional_fixo: string
+  ordem: number
+}
+
 export interface PlanoCatalogo {
   id: TipoPlano
   nome: string

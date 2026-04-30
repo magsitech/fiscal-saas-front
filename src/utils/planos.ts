@@ -1,7 +1,17 @@
-import type { PlanoCatalogo, TipoPlano } from '@/types'
+import type { FaixaPreco, PlanoCatalogo, TipoPlano } from '@/types'
 import { fmtBRL, fmtInt } from '@/utils/fmt'
 
 export const PAID_PLAN_IDS: TipoPlano[] = ['BASICO', 'PRO', 'BUSINESS']
+
+export const FALLBACK_FAIXAS: FaixaPreco[] = [
+  { id_faixa: 'F1', limite_superior: 500,   preco_base: '0.1900', adicional_fixo: '0.0300', ordem: 1 },
+  { id_faixa: 'F2', limite_superior: 2000,  preco_base: '0.1500', adicional_fixo: '0.0300', ordem: 2 },
+  { id_faixa: 'F3', limite_superior: 5000,  preco_base: '0.1300', adicional_fixo: '0.0300', ordem: 3 },
+  { id_faixa: 'F4', limite_superior: 10000, preco_base: '0.1200', adicional_fixo: '0.0300', ordem: 4 },
+  { id_faixa: 'F5', limite_superior: 30000, preco_base: '0.1000', adicional_fixo: '0.0300', ordem: 5 },
+  { id_faixa: 'F6', limite_superior: 50000, preco_base: '0.0900', adicional_fixo: '0.0300', ordem: 6 },
+  { id_faixa: 'F7', limite_superior: null,  preco_base: '0.0800', adicional_fixo: '0.0300', ordem: 7 },
+]
 
 export const PLAN_ORDER: Partial<Record<TipoPlano, number>> = {
   TRIAL: 0,

@@ -3,8 +3,9 @@ import { endOfDay, format, parseISO, startOfDay, subDays } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { CheckCircle2, CreditCard, Download, ExternalLink, FileText, Info, Landmark, Lock, RefreshCw, SlidersHorizontal, Sparkles, Webhook, XCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { dashboardApi, pedidosApi, planosApi, webhookApi } from '@/services/api'
-import type { AuditoriaItem, AssinaturaResumo, ExtratoItem, Pedido, PedidoDetalhe, SimuladorResponse, WebhookLog } from '@/types'
+import { dashboardApi, faixasApi, pedidosApi, planosApi, webhookApi } from '@/services/api'
+import type { AuditoriaItem, AssinaturaResumo, ExtratoItem, FaixaPreco, Pedido, PedidoDetalhe, PlanoCatalogo, WebhookLog } from '@/types'
+import { FALLBACK_FAIXAS, FALLBACK_PAID_PLANOS, PAID_PLAN_IDS, sortPlanos } from '@/utils/planos'
 import { CreditosCheckout } from '@/components/credits/CreditosCheckout'
 import {
   Badge,
@@ -1723,11 +1724,108 @@ export function PagamentosPage() {
   )
 }
 
+// ─── Simulador client-side ────────────────────────────────────────────────────
+
+interface SimFaixa {
+  faixa: string
+  consultas: number
+  preco_unitario: number
+  custo: number
+}
+
+interface SimResultado {
+  plano: PlanoCatalogo
+  quantidade: number
+  mensalidade: number
+  franquiaConsultas: number
+  franquiaUsada: number
+  excessoConsultas: number
+  custoExcesso: number
+  custoTotal: number
+  custoMedio: number
+  detalhes: SimFaixa[]
+}
+
+// BASICO usa preco_base + adicional_fixo; PRO/BUSINESS usam apenas preco_base
+function precoFaixaParaPlano(faixa: FaixaPreco, plano: PlanoCatalogo): number {
+  const base = parseFloat(faixa.preco_base)
+  const adicional = parseFloat(faixa.adicional_fixo)
+  return plano.excedente_inicia_faixa === 0 ? base + adicional : base
+}
+
+function faixaLabel(faixa: FaixaPreco, index: number, todas: FaixaPreco[]): string {
+  const prevLimit = index === 0 ? 0 : (todas[index - 1].limite_superior ?? 0)
+  const low = (prevLimit + 1).toLocaleString('pt-BR')
+  const high = faixa.limite_superior ? faixa.limite_superior.toLocaleString('pt-BR') : '+'
+  return `${low}–${high}`
+}
+
+function calcularSimulacao(plano: PlanoCatalogo, quantidade: number, faixas: FaixaPreco[]): SimResultado {
+  const mensalidade = parseFloat(plano.mensalidade)
+  const franquia = plano.franquia_consultas
+  const franquiaUsada = Math.min(quantidade, franquia)
+  const excesso = Math.max(0, quantidade - franquia)
+
+  const detalhes: SimFaixa[] = []
+  let remaining = excesso
+  let prevLimit = 0
+  let custoExcesso = 0
+
+  for (let i = 0; i < faixas.length && remaining > 0; i++) {
+    const faixa = faixas[i]
+    const tierMax = faixa.limite_superior ?? Infinity
+    const tierSize = tierMax === Infinity ? remaining : (tierMax as number) - prevLimit
+    const qty = Math.min(remaining, tierSize)
+    const price = precoFaixaParaPlano(faixa, plano)
+    const cost = qty * price
+    detalhes.push({ faixa: faixaLabel(faixa, i, faixas), consultas: qty, preco_unitario: price, custo: cost })
+    custoExcesso += cost
+    remaining -= qty
+    if (tierMax !== Infinity) prevLimit = tierMax as number
+  }
+
+  const custoTotal = mensalidade + custoExcesso
+  const custoMedio = quantidade > 0 ? custoTotal / quantidade : 0
+  return { plano, quantidade, mensalidade, franquiaConsultas: franquia, franquiaUsada, excessoConsultas: excesso, custoExcesso, custoTotal, custoMedio, detalhes }
+}
+
+const SIM_PLAN_COLOR: Record<string, string> = {
+  BASICO: '#94a3b8',
+  PRO: 'var(--accent)',
+  BUSINESS: '#8b5cf6',
+}
+
 export function SimuladorPage() {
+  const [planos, setPlanos] = useState<PlanoCatalogo[]>(FALLBACK_PAID_PLANOS)
+  const [faixas, setFaixas] = useState<FaixaPreco[]>(FALLBACK_FAIXAS)
+  const [selectedPlanId, setSelectedPlanId] = useState<string>('BASICO')
   const [qtd, setQtd] = useState('1000')
-  const [resultado, setResultado] = useState<SimuladorResponse | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [resultado, setResultado] = useState<SimResultado | null>(null)
   const presets = ['500', '1000', '2500', '5000', '10000']
+
+  useEffect(() => {
+    planosApi.listar()
+      .then(list => {
+        const paid = sortPlanos(list.filter(p => (PAID_PLAN_IDS as readonly string[]).includes(p.id)))
+        if (paid.length > 0) setPlanos(paid)
+      })
+      .catch(() => {})
+    faixasApi.listar()
+      .then(list => { if (list.length > 0) setFaixas(list) })
+      .catch(() => {})
+  }, [])
+
+  const selectedPlano = planos.find(p => p.id === selectedPlanId) ?? planos[0]
+
+  function calcular() {
+    const n = parseInt(qtd)
+    if (isNaN(n) || n < 1 || n > 100_000) { toast.error('Entre 1 e 100.000 consultas'); return }
+    if (!selectedPlano) return
+    setResultado(calcularSimulacao(selectedPlano, n, faixas))
+  }
+
+  function f2(n: number) { return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }
+  function f4(n: number) { return n.toLocaleString('pt-BR', { minimumFractionDigits: 4, maximumFractionDigits: 4 }) }
 
   function metricSurface(tone: string): React.CSSProperties {
     return {
@@ -1740,62 +1838,87 @@ export function SimuladorPage() {
     }
   }
 
-  async function simular() {
-    const n = parseInt(qtd)
-    if (!n || n < 1 || n > 100_000) return toast.error('Entre 1 e 100.000 consultas')
-    setLoading(true)
-    try {
-      const r = await dashboardApi.simulador(n)
-      setResultado(r)
-    } catch {
-      toast.error('Erro ao simular. Verifique a conexão.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+      {/* ── Configuração ─────────────────────────────────────────────────────── */}
       <Card>
+        {/* Header */}
         <div style={{
           padding: '34px 34px 28px',
           borderBottom: '1px solid var(--border)',
           background: 'radial-gradient(circle at top left, color-mix(in srgb, var(--accent-dim) 55%, transparent) 0%, transparent 34%), radial-gradient(circle at top right, color-mix(in srgb, var(--info-dim) 50%, transparent) 0%, transparent 28%), linear-gradient(135deg, color-mix(in srgb, var(--surface) 78%, var(--accent-dim) 22%), color-mix(in srgb, var(--surface) 88%, var(--info-dim) 12%))',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '14px',
+          display: 'flex', flexDirection: 'column', gap: '14px',
         }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', width: 'fit-content', padding: '9px 14px', borderRadius: '999px', background: 'rgba(255,255,255,0.08)', border: '1px solid var(--accent-glow)', fontSize: '11px', fontWeight: 700, letterSpacing: '0.12em', color: 'var(--accent)' }}>
-            SIMULADOR
+            SIMULADOR DE CUSTO
           </div>
           <div style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-0.04em', color: 'var(--text)', maxWidth: '820px', lineHeight: 1.05 }}>
-            Planeje o custo do próximo lote com mais clareza
+            Simule o custo mensal por plano e volume
           </div>
           <div style={{ fontSize: '15px', color: 'var(--text-muted)', lineHeight: 1.8, maxWidth: '820px' }}>
-            Simule o custo de <strong style={{ color: 'var(--text)' }}>N consultas</strong> considerando o volume já acumulado no período atual. A faixa de cobrança é aplicada de forma cumulativa para mostrar o impacto real da próxima compra.
+            Escolha um <strong style={{ color: 'var(--text)' }}>plano</strong>, informe a quantidade de consultas esperada e veja o custo total detalhado com mensalidade, franquia incluída e excedente por faixa progressiva.
           </div>
         </div>
-        <div className="p-6" style={{ display: 'flex', flexDirection: 'column', gap: '26px', padding: '28px 34px 34px' }}>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-            gap: '14px',
-          }}>
-            <div style={{ padding: '18px', borderRadius: '20px', border: '1px solid var(--border)', background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, transparent), color-mix(in srgb, var(--surface-2) 98%, transparent))', boxShadow: '0 16px 34px rgba(15,23,42,0.06)' }}>
-              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-dim)', marginBottom: '6px' }}>Faixas progressivas</div>
-              <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6 }}>O cálculo respeita o preço unitário por volume acumulado.</div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '28px', padding: '28px 34px 34px' }}>
+          {/* ── Seleção de plano ── */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-dim)' }}>
+              Selecione o plano
             </div>
-            <div style={{ padding: '18px', borderRadius: '20px', border: '1px solid var(--border)', background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, transparent), color-mix(in srgb, var(--surface-2) 98%, transparent))', boxShadow: '0 16px 34px rgba(15,23,42,0.06)' }}>
-              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-dim)', marginBottom: '6px' }}>Visão financeira</div>
-              <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6 }}>Veja custo total, média por consulta e composição por faixa.</div>
-            </div>
-            <div style={{ padding: '18px', borderRadius: '20px', border: '1px solid var(--border)', background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, transparent), color-mix(in srgb, var(--surface-2) 98%, transparent))', boxShadow: '0 16px 34px rgba(15,23,42,0.06)' }}>
-              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-dim)', marginBottom: '6px' }}>Limite operacional</div>
-              <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6 }}>Aceita simulações de 1 a 100.000 consultas por cálculo.</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '12px' }}>
+              {planos.map(plano => {
+                const isSelected = plano.id === selectedPlanId
+                const color = SIM_PLAN_COLOR[plano.id] ?? 'var(--text-muted)'
+                return (
+                  <button
+                    key={plano.id}
+                    type="button"
+                    onClick={() => { setSelectedPlanId(plano.id); setResultado(null) }}
+                    style={{
+                      textAlign: 'left',
+                      padding: '18px 20px',
+                      borderRadius: '18px',
+                      border: `2px solid ${isSelected ? color : 'var(--border)'}`,
+                      background: isSelected
+                        ? `color-mix(in srgb, ${color} 9%, var(--surface))`
+                        : 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, transparent), color-mix(in srgb, var(--surface-2) 98%, transparent))',
+                      cursor: 'pointer',
+                      transition: 'border-color 0.15s, background 0.15s',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '6px',
+                    }}
+                  >
+                    <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: isSelected ? color : 'var(--text-dim)' }}>
+                      {plano.nome}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px' }}>
+                      <span style={{ fontFamily: 'var(--mono)', fontSize: '22px', fontWeight: 800, color: isSelected ? color : 'var(--text)', letterSpacing: '-0.02em' }}>
+                        R$ {f2(parseFloat(plano.mensalidade))}
+                      </span>
+                      <span style={{ fontSize: '11px', color: 'var(--text-dim)', fontWeight: 500 }}>/mês</span>
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-dim)', lineHeight: 1.5 }}>
+                      {plano.franquia_consultas > 0
+                        ? `${plano.franquia_consultas.toLocaleString('pt-BR')} consultas incluídas`
+                        : 'Cobrança por uso desde a 1ª consulta'}
+                    </div>
+                    {isSelected && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '4px' }}>
+                        <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: color, flexShrink: 0 }} />
+                        <span style={{ fontSize: '10px', fontWeight: 700, color, letterSpacing: '0.08em' }}>SELECIONADO</span>
+                      </div>
+                    )}
+                  </button>
+                )
+              })}
             </div>
           </div>
+
+          {/* ── Volume e botão ── */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-dim)' }}>
+            <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-dim)' }}>
               Atalhos de volume
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
@@ -1807,7 +1930,7 @@ export function SimuladorPage() {
                     type="button"
                     onClick={() => setQtd(preset)}
                     style={{
-                      padding: '11px 20px',
+                      padding: '10px 18px',
                       borderRadius: '999px',
                       border: `1px solid ${ativo ? 'var(--accent-glow)' : 'var(--border)'}`,
                       background: ativo
@@ -1818,7 +1941,7 @@ export function SimuladorPage() {
                       fontSize: '12px',
                       fontWeight: 700,
                       cursor: 'pointer',
-                      boxShadow: ativo ? '0 12px 24px rgba(0,212,170,0.10)' : 'none',
+                      boxShadow: ativo ? '0 8px 20px rgba(0,212,170,0.10)' : 'none',
                     }}
                   >
                     {Number(preset).toLocaleString('pt-BR')}
@@ -1829,17 +1952,12 @@ export function SimuladorPage() {
           </div>
           <div className="simulator-controls" style={{ display: 'flex', gap: '16px', alignItems: 'stretch' }}>
             <div style={{
-              flex: 1,
-              padding: '20px 24px',
-              borderRadius: '22px',
-              border: '1px solid var(--border)',
-              background: 'color-mix(in srgb, var(--surface-2) 55%, transparent)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '10px',
+              flex: 1, padding: '20px 24px', borderRadius: '22px',
+              border: '1px solid var(--border)', background: 'color-mix(in srgb, var(--surface-2) 55%, transparent)',
+              display: 'flex', flexDirection: 'column', gap: '10px',
             }}>
               <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-dim)' }}>
-                Quantidade de consultas
+                Consultas esperadas no mês
               </div>
               <input
                 type="number"
@@ -1849,69 +1967,41 @@ export function SimuladorPage() {
                 max={100000}
                 className="simulator-input"
                 style={{
-                  width: '100%',
-                  background: 'color-mix(in srgb, var(--surface-2) 94%, transparent)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '14px',
-                  padding: '14px 18px',
-                  fontSize: '22px',
-                  fontWeight: 700,
-                  fontFamily: 'var(--mono)',
-                  color: 'var(--text)',
-                  outline: 'none',
-                  transition: 'border-color 0.15s, box-shadow 0.15s',
+                  width: '100%', background: 'color-mix(in srgb, var(--surface-2) 94%, transparent)',
+                  border: '1px solid var(--border)', borderRadius: '14px', padding: '14px 18px',
+                  fontSize: '22px', fontWeight: 700, fontFamily: 'var(--mono)', color: 'var(--text)',
+                  outline: 'none', transition: 'border-color 0.15s, box-shadow 0.15s',
                 }}
                 onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.boxShadow = '0 0 0 4px var(--accent-dim)' }}
                 onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none' }}
               />
               <div style={{ fontSize: '12px', color: 'var(--text-dim)', lineHeight: 1.5 }}>
-                Informe o volume desejado para calcular o custo nas faixas atuais.
+                Informe o volume mensal esperado para o plano selecionado.
               </div>
             </div>
             <button
               type="button"
-              onClick={simular}
-              disabled={loading}
+              onClick={calcular}
               style={{
-                minWidth: '220px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '10px',
-                padding: '18px 26px',
-                borderRadius: '22px',
+                minWidth: '200px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                gap: '10px', padding: '18px 26px', borderRadius: '22px',
                 border: '1px solid rgba(255,255,255,0.14)',
-                background: loading
-                  ? 'color-mix(in srgb, var(--accent) 60%, transparent)'
-                  : 'linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 72%, white))',
-                color: '#041311',
-                fontSize: '14px',
-                fontWeight: 800,
-                letterSpacing: '-0.01em',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                opacity: loading ? 0.7 : 1,
-                boxShadow: '0 18px 40px rgba(0,212,170,0.24)',
-                transition: 'transform 0.12s ease, box-shadow 0.18s ease, opacity 0.15s ease',
+                background: 'linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 72%, white))',
+                color: '#041311', fontSize: '14px', fontWeight: 800, letterSpacing: '-0.01em',
+                cursor: 'pointer', boxShadow: '0 18px 40px rgba(0,212,170,0.24)',
+                transition: 'transform 0.12s ease, box-shadow 0.18s ease',
               }}
-              onMouseEnter={e => {
-                if (!loading) {
-                  e.currentTarget.style.transform = 'translateY(-1px)'
-                  e.currentTarget.style.boxShadow = '0 18px 40px rgba(0,212,170,0.30)'
-                }
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.transform = 'translateY(0)'
-                e.currentTarget.style.boxShadow = '0 14px 34px rgba(0,212,170,0.24)'
-              }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 18px 40px rgba(0,212,170,0.30)' }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 14px 34px rgba(0,212,170,0.24)' }}
               onMouseDown={e => { e.currentTarget.style.transform = 'translateY(0)' }}
             >
-              {loading ? <Spinner size={16} /> : null}
-              {loading ? 'Calculando...' : 'Calcular projeção'}
+              Calcular custo
             </button>
           </div>
         </div>
       </Card>
 
+      {/* ── Estado vazio ─────────────────────────────────────────────────────── */}
       {!resultado && (
         <Card>
           <div style={{
@@ -1920,160 +2010,235 @@ export function SimuladorPage() {
             gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
             gap: '16px',
           }}>
-            <div style={{ padding: '22px', borderRadius: '20px', border: '1px solid var(--border)', background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, transparent), color-mix(in srgb, var(--surface-2) 98%, transparent))', boxShadow: '0 16px 30px rgba(15,23,42,0.06)' }}>
-              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-dim)', marginBottom: '8px' }}>O que você verá</div>
-              <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.7 }}>Custo total, custo médio por consulta e o breakdown por faixa progressiva.</div>
-            </div>
-            <div style={{ padding: '22px', borderRadius: '20px', border: '1px solid var(--border)', background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, transparent), color-mix(in srgb, var(--surface-2) 98%, transparent))', boxShadow: '0 16px 30px rgba(15,23,42,0.06)' }}>
-              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-dim)', marginBottom: '8px' }}>Quando usar</div>
-              <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.7 }}>Antes de comprar créditos ou estimar impacto financeiro para o próximo lote.</div>
-            </div>
-            <div style={{ padding: '22px', borderRadius: '20px', border: '1px solid var(--border)', background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, transparent), color-mix(in srgb, var(--surface-2) 98%, transparent))', boxShadow: '0 16px 30px rgba(15,23,42,0.06)' }}>
-              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-dim)', marginBottom: '8px' }}>Leitura rápida</div>
-              <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.7 }}>Use os atalhos acima para testar cenários frequentes em segundos.</div>
-            </div>
+            {[
+              { label: 'Mensalidade + excedente', body: 'O custo total é composto pela mensalidade do plano mais o excedente cobrado por faixa progressiva.' },
+              { label: 'Franquia incluída', body: 'Planos PRO e Business incluem consultas gratuitas no mês. O excedente começa apenas após esgotá-las.' },
+              { label: 'Compare planos', body: 'Troque o plano selecionado para ver qual se encaixa melhor no seu volume mensal esperado.' },
+            ].map(({ label, body }) => (
+              <div key={label} style={{ padding: '22px', borderRadius: '20px', border: '1px solid var(--border)', background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, transparent), color-mix(in srgb, var(--surface-2) 98%, transparent))', boxShadow: '0 16px 30px rgba(15,23,42,0.06)' }}>
+                <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-dim)', marginBottom: '8px' }}>{label}</div>
+                <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.7 }}>{body}</div>
+              </div>
+            ))}
           </div>
         </Card>
       )}
 
-      {resultado && (
-        <>
-          <div
-            className="grid grid-cols-3 gap-4 simulator-results-grid"
-            style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}
-          >
-            <div style={metricSurface('var(--accent)')}>
-              <div style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-dim)' }}>Custo total</div>
-                <div style={{ fontFamily: 'var(--mono)', fontSize: '32px', fontWeight: 800, color: 'var(--accent)', letterSpacing: '-0.03em' }}>
-                  R$ {Number(resultado.custo_total).toFixed(2)}
+      {/* ── Resultado ────────────────────────────────────────────────────────── */}
+      {resultado && (() => {
+        const planColor = SIM_PLAN_COLOR[resultado.plano.id] ?? 'var(--accent)'
+        const totalStr = `R$ ${f2(resultado.custoTotal)}`
+        return (
+          <>
+            {/* KPIs */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+              <div style={metricSurface(planColor)}>
+                <div style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-dim)' }}>Custo total mensal</div>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: '32px', fontWeight: 800, color: planColor, letterSpacing: '-0.03em' }}>
+                    {totalStr}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                    Plano <strong style={{ color: 'var(--text)' }}>{resultado.plano.nome}</strong> com {resultado.quantidade.toLocaleString('pt-BR')} consultas/mês.
+                  </div>
                 </div>
-                <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.7 }}>Valor previsto para o lote informado.</div>
+              </div>
+              <div style={metricSurface('var(--accent)')}>
+                <div style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-dim)' }}>Mensalidade</div>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: '32px', fontWeight: 800, color: 'var(--accent)', letterSpacing: '-0.03em' }}>
+                    R$ {f2(resultado.mensalidade)}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                    {resultado.franquiaConsultas > 0
+                      ? `Inclui ${resultado.franquiaUsada.toLocaleString('pt-BR')} de ${resultado.franquiaConsultas.toLocaleString('pt-BR')} consultas gratuitas.`
+                      : 'Sem franquia incluída — cobrança por uso desde a 1ª consulta.'}
+                  </div>
+                </div>
+              </div>
+              <div style={metricSurface(resultado.custoExcesso > 0 ? 'var(--warn)' : 'var(--text-dim)')}>
+                <div style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-dim)' }}>Custo excedente</div>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: '32px', fontWeight: 800, color: resultado.custoExcesso > 0 ? 'var(--warn)' : 'var(--text-dim)', letterSpacing: '-0.03em' }}>
+                    R$ {f2(resultado.custoExcesso)}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                    {resultado.excessoConsultas > 0
+                      ? `${resultado.excessoConsultas.toLocaleString('pt-BR')} consultas além da franquia — custo médio R$ ${f4(resultado.custoMedio)}/consulta.`
+                      : 'Volume dentro da franquia — sem cobranças adicionais.'}
+                  </div>
+                </div>
               </div>
             </div>
-            <div style={metricSurface('var(--info)')}>
-              <div style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-dim)' }}>Custo médio por consulta</div>
-                <div style={{ fontFamily: 'var(--mono)', fontSize: '32px', fontWeight: 800, color: 'var(--info)', letterSpacing: '-0.03em' }}>
-                  R$ {resultado.custo_medio_por_consulta}
-                </div>
-                <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.7 }}>Média unitária estimada após aplicar as faixas.</div>
-              </div>
-            </div>
-            <div style={metricSurface('var(--warn)')}>
-              <div style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-dim)' }}>Total acumulado após</div>
-                <div style={{ fontFamily: 'var(--mono)', fontSize: '32px', fontWeight: 800, color: 'var(--warn)', letterSpacing: '-0.03em' }}>
-                  {(resultado.acumulado_atual + resultado.quantidade).toLocaleString('pt-BR')}
-                </div>
-                <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.7 }}>Volume projetado ao final desta simulação.</div>
-              </div>
-            </div>
-          </div>
 
-          {resultado.detalhes_por_faixa.length > 0 && (
+            {/* Breakdown detalhado */}
             <Card>
               <CardHeader className="card-header-responsive">
                 <div>
-                  <CardTitle>Breakdown por faixa</CardTitle>
-                  <div className="text-xs text-[var(--text-muted)] mt-1">Entenda como o volume é distribuído entre as faixas progressivas.</div>
+                  <CardTitle>Composição do custo — {resultado.plano.nome}</CardTitle>
+                  <div className="text-xs text-[var(--text-muted)] mt-1">
+                    Mensalidade + excedente progressivo para {resultado.quantidade.toLocaleString('pt-BR')} consultas/mês.
+                  </div>
                 </div>
               </CardHeader>
               <div className="app-data-desktop app-table-shell">
                 <Table fixed>
                   <colgroup>
-                    <col style={{ width: '22%' }} />
+                    <col style={{ width: '26%' }} />
+                    <col style={{ width: '20%' }} />
                     <col style={{ width: '18%' }} />
                     <col style={{ width: '18%' }} />
                     <col style={{ width: '18%' }} />
-                    <col style={{ width: '24%' }} />
                   </colgroup>
                   <thead>
                     <tr>
-                      <Th>Faixa</Th>
-                      <Th><div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>Consultas</div></Th>
-                      <Th><div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>Preço unitário</div></Th>
-                      <Th><div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>Subtotal</div></Th>
-                      <Th><div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>% do total</div></Th>
+                      <Th>Item</Th>
+                      <Th><div style={{ textAlign: 'right' }}>Consultas</div></Th>
+                      <Th><div style={{ textAlign: 'right' }}>Preço unit.</div></Th>
+                      <Th><div style={{ textAlign: 'right' }}>Subtotal</div></Th>
+                      <Th><div style={{ textAlign: 'right' }}>% do total</div></Th>
                     </tr>
                   </thead>
                   <tbody>
-                    {resultado.detalhes_por_faixa.map((d) => {
-                      const pct = ((Number(d.custo_faixa) / Number(resultado.custo_total)) * 100).toFixed(1)
+                    {/* Linha de mensalidade */}
+                    <TrHover>
+                      <Td>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text)' }}>Mensalidade</span>
+                          <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>
+                            {resultado.franquiaConsultas > 0
+                              ? `${resultado.franquiaUsada.toLocaleString('pt-BR')} consultas incluídas`
+                              : 'Sem franquia'}
+                          </span>
+                        </div>
+                      </Td>
+                      <Td mono><div style={{ textAlign: 'right', color: 'var(--text-dim)' }}>
+                        {resultado.franquiaUsada > 0 ? resultado.franquiaUsada.toLocaleString('pt-BR') : '—'}
+                      </div></Td>
+                      <Td mono><div style={{ textAlign: 'right', color: 'var(--text-dim)' }}>—</div></Td>
+                      <Td>
+                        <div style={{ textAlign: 'right' }}>
+                          <span style={{ fontFamily: 'var(--mono)', fontSize: '12px', fontWeight: 700, color: 'var(--accent)' }}>
+                            R$ {f2(resultado.mensalidade)}
+                          </span>
+                        </div>
+                      </Td>
+                      <Td>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '5px' }}>
+                          <span style={{ fontFamily: 'var(--mono)', fontSize: '11px', color: 'var(--text-muted)' }}>
+                            {resultado.custoTotal > 0 ? ((resultado.mensalidade / resultado.custoTotal) * 100).toFixed(1) : '100.0'}%
+                          </span>
+                          <div style={{ width: '80px', height: '4px', background: 'var(--surface-2)', borderRadius: '999px', overflow: 'hidden' }}>
+                            <div style={{ height: '100%', width: `${resultado.custoTotal > 0 ? (resultado.mensalidade / resultado.custoTotal) * 100 : 100}%`, background: 'var(--accent)', borderRadius: '999px' }} />
+                          </div>
+                        </div>
+                      </Td>
+                    </TrHover>
+                    {/* Faixas do excedente */}
+                    {resultado.detalhes.map((d, i) => {
+                      const pct = resultado.custoTotal > 0 ? (d.custo / resultado.custoTotal) * 100 : 0
                       return (
                         <TrHover key={d.faixa}>
                           <Td>
-                            <span style={{
-                              display: 'inline-flex', alignItems: 'center',
-                              padding: '4px 10px', borderRadius: '8px',
-                              border: '1px solid var(--border)', background: 'var(--surface-2)',
-                              fontFamily: 'var(--mono)', fontSize: '11px', fontWeight: 700,
-                              color: 'var(--text-muted)', letterSpacing: '0.04em',
-                            }}>
-                              {d.faixa}
-                            </span>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                              <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text)' }}>
+                                Excedente faixa {i + 1}
+                              </span>
+                              <span style={{
+                                display: 'inline-flex', alignItems: 'center', width: 'fit-content',
+                                padding: '2px 8px', borderRadius: '6px',
+                                border: '1px solid var(--border)', background: 'var(--surface-2)',
+                                fontFamily: 'var(--mono)', fontSize: '10px', fontWeight: 700,
+                                color: 'var(--text-dim)', letterSpacing: '0.04em',
+                              }}>
+                                {d.faixa}
+                              </span>
+                            </div>
                           </Td>
                           <Td mono><div style={{ textAlign: 'right' }}>{d.consultas.toLocaleString('pt-BR')}</div></Td>
-                          <Td mono><div style={{ textAlign: 'right' }}>R$ {d.preco_unitario}</div></Td>
+                          <Td mono><div style={{ textAlign: 'right' }}>R$ {f4(d.preco_unitario)}</div></Td>
                           <Td>
                             <div style={{ textAlign: 'right' }}>
-                              <span style={{ fontFamily: 'var(--mono)', fontSize: '12px', fontWeight: 700, color: 'var(--accent)' }}>
-                                R$ {d.custo_faixa}
+                              <span style={{ fontFamily: 'var(--mono)', fontSize: '12px', fontWeight: 700, color: 'var(--warn)' }}>
+                                R$ {f2(d.custo)}
                               </span>
                             </div>
                           </Td>
                           <Td>
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
-                              <span style={{ fontFamily: 'var(--mono)', fontSize: '11px', color: 'var(--text-muted)' }}>{pct}%</span>
-                              <div style={{ width: '100px', height: '5px', background: 'var(--surface-2)', borderRadius: '999px', overflow: 'hidden' }}>
-                                <div style={{ height: '100%', width: `${pct}%`, background: 'var(--accent)', borderRadius: '999px' }} />
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '5px' }}>
+                              <span style={{ fontFamily: 'var(--mono)', fontSize: '11px', color: 'var(--text-muted)' }}>{pct.toFixed(1)}%</span>
+                              <div style={{ width: '80px', height: '4px', background: 'var(--surface-2)', borderRadius: '999px', overflow: 'hidden' }}>
+                                <div style={{ height: '100%', width: `${pct}%`, background: 'var(--warn)', borderRadius: '999px' }} />
                               </div>
                             </div>
                           </Td>
                         </TrHover>
                       )
                     })}
+                    {/* Linha total */}
+                    <tr style={{ borderTop: '2px solid var(--border)' }}>
+                      <Td>
+                        <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text)' }}>Total</span>
+                      </Td>
+                      <Td mono><div style={{ textAlign: 'right', fontWeight: 700, color: 'var(--text)' }}>
+                        {resultado.quantidade.toLocaleString('pt-BR')}
+                      </div></Td>
+                      <Td mono><div style={{ textAlign: 'right', color: 'var(--text-dim)', fontSize: '11px' }}>
+                        média R$ {f4(resultado.custoMedio)}
+                      </div></Td>
+                      <Td>
+                        <div style={{ textAlign: 'right' }}>
+                          <span style={{ fontFamily: 'var(--mono)', fontSize: '15px', fontWeight: 800, color: planColor }}>
+                            {totalStr}
+                          </span>
+                        </div>
+                      </Td>
+                      <Td><div style={{ textAlign: 'right', fontFamily: 'var(--mono)', fontSize: '11px', color: 'var(--text-dim)' }}>100%</div></Td>
+                    </tr>
                   </tbody>
                 </Table>
               </div>
+              {/* Mobile */}
               <div className="app-data-mobile" style={{ padding: '16px' }}>
                 <div className="app-mobile-card-list">
-                  {resultado.detalhes_por_faixa.map((d) => {
-                    const pct = ((Number(d.custo_faixa) / Number(resultado.custo_total)) * 100).toFixed(1)
-                    return (
-                      <div key={d.faixa} style={{
-                        background: 'var(--surface)',
-                        border: '1px solid var(--border)',
-                        borderRadius: '16px',
-                        padding: '18px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '12px',
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-                          <span style={{
-                            display: 'inline-flex', alignItems: 'center',
-                            padding: '4px 10px', borderRadius: '8px',
-                            border: '1px solid var(--border)', background: 'var(--surface-2)',
-                            fontFamily: 'var(--mono)', fontSize: '11px', fontWeight: 700,
-                            color: 'var(--text-muted)',
-                          }}>
-                            {d.faixa}
-                          </span>
-                          <span style={{ fontFamily: 'var(--mono)', fontSize: '12px', fontWeight: 700, color: 'var(--accent)' }}>R$ {d.custo_faixa}</span>
+                  {/* Mensalidade mobile */}
+                  <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>Mensalidade</span>
+                      <span style={{ fontFamily: 'var(--mono)', fontSize: '13px', fontWeight: 700, color: 'var(--accent)' }}>R$ {f2(resultado.mensalidade)}</span>
+                    </div>
+                    <MobileField label="Franquia" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>
+                      {resultado.franquiaConsultas > 0 ? `${resultado.franquiaUsada.toLocaleString('pt-BR')} consultas` : '—'}
+                    </span>} />
+                  </div>
+                  {/* Faixas excedente mobile */}
+                  {resultado.detalhes.map((d, i) => (
+                    <div key={d.faixa} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text)' }}>Excedente faixa {i + 1}</span>
+                          <span style={{ fontFamily: 'var(--mono)', fontSize: '10px', color: 'var(--text-dim)' }}>{d.faixa}</span>
                         </div>
-                        <MobileField label="Consultas" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>{d.consultas.toLocaleString('pt-BR')}</span>} />
-                        <MobileField label="Preço unitário" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>R$ {d.preco_unitario}</span>} />
-                        <MobileField label="% do total" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>{pct}%</span>} />
+                        <span style={{ fontFamily: 'var(--mono)', fontSize: '12px', fontWeight: 700, color: 'var(--warn)' }}>R$ {f2(d.custo)}</span>
                       </div>
-                    )
-                  })}
+                      <MobileField label="Consultas" value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>{d.consultas.toLocaleString('pt-BR')}</span>} />
+                      <MobileField label="Preço unit." value={<span style={{ fontFamily: 'var(--mono)', fontSize: '12px' }}>R$ {f4(d.preco_unitario)}</span>} />
+                    </div>
+                  ))}
+                  {/* Total mobile */}
+                  <div style={{ background: `color-mix(in srgb, ${planColor} 8%, var(--surface))`, border: `2px solid ${planColor}`, borderRadius: '16px', padding: '18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div>
+                      <div style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-dim)', marginBottom: '2px' }}>Total mensal</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-dim)' }}>{resultado.quantidade.toLocaleString('pt-BR')} consultas</div>
+                    </div>
+                    <span style={{ fontFamily: 'var(--mono)', fontSize: '20px', fontWeight: 800, color: planColor }}>{totalStr}</span>
+                  </div>
                 </div>
               </div>
             </Card>
-          )}
-        </>
-      )}
+          </>
+        )
+      })()}
     </div>
   )
 }

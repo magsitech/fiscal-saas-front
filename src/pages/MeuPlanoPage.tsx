@@ -4,11 +4,11 @@ import { ptBR } from 'date-fns/locale'
 import { differenceInCalendarDays } from 'date-fns'
 import { AlertTriangle, Ban, Building2, Check, Clock, FlaskConical, Rocket, Star, Zap } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { pedidosApi, planosApi } from '@/services/api'
-import type { AssinaturaResumo, PlanoCatalogo, TipoPlano, UpgradePreview } from '@/types'
+import { faixasApi, pedidosApi, planosApi } from '@/services/api'
+import type { AssinaturaResumo, FaixaPreco, PlanoCatalogo, TipoPlano, UpgradePreview } from '@/types'
 import { Skeleton } from '@/components/ui'
 import { MensalidadeCheckout } from '@/components/planos/MensalidadeCheckout'
-import { buildPlanoFeatures, FALLBACK_PAID_PLANOS, formatPlanoPrice, isPaidPlan, PAID_PLAN_IDS, parsePlanoPrice, PLAN_ORDER, sortPlanos } from '@/utils/planos'
+import { buildPlanoFeatures, FALLBACK_FAIXAS, FALLBACK_PAID_PLANOS, formatPlanoPrice, isPaidPlan, PAID_PLAN_IDS, parsePlanoPrice, PLAN_ORDER, sortPlanos } from '@/utils/planos'
 
 const PLANO_LABEL: Record<TipoPlano, string> = {
   TRIAL: 'Trial', BASICO: 'Básico', PRO: 'Pro', BUSINESS: 'Business', CANCELADO: 'Cancelado', INATIVO: 'Inativo',
@@ -37,6 +37,7 @@ function fmtDate(d: string | null | undefined) {
 export function MeuPlanoPage() {
   const [assinatura, setAssinatura] = useState<AssinaturaResumo | null>(null)
   const [catalogoPlanos, setCatalogoPlanos] = useState<PlanoCatalogo[]>(FALLBACK_PAID_PLANOS)
+  const [faixas, setFaixas] = useState<FaixaPreco[]>(FALLBACK_FAIXAS)
   const [loading, setLoading] = useState(true)
   const [sandbox, setSandbox] = useState(false)
   const [loadingCancelamento, setLoadingCancelamento] = useState(false)
@@ -58,6 +59,9 @@ export function MeuPlanoPage() {
       setCatalogoPlanos(planosPagos.length > 0 ? planosPagos : FALLBACK_PAID_PLANOS)
       if (config?.sandbox) setSandbox(true)
     }).finally(() => setLoading(false))
+    faixasApi.listar()
+      .then(list => { if (list.length > 0) setFaixas(list) })
+      .catch(() => {})
   }, [])
 
   const plano = (assinatura?.plano ?? 'TRIAL') as TipoPlano
@@ -561,6 +565,75 @@ export function MeuPlanoPage() {
           </div>
         </div>
       )}
+
+      {/* Tabela de faixas de preço */}
+      <div style={card}>
+        <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--text-dim)', marginBottom: '20px' }}>
+          Faixas de preço por consulta
+        </div>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+            <thead>
+              <tr>
+                {[
+                  { label: 'Volume acumulado', align: 'left' as const },
+                  { label: 'Básico', align: 'right' as const },
+                  { label: 'Pro', align: 'right' as const },
+                  { label: 'Business', align: 'right' as const },
+                ].map(({ label, align }) => (
+                  <th key={label} style={{
+                    textAlign: align, padding: '8px 12px',
+                    fontSize: '10px', fontWeight: 700, textTransform: 'uppercase',
+                    letterSpacing: '0.12em', color: 'var(--text-dim)',
+                    borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap',
+                  }}>
+                    {label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {faixas.map((f, i) => {
+                const prevLimit = i === 0 ? 0 : (faixas[i - 1].limite_superior ?? 0)
+                const low = (prevLimit + 1).toLocaleString('pt-BR')
+                const high = f.limite_superior ? f.limite_superior.toLocaleString('pt-BR') : '+'
+                const label = `${low}–${high}`
+                const base = parseFloat(f.preco_base)
+                const adicional = parseFloat(f.adicional_fixo)
+                const precoBasico = base + adicional
+                const precoPro = base
+                const fmt = (n: number) => `R$ ${n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                return (
+                  <tr key={f.id_faixa} style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td style={{ padding: '11px 12px' }}>
+                      <span style={{
+                        fontFamily: 'var(--mono)', fontSize: '11px', fontWeight: 700,
+                        padding: '3px 8px', borderRadius: '6px',
+                        border: '1px solid var(--border)', background: 'var(--surface-2)',
+                        color: 'var(--text-muted)', letterSpacing: '0.04em',
+                      }}>
+                        {label}
+                      </span>
+                    </td>
+                    <td style={{ padding: '11px 12px', textAlign: 'right', fontFamily: 'var(--mono)', fontSize: '12px', fontWeight: 600, color: PLANO_COLOR.BASICO }}>
+                      {fmt(precoBasico)}
+                    </td>
+                    <td style={{ padding: '11px 12px', textAlign: 'right', fontFamily: 'var(--mono)', fontSize: '12px', fontWeight: 600, color: PLANO_COLOR.PRO }}>
+                      {fmt(precoPro)}
+                    </td>
+                    <td style={{ padding: '11px 12px', textAlign: 'right', fontFamily: 'var(--mono)', fontSize: '12px', fontWeight: 600, color: PLANO_COLOR.BUSINESS }}>
+                      {fmt(precoPro)}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+        <div style={{ marginTop: '14px', fontSize: '11px', color: 'var(--text-dim)', lineHeight: 1.7 }}>
+          O volume é acumulado ao longo do mês. Planos Pro e Business incluem consultas gratuitas na mensalidade antes de iniciar a cobrança por excedente.
+        </div>
+      </div>
 
       {/* Detalhes da assinatura */}
       <div style={card}>
