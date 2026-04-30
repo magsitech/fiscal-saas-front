@@ -1746,13 +1746,6 @@ interface SimResultado {
   detalhes: SimFaixa[]
 }
 
-// BASICO usa preco_base + adicional_fixo; PRO/BUSINESS usam apenas preco_base
-function precoFaixaParaPlano(faixa: FaixaPreco, plano: PlanoCatalogo): number {
-  const base = parseFloat(faixa.preco_base)
-  const adicional = parseFloat(faixa.adicional_fixo)
-  return plano.excedente_inicia_faixa === 0 ? base + adicional : base
-}
-
 function faixaLabel(faixa: FaixaPreco, index: number, todas: FaixaPreco[]): string {
   const prevLimit = index === 0 ? 0 : (todas[index - 1].limite_superior ?? 0)
   const low = (prevLimit + 1).toLocaleString('pt-BR')
@@ -1767,21 +1760,35 @@ function calcularSimulacao(plano: PlanoCatalogo, quantidade: number, faixas: Fai
   const excesso = Math.max(0, quantidade - franquia)
 
   const detalhes: SimFaixa[] = []
-  let remaining = excesso
-  let prevLimit = 0
   let custoExcesso = 0
 
-  for (let i = 0; i < faixas.length && remaining > 0; i++) {
-    const faixa = faixas[i]
-    const tierMax = faixa.limite_superior ?? Infinity
-    const tierSize = tierMax === Infinity ? remaining : (tierMax as number) - prevLimit
-    const qty = Math.min(remaining, tierSize)
-    const price = precoFaixaParaPlano(faixa, plano)
-    const cost = qty * price
-    detalhes.push({ faixa: faixaLabel(faixa, i, faixas), consultas: qty, preco_unitario: price, custo: cost })
-    custoExcesso += cost
-    remaining -= qty
-    if (tierMax !== Infinity) prevLimit = tierMax as number
+  if (plano.excedente_inicia_faixa === 0) {
+    // BASICO: preço único (Faixa 1), sem progressão de faixas
+    if (excesso > 0 && faixas.length > 0) {
+      const faixa = faixas[0]
+      const price = parseFloat(faixa.preco_base) + parseFloat(faixa.adicional_fixo)
+      const cost = excesso * price
+      detalhes.push({ faixa: `1–+`, consultas: excesso, preco_unitario: price, custo: cost })
+      custoExcesso = cost
+    }
+  } else {
+    // PRO/BUSINESS: faixas progressivas a partir de excedente_inicia_faixa (1-based)
+    const startIdx = plano.excedente_inicia_faixa - 1
+    let prevLimit = startIdx > 0 ? (faixas[startIdx - 1].limite_superior ?? 0) : 0
+    let remaining = excesso
+
+    for (let i = startIdx; i < faixas.length && remaining > 0; i++) {
+      const faixa = faixas[i]
+      const tierMax = faixa.limite_superior ?? Infinity
+      const tierSize = tierMax === Infinity ? remaining : (tierMax as number) - prevLimit
+      const qty = Math.min(remaining, tierSize)
+      const price = parseFloat(faixa.preco_base)
+      const cost = qty * price
+      detalhes.push({ faixa: faixaLabel(faixa, i, faixas), consultas: qty, preco_unitario: price, custo: cost })
+      custoExcesso += cost
+      remaining -= qty
+      if (tierMax !== Infinity) prevLimit = tierMax as number
+    }
   }
 
   const custoTotal = mensalidade + custoExcesso
